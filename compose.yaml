@@ -1,0 +1,83 @@
+# =============================================================================
+# Ready2Roll — docker-compose.yml
+# Stack: Vue.js (frontend) + Django (backend) + PostgreSQL (db) + Nginx (proxy)
+#
+# Network layout:
+#   frontend-net  -> nginx <-> vue, nginx <-> django (public-facing tier)
+#   backend-net   -> django <-> postgres              (private data tier)
+#
+# All environment variables are read from a single .env file at the repo root.
+# See .env.example for the required keys.
+# =============================================================================
+
+name: ready2roll
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # Vue.js — frontend
+  # ---------------------------------------------------------------------------
+  
+  vuejs-prod:
+    build:
+      context: ./srcs/frontend
+      dockerfile: Dockerfile
+    container_name: vuejs_container
+    image: vue_frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - /app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    networks:
+      - frontend-net
+
+
+  # ---------------------------------------------------------------------------
+  # Reverse proxy — single entrypoint, routes /api to Django and everything
+  # else to the built Vue app. Only service exposed to the host.
+  # ---------------------------------------------------------------------------
+  # nginx:
+  
+  # ---------------------------------------------------------------------------
+  # Django — backend
+  # ---------------------------------------------------------------------------
+  
+  
+  
+  # ---------------------------------------------------------------------------
+  # PostgreSQL — Database
+  # ---------------------------------------------------------------------------
+  postgre_db:
+    image: postgres:16
+    container_name: ready2roll-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - r2r_pgdata:/var/lib/postgresql/data
+      - ./srcs/postgre_db/init:/docker-entrypoint-initdb.d
+    networks:
+      - backend-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
+volumes:
+  r2r_pgdata:
+
+
+networks:
+  frontend-net:
+    driver: bridge
+  backend-net:
+    driver: bridge
