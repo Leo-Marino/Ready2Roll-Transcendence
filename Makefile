@@ -35,4 +35,4 @@ fclean: clean
 enterdb:
 	@docker exec -it ready2roll-db psql -U r2r_admin -d ready2roll
 
-re: fclean setup up
+re: fclean up

@@ -17,7 +17,7 @@ services:
   # ---------------------------------------------------------------------------
   # Vue.js — frontend
   # ---------------------------------------------------------------------------
-  
+
   vuejs-prod:
     build:
       context: ./srcs/frontend
@@ -40,13 +40,35 @@ services:
   # else to the built Vue app. Only service exposed to the host.
   # ---------------------------------------------------------------------------
   # nginx:
-  
+
   # ---------------------------------------------------------------------------
   # Django — backend
   # ---------------------------------------------------------------------------
-  
-  
-  
+  # ---------------------------------------------------------------------------
+  # Django — backend
+  # ---------------------------------------------------------------------------
+  django_backend:
+    build:
+      context: ./srcs/backend  # Se il tuo Dockerfile è nella root. Se è in una cartella, cambia in ./srcs/backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: django_container
+    image: django_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./srcs/backend:/app  # Mappa il tuo codice locale dentro il container per aggiornamenti in tempo reale
+    env_file:
+      - .env    # Prende le password del DB dallo stesso file usato da Postgres
+    networks:
+      - frontend-net  # Rete per parlare con Vue.js
+      - backend-net   # Rete per parlare con PostgreSQL
+    depends_on:
+      postgre_db:
+        condition: service_healthy # Django aspetterà che il DB sia pronto prima di avviarsi
+
+
   # ---------------------------------------------------------------------------
   # PostgreSQL — Database
   # ---------------------------------------------------------------------------
