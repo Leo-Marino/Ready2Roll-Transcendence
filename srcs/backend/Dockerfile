@@ -26,6 +26,12 @@ FROM builder AS development
 ENV PATH="/opt/venv/bin:$PATH"
 
 COPY . .
+
+# ADD the entrypoint for automatic migration
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+ENTRYPOINT [ "bash", "/app/entrypoint.sh" ]
+
 EXPOSE 8000
 
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
