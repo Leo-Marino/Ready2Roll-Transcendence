@@ -1,4 +1,44 @@
 <script setup>
+    import { ref } from vue;
+
+    // create the object that is going to store our data
+    const formData = ref({
+        username: '',
+        email: '',
+        password: '',
+        confirmPassword: ''
+    })
+
+    // when the function is called, vue is going to create the JSON
+    // object containing the necessary info, then it's going to make
+    // a POST request to the port 8000 of the localhost website, where
+    // a 'server' is already setup in the backend part in Django,
+    // where it is going to see the request made by vue, then Django
+    // is going to try to store the gotten variables into the DB, and
+    // finally, a response is going to be given back to vue, where:
+    // if everything has gone well, then its going to get a positive code
+    // (code 200 OK etc), therefore the website can redirect the user to
+    // the main page, otherwise its going to return a code 400 error or sum,
+    // which means the storing has gone wrong.
+    const handleSubmit = async() => {
+        try
+        {
+            const response = await fetch('http://localhost:8000/api/signup/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData.value)
+            })
+            const data = await response.json()
+            if (response.ok)
+                console.log('Registration successful: ', data)
+            else
+                console.error('Registration failed: ', data)
+        }
+        catch (error)
+        {
+            console.error('Network error: ', error)
+        }
+    }
 </script>
 
 <template>
@@ -12,18 +52,18 @@
                 <img src="../assets/logo_temp.png" alt="logo">
             </div>      
             <div id="loginForm" class="centred">
-                <form method="post">
+                <form method="post" @submit.prevent="handleSubmit">
                     <div class="inputFieldDiv">
-                        <input type="text" placeholder="Username">
+                        <input type="text" placeholder="Username" v-model="formData.username">
                     </div>
                     <div class="inputFieldDiv">
-                        <input type="text" placeholder="E-mail">
+                        <input type="text" placeholder="E-mail" v-model="formData.email">
                     </div>
                     <div class="inputFieldDiv">
-                        <input type="password" placeholder="Password">
+                        <input type="password" placeholder="Password" v-model="formData.password">
                     </div>
                     <div class="inputFieldDiv">
-                        <input type="password" placeholder="Confirm password">
+                        <input type="password" placeholder="Confirm password" v-model="formData.confirmPassword">
                     </div>
                     <br>
                     <div class="inputFieldButton">
