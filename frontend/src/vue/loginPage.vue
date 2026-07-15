@@ -8,7 +8,7 @@
     <div class="wrapper">
         <div id="logoDiv" class="centred">
             <img src="./assets/logo.png" alt="logo">
-        </div>        
+        </div>      
         <div id="loginForm" class="centred">
             <form method="post">
                 <div class="inputFieldDiv">
