@@ -3,11 +3,11 @@
 
 <template>
     <video autoplay muted loop playsinline id="bgVideo">
-        <source src="./assets/ready2roll_wave_background.mp4" type="video/mp4">
+        <source src="../assets/ready2roll_wave_background.mp4" type="video/mp4">
     </video>
     <div class="wrapper">
         <div id="logoDiv" class="centred">
-            <img src="./assets/logo.png" alt="logo">
+            <img src="../assets/logo_temp.png" alt="logo">
         </div>      
         <div id="loginForm" class="centred">
             <form method="post">
@@ -27,7 +27,7 @@
                     <hr class="dashedSeparator">
                 </div>
                 <div class="centred" id="signupLink">
-                    <p>Don't have an account? <a href="#" target="_blank">Sign up</a></p>
+                    <p>Don't have an account? <router-link to="/signup">Sign up</router-link></p>
                 </div>
             </form>
         </div>
@@ -35,6 +35,12 @@
 </template>
 
 <style scoped>
+    a
+    {
+        color: #FFFFFF;
+        text-decoration: underline;
+        text-decoration-color: #FFFFFF;
+    }
     .centred
     {
         display: flex;
@@ -74,7 +80,7 @@
 
     #loginForm
     {
-        width: 350px;
+        width: 550px;
         height: 350px;
         margin: 0 auto;
         background: rgba(255, 255, 255, 0.1);
@@ -86,33 +92,54 @@
     .inputFieldDiv
     {
         margin: 10px auto 10px auto;
-        width: 100%;
+        width: 500px;
     }
 
     .inputFieldDiv input
     {
         width: 100%;
+        height: 50px;
         box-sizing: border-box; 
         padding: 10px;
         border-radius: 17px;
         background: rgba(255, 255, 255, 0.1);
         color: #FFFFFF;
-        font-family: "Audiowide", sans-serif;
+        font-family: "Bruno Ace", sans-serif;
         font-weight: 400;
         font-style: normal;
     }
 
+    .inputFieldDiv input::placeholder
+    {
+        color: #FFFFFF;
+        opacity: 1;
+    }
+
+    /* support for older versions of actual browsers such as Chrome, Firefox, Safari ecc */
+    /* .inputFieldDiv input::-moz-placeholder
+    {
+        color: #FFFFFF;
+        opacity: 1;
+    }
+
+    .inputFieldDiv input::-webkit-input-placeholder
+    {
+        color: #FFFFFF;
+        opacity: 1;
+    } */
+
     .inputFieldButton button
     {
-        background: rgba(5, 212, 202, 0.822);
+        background: rgba(0, 242, 254, 1);
         color: #FFFFFF;
         width: 100%;
         height: 40px;
         border: none;
         border-radius: 17px;
         cursor: pointer;
-        font-family: "Audiowide", sans-serif;
-        font-weight: 400;
+        font-family: "Bruno Ace", sans-serif;
+        font-weight: 900;
+        font-style: normal;
     }
     
     .inputFieldButton button:hover
@@ -141,13 +168,15 @@
     {
         padding: 0 15px;
         color: rgb(255, 255, 255);
-        font-family: "Audiowide", sans-serif;
+        font-family: "Bruno Ace", sans-serif;
+        font-style: normal;
         font-size: 14px;
     }
 
     #signupLink
     {
-        font-family: "Audiowide", sans-serif;
+        font-family: "Bruno Ace", sans-serif;
         color: #FFFFFF;
+        font-size: 14px;
     }
 </style>
