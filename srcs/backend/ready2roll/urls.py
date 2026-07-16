@@ -16,9 +16,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from test.views import hello_vue
+from test.views import signup_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-	path('api/test/', hello_vue, name='hello_vue'),
+	path('api/signup/', signup_view, name='signup'),
 ]

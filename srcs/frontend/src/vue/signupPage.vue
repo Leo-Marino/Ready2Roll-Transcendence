@@ -1,4 +1,45 @@
 <script setup>
+import { ref } from 'vue';
+
+// 1. Creiamo le variabili per salvare quello che l'utente digita
+const username = ref('');
+const email = ref('');
+const password = ref('');
+
+// 2. La funzione che spedisce i dati al tuo Django
+const submitSignup = async () => {
+    // Impacchettiamo i dati
+    const payload = {
+        username: username.value,
+        email: email.value,
+        password: password.value
+    };
+
+    try {
+        // Bussiamo alla porta del backend!
+        const response = await fetch('http://localhost:8000/api/signup/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            alert("Registrazione completata con successo! Benvenuto in Ready2Roll!");
+            // Opzionale: qui il tuo amico potrà inserire il codice per cambiare pagina
+            // es: router.push('/login');
+        } else {
+            const errors = await response.json();
+            console.error("Errore dal server:", errors);
+            alert("Errore nella registrazione. (Forse l'username esiste già o la password è debole)");
+        }
+    } catch (error) {
+        console.error("Errore di rete:", error);
+        alert("Impossibile connettersi al Server Backend.");
+    }
+};
 </script>
 
 <template>
@@ -12,25 +53,31 @@
                 <img src="../assets/logo_temp.png" alt="logo">
             </div>
             <div id="loginForm" class="centred">
-                <form method="post">
+                <form @submit.prevent="submitSignup">
+
                     <div class="inputFieldDiv">
-                        <input type="text" placeholder="Username">
+                        <input type="text" v-model="username" placeholder="Username" required>
                     </div>
+
                     <div class="inputFieldDiv">
-                        <input type="text" placeholder="E-mail">
+                        <input type="email" v-model="email" placeholder="E-mail" required>
                     </div>
+
                     <div class="inputFieldDiv">
-                        <input type="password" placeholder="Password">
+                        <input type="password" v-model="password" placeholder="Password" required>
                     </div>
+
                     <br>
                     <div class="inputFieldButton">
                         <button type="submit">Submit</button>
                     </div>
+
                     <div class="or-separator">
                         <hr class="dashedSeparator">
                         <span class="or-text">OR</span>
                         <hr class="dashedSeparator">
                     </div>
+
                     <div class="centred" id="signupLink">
                         <p>Already have an account? <router-link to="/login">Login</router-link></p>
                     </div>
