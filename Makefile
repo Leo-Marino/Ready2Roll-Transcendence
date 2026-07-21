@@ -18,10 +18,10 @@ down:
 # -v cancella volumi?
 
 stop:
-	docker stop vuejs_container
+	docker stop vuejs_container django_container postgres:16
 
 start:
-	docker vuejs_container
+	docker vuejs_container django_container postgres:16
 # 	@echo Access to https://"$(USER)".42.fr
 
 reup: down up
