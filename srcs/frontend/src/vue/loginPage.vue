@@ -140,7 +140,6 @@
         font-weight: 900;
         font-style: normal;
     }
-
     .inputFieldButton button:hover
     {
         background: rgba(5, 212, 202, 0.61);
