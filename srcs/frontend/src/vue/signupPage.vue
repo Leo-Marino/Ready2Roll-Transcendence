@@ -181,7 +181,7 @@ const submitSignup = async () => {
 
     .inputFieldButton button
     {
-        background: rgba(0, 242, 254, 1);
+        background: rgba(0, 242, 254, 0.6765);
         color: #FFFFFF;
         width: 100%;
         height: 40px;
