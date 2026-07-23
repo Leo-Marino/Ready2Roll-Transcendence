@@ -1,6 +1,16 @@
+<script setup>
+import { RouterView } from 'vue-router'
+</script>
+
 <template>
-  <router-view />
+  <RouterView />
 </template>
 
 <style>
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #000;
+}
 </style>
