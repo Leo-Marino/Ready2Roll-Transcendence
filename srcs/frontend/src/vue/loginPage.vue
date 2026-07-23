@@ -8,7 +8,7 @@
     <div class="wrapper">
         <div id="logoDiv" class="centred">
             <img src="../assets/logo_temp.png" alt="logo">
-        </div>      
+        </div>
         <div id="loginForm" class="centred">
             <form method="post">
                 <div class="inputFieldDiv">
@@ -59,7 +59,7 @@
         width: 100%;
         height: 100%;
         z-index: -1;
-        object-fit: cover;      
+        object-fit: cover;
     }
 
     #logoDiv
@@ -98,7 +98,7 @@
     .inputFieldDiv input
     {
         width: 100%;
-        box-sizing: border-box; 
+        box-sizing: border-box;
         padding: 10px;
         border-radius: 17px;
         background: rgba(255, 255, 255, 0.1);
@@ -129,7 +129,7 @@
 
     .inputFieldButton button
     {
-        background: rgba(0, 242, 254, 1);
+        background: rgba(0, 242, 254, 67.65%);
         color: #FFFFFF;
         width: 100%;
         height: 40px;
@@ -140,7 +140,7 @@
         font-weight: 900;
         font-style: normal;
     }
-    
+
     .inputFieldButton button:hover
     {
         background: rgba(5, 212, 202, 0.61);
