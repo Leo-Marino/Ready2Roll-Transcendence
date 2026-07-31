@@ -1,16 +1,18 @@
+CREATE TYPE content_type AS ENUM ('text', 'image', 'video', 'gif');
+
 CREATE TABLE subscriptions (
 	follower_id INTEGER NOT NULL,
 	followed_id INTEGER NOT NULL,
 	created_at TIMESTAMP DEFAULT now(),
 	PRIMARY KEY (follower_id, followed_id),
-	CONSTRAINT fk_users
+	CONSTRAINT fk_follower
 		FOREIGN KEY (follower_id)
 		REFERENCES users(id)
 		ON DELETE CASCADE,
-	CONSTRAINT fk_users
+	CONSTRAINT fk_followed
 		FOREIGN KEY (followed_id)
 		REFERENCES users(id)
-		ON DELETE CASCADE,
+		ON DELETE CASCADE
 	);
 
 CREATE TABLE likes (
@@ -31,6 +33,7 @@ CREATE TABLE likes (
 CREATE TABLE comments (
 	id SERIAL PRIMARY KEY,
 	content TEXT NOT NULL,
+	type_content content_type DEFAULT 'text',
 	parent_comment_id INTEGER,
 	user_id INTEGER NOT NULL,
 	event_id INTEGER NOT NULL,

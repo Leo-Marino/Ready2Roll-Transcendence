@@ -1,4 +1,4 @@
-CREATE TYPE mediatype AS ENUM ('image', 'video');
+CREATE TYPE mediatype AS ENUM ('image', 'video', 'gif');
 
 CREATE TABLE events (
 	id SERIAL PRIMARY KEY,
