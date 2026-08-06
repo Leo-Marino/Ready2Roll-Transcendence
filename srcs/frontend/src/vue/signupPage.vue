@@ -1,5 +1,8 @@
 <script setup>
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 // 1. Creiamo le variabili per salvare quello che l'utente digita
 const username = ref('');
@@ -30,6 +33,7 @@ const submitSignup = async () => {
             alert("Registrazione completata con successo! Benvenuto in Ready2Roll!");
             // Opzionale: qui il tuo amico potrà inserire il codice per cambiare pagina
             // es: router.push('/login');
+            router.push('/home');
         } else {
             const errors = await response.json();
             console.error("Errore dal server:", errors);
