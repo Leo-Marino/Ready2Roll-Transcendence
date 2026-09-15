@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import CreateEvent from '../vue/ownerEventVisual.vue'
+import CreateEvent from '../vue/ownerEventCreate.vue'
 import LoginPage from '../vue/loginPage.vue' // comment this to test other pages n therefore to put privilege on
 import SignupPage from '../vue/signupPage.vue' // ```
 import HomePage from '../vue/HomePage.vue' // ```
