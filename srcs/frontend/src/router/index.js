@@ -9,7 +9,7 @@ const routes = [
     // decomment this to test other pages n therefore to put privilege on
     // path: '/',
     //   name: 'create-event',
-    //   component: CreateEvent 
+    //   component: CreateEvent
     path: '/login',
     name: 'Login',
     component: LoginPage
@@ -27,6 +27,11 @@ const routes = [
     path: '/home',
     name: 'home',
     component: HomePage
+  },
+  {
+    path: '/CreateEvent',
+    name: 'CreateEvent',
+    component: CreateEvent
   }
 ]
 
