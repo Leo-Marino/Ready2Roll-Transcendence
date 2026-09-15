@@ -28,4 +28,4 @@ CMD ["npm", "run", "dev", "--", "--host"]
 
 # # Start Nginx directly with custom config
 # ENTRYPOINT ["nginx", "-c", "/etc/nginx/nginx.conf"]//i have to take this
-# CMD ["-g", "daemon off;"]//i have to take this
+# CMD ["-g", "daemon off;"]//i have to take this back

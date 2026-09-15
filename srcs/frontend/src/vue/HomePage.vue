@@ -1,5 +1,6 @@
 <script setup>
-import { ref } from 'vue';
+// 1. ADDED: onMounted import
+import { ref, onMounted } from 'vue';
 
 // (Mock Data for Left Sidebar)
 const subscribedAccounts = ref([
@@ -15,14 +16,15 @@ const comments = ref([
 ]);
 
 // (Mock Data for the Video Feed)
-// You can replace 'url' with the actual video sources later
 const videos = ref([
   { id: 1, title: 'Video 1: Awesome DJ Set', url: '/videos/video1.mp4' },
   { id: 2, title: 'Video 2: Crazy Crowd', url: '/videos/video2.mp4' }
 ]);
-// --- NEW: Audio and Playback Control ---
 
-// Controls global mute state (Starts true because of browser autoplay policies)
+// 2. ADDED: Array to hold all video elements (This caused the white screen!)
+const videoRefs = ref([]);
+
+// Controls global mute state
 const isMuted = ref(true);
 
 // Function to play or pause the video when clicked
@@ -34,6 +36,30 @@ const togglePlay = (event) => {
     videoElement.pause();
   }
 };
+
+// Intersection Observer (The Radar)
+onMounted(() => {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      // If the video comes into view (at least 60% visible)
+      if (entry.isIntersecting) {
+        entry.target.play(); // Play the video automatically
+      } else {
+        // If the video leaves the screen, pause it immediately
+        entry.target.pause();
+      }
+    });
+  }, {
+    threshold: 0.6 // Trigger when 60% of the video is visible
+  });
+
+  // Attach the observer to all video elements
+  videoRefs.value.forEach((videoEl) => {
+    if (videoEl) {
+      observer.observe(videoEl);
+    }
+  });
+});
 </script>
 
 <template>
@@ -82,37 +108,31 @@ const togglePlay = (event) => {
           <p class="show-more">show more ⌄</p>
         </div>
       </aside>
-
-      <!-- 2. Center (Main Video Feed with TikTok-style Smooth Scroll) -->
-      <!-- Added 'feed-container' for scrolling logic -->
 <!-- 2. Center (Main Video Feed) -->
-<main class="feed-container">
+      <main class="feed-container">
 
-        <div class="video-wrapper glass-panel" v-for="video in videos" :key="video.id">
+        <!-- NEW: Added 'index' to the v-for loop -->
+        <div class="video-wrapper glass-panel" v-for="(video, index) in videos" :key="video.id">
 
-          <!-- The actual video element with click event and dynamic mute -->
+          <!-- NEW: Changed how 'ref' pushes elements into the array in Vue 3 -->
           <video
+            :ref="el => { if (el) videoRefs[index] = el }"
             class="feed-video"
             :src="video.url"
-            autoplay
             loop
             :muted="isMuted"
             playsinline
             @click="togglePlay">
           </video>
 
-          <!-- Video info overlay -->
           <div class="video-overlay">
             <h2>{{ video.title }}</h2>
           </div>
 
-          <!-- On-video controls -->
           <div class="video-controls">
             <button>ᐱ</button>
             <button>ᐯ</button>
             <div class="volume-slider">|</div>
-
-            <!-- Dynamic sound button that toggles isMuted -->
             <button @click="isMuted = !isMuted">
               {{ isMuted ? '🔇' : '🔊' }}
             </button>
@@ -235,25 +255,22 @@ const togglePlay = (event) => {
   width: 300px;
 }
 
-/*
-  Layout Adjustments (Fixing the large gaps)
-*/
 .main-content {
   display: flex;
   flex-direction: row;
-  justify-content: center; /* Centers the content */
-  gap: 15px; /* Reduced gap between sidebars and video */
-  height: calc(100vh - 95px); /* Calculate remaining height */
-  overflow: hidden; /* Prevent body scroll */
+  justify-content: space-between; /* Pushes items to the far left and right */
+  width: 100%;
+  height: calc(100vh - 95px);
+  overflow: hidden;
 }
 
-/* Fixed width for sidebars so they don't stretch */
+/* Sidebar sizing */
 .left-sidebar {
-  width: 260px;
+  width: 280px; /* Adjusted width for balance */
   display: flex;
   flex-direction: column;
   gap: 20px;
-  overflow-y: auto; /* Allows scrolling if menu gets too long */
+  overflow-y: auto;
 }
 
 .right-sidebar {
@@ -263,7 +280,6 @@ const togglePlay = (event) => {
   gap: 15px;
   overflow-y: auto;
 }
-
 /*
   TikTok-style Smooth Scrolling Logic
 */
