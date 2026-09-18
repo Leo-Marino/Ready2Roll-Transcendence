@@ -18,8 +18,9 @@ services:
 
   vuejs-prod:
     build:
-      context: ./srcs/frontend
-      dockerfile: Dockerfile
+      context: ./srcs
+      dockerfile: frontend/Dockerfile
+      target: builder
     container_name: vuejs_container
     image: vue_frontend
     ports:
