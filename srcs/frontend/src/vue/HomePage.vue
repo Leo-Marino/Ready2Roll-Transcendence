@@ -1,30 +1,78 @@
 <script setup>
-import { ref } from 'vue';
+// 1. ADDED: onMounted import
+import { ref, onMounted } from 'vue';
 
-// (Mock Data)
+// (Mock Data for Left Sidebar)
 const subscribedAccounts = ref([
   { id: 1, name: 'Xhul', img: 'https://i.pravatar.cc/150?u=1' },
   { id: 2, name: 'Anna', img: 'https://i.pravatar.cc/150?u=2' },
   { id: 3, name: 'thilina', img: 'https://i.pravatar.cc/150?u=3' }
 ]);
 
+// (Mock Data for Right Sidebar Comments)
 const comments = ref([
   { id: 1, user: 'Xhul', text: 'The drop on that first track was insanity!' },
   { id: 2, user: 'Anna', text: 'Best set of the year so far!' }
 ]);
+
+// (Mock Data for the Video Feed)
+const videos = ref([
+  { id: 1, title: 'Video 1: Awesome DJ Set', url: '/videos/video1.mp4' },
+  { id: 2, title: 'Video 2: Crazy Crowd', url: '/videos/video2.mp4' }
+]);
+
+// 2. ADDED: Array to hold all video elements (This caused the white screen!)
+const videoRefs = ref([]);
+
+// Controls global mute state
+const isMuted = ref(true);
+
+// Function to play or pause the video when clicked
+const togglePlay = (event) => {
+  const videoElement = event.target;
+  if (videoElement.paused) {
+    videoElement.play();
+  } else {
+    videoElement.pause();
+  }
+};
+
+// Intersection Observer (The Radar)
+onMounted(() => {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      // If the video comes into view (at least 60% visible)
+      if (entry.isIntersecting) {
+        entry.target.play(); // Play the video automatically
+      } else {
+        // If the video leaves the screen, pause it immediately
+        entry.target.pause();
+      }
+    });
+  }, {
+    threshold: 0.6 // Trigger when 60% of the video is visible
+  });
+
+  // Attach the observer to all video elements
+  videoRefs.value.forEach((videoEl) => {
+    if (videoEl) {
+      observer.observe(videoEl);
+    }
+  });
+});
 </script>
 
 <template>
+  <!-- Background Video -->
   <video autoplay muted loop playsinline id="bgVideo">
       <source src="../assets/ready2roll_wave_background.mp4" type="video/mp4">
   </video>
 
   <div class="app-container">
 
-    <!-- Navbar -->
+    <!-- Top Navbar -->
     <header class="navbar glass-panel">
       <div class="logo">
-        <!-- Logo section -->
         <span style="color: #00f2fe; font-weight: bold;">R</span> Ready2Roll
       </div>
       <div class="search-bar">
@@ -60,23 +108,42 @@ const comments = ref([
           <p class="show-more">show more ⌄</p>
         </div>
       </aside>
+<!-- 2. Center (Main Video Feed) -->
+      <main class="feed-container">
 
-      <!-- 2. Center (Main Video Area) -->
-      <main class="video-container glass-panel">
-        <div class="video-placeholder">
-          <!-- The event video will be placed here -->
-          <p>The Video</p>
+        <!-- NEW: Added 'index' to the v-for loop -->
+        <div class="video-wrapper glass-panel" v-for="(video, index) in videos" :key="video.id">
+
+          <!-- NEW: Changed how 'ref' pushes elements into the array in Vue 3 -->
+          <video
+            :ref="el => { if (el) videoRefs[index] = el }"
+            class="feed-video"
+            :src="video.url"
+            loop
+            :muted="isMuted"
+            playsinline
+            @click="togglePlay">
+          </video>
+
+          <div class="video-overlay">
+            <h2>{{ video.title }}</h2>
+          </div>
+
+          <div class="video-controls">
+            <button>ᐱ</button>
+            <button>ᐯ</button>
+            <div class="volume-slider">|</div>
+            <button @click="isMuted = !isMuted">
+              {{ isMuted ? '🔇' : '🔊' }}
+            </button>
+          </div>
+
         </div>
-        <div class="video-controls">
-          <button>ᐱ</button>
-          <button>ᐯ</button>
-          <div class="volume-slider">|</div>
-          <button>🔊</button>
-        </div>
+
       </main>
-
       <!-- 3. Right Sidebar -->
       <aside class="right-sidebar">
+
         <!-- Video Owner Information -->
         <div class="owner-info glass-panel">
           <div class="owner-header">
@@ -115,10 +182,32 @@ const comments = ref([
 </template>
 
 <style scoped>
-/*
-  Using the same style from the Signup/Login pages
-  to maintain a clean and consistent design
-*/
+/* Styling the actual video tag */
+.feed-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Ensures the video fills the box without stretching */
+  border-radius: 15px;
+  position: absolute; /* Places the video behind the text and buttons */
+  top: 0;
+  left: 0;
+  z-index: 0;
+}
+
+/* Ensure text and buttons stay above the video */
+.video-overlay, .video-controls {
+  position: relative;
+  z-index: 1;
+}
+
+/* Styling the video title overlay */
+.video-overlay {
+  position: absolute;
+  bottom: 30px;
+  left: 20px;
+  color: white;
+  text-shadow: 1px 1px 4px rgba(0,0,0,0.8); /* Makes text readable over bright videos */
+}
 #bgVideo {
     position: fixed;
     top: 0;
@@ -137,11 +226,10 @@ const comments = ref([
   height: 100vh;
   color: #FFFFFF;
   font-family: sans-serif;
-  padding: 10px;
+  padding: 10px 20px; /* Added side padding for better framing */
   box-sizing: border-box;
 }
 
-/* This magic class applies the clean glassmorphism effect */
 .glass-panel {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 15px;
@@ -155,6 +243,7 @@ const comments = ref([
   align-items: center;
   height: 60px;
   margin-bottom: 15px;
+  flex-shrink: 0;
 }
 
 .search-bar input {
@@ -169,35 +258,96 @@ const comments = ref([
 .main-content {
   display: flex;
   flex-direction: row;
-  gap: 20px;
-  height: calc(100vh - 90px);
+  justify-content: space-between; /* Pushes items to the far left and right */
+  width: 100%;
+  height: calc(100vh - 95px);
+  overflow: hidden;
 }
 
-/* Layout structure */
+/* Sidebar sizing */
 .left-sidebar {
-  width: 250px;
+  width: 280px; /* Adjusted width for balance */
   display: flex;
   flex-direction: column;
   gap: 20px;
   overflow-y: auto;
 }
 
-.video-container {
-  flex-grow: 1;
-  display: flex;
-  position: relative;
-  justify-content: center;
-  align-items: center;
-}
-
 .right-sidebar {
-  width: 300px;
+  width: 320px;
   display: flex;
   flex-direction: column;
   gap: 15px;
+  overflow-y: auto;
+}
+/*
+  TikTok-style Smooth Scrolling Logic
+*/
+/* Container for the video feed */
+.feed-container {
+  flex-grow: 1;
+  max-width: 550px;
+  height: 100%;
+  overflow-y: scroll;
+
+  /* The magic for snapping */
+  scroll-snap-type: y mandatory;
+
+  /* 1. Add this to make the scrolling movement smooth instead of instant */
+  scroll-behavior: smooth;
+
+  scrollbar-width: none;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Styling for lists and avatars */
+/* Individual video container */
+.video-wrapper {
+  min-height: 100%;
+  width: 100%;
+
+  /* Snaps to the start of the video */
+  scroll-snap-align: start;
+
+  /* 2. Add this! It forces the scroll to STOP at every single video (feels heavier/controlled) */
+  scroll-snap-stop: always;
+
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 15px;
+  margin-bottom: 15px;
+}
+
+/* Styling for video placeholder content */
+.video-placeholder {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.video-controls {
+  position: absolute;
+  right: 15px;
+  bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.video-controls button {
+  background: rgba(0, 0, 0, 0.5);
+  border: none;
+  color: white;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/*
+  General UI Components Styling
+*/
 ul {
   list-style: none;
   padding: 0;
@@ -215,7 +365,6 @@ li {
   border-radius: 50%;
 }
 
-/* Buttons styling */
 .subscribe-btn {
   background: rgba(0, 242, 254, 0.7);
   color: white;
