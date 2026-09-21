@@ -17,8 +17,10 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from test.views import signup_view
+from rest_framework_simplejwt.views import TokenObtainPairView # Aggiungi questa importazione
 
 urlpatterns = [
     path('admin/', admin.site.urls),
 	path('api/signup/', signup_view, name='signup'),
+	path('api/login/', TokenObtainPairView.as_view(), name='login'),
 ]

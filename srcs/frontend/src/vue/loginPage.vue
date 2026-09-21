@@ -1,4 +1,44 @@
 <script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+// Variabili collegate ai campi di testo
+const username = ref('')
+const password = ref('')
+const router = useRouter()
+
+const submitLogin = async () => {
+    try {
+        // Usa il percorso relativo se avete configurato Nginx, altrimenti l'IP del tuo Django
+        const response = await fetch('/api/login/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: username.value,
+                password: password.value
+            })
+        })
+
+        if (response.ok) {
+            const data = await response.json()
+
+            // 1. Salva il "Braccialetto VIP" (Token JWT) nella memoria del browser
+            localStorage.setItem('access_token', data.access)
+            localStorage.setItem('refresh_token', data.refresh)
+
+            alert('Login effettuato con successo!')
+
+            // 2. Manda l'utente alla Home Page!
+            router.push('/home') // Cambia '/home' con il percorso reale della vostra home
+        } else {
+            alert('Username o Password errati. Riprova.')
+        }
+    } catch (error) {
+        console.error('Errore di connessione col server:', error)
+    }
+}
 </script>
 
 <template>
@@ -10,16 +50,18 @@
             <img src="../assets/logo_temp.png" alt="logo">
         </div>
         <div id="loginForm" class="centred">
-            <form method="post">
+            <!-- Rimosso method="post" e aggiunto @submit.prevent -->
+            <form @submit.prevent="submitLogin">
                 <div class="inputFieldDiv">
-                    <input type="text" placeholder="E-mail">
+                    <!-- Nota: ho cambiato il placeholder in Username perché Django di default usa quello per il login -->
+                    <input type="text" placeholder="Username" v-model="username" required>
                 </div>
                 <div class="inputFieldDiv">
-                    <input type="password" placeholder="Password">
+                    <input type="password" placeholder="Password" v-model="password" required>
                 </div>
                 <br>
                 <div class="inputFieldButton">
-                    <button>Log-in</button>
+                    <button type="submit">Log-in</button>
                 </div>
                 <div class="or-separator">
                     <hr class="dashedSeparator">
