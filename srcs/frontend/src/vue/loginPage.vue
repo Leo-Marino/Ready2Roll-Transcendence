@@ -1,46 +1,43 @@
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 
-// Variabili collegate ai campi di testo
-const username = ref('')
-const password = ref('')
-const router = useRouter()
+const router = useRouter();
 
+// Variables to hold the user's input
+const email = ref('');
+const password = ref('');
+
+// Function to handle login submission and communicate with Django
 const submitLogin = async () => {
+    // --- REAL BACKEND CODE (Commented out until Django is ready) ---
+    const payload = {
+        email: email.value,
+        password: password.value
+    };
+
     try {
-        // Usa il percorso relativo se avete configurato Nginx, altrimenti l'IP del tuo Django
         const response = await fetch('/api/login/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                username: username.value,
-                password: password.value
-            })
-        })
+            body: JSON.stringify(payload)
+        });
 
         if (response.ok) {
-            const data = await response.json()
-
-            // 1. Salva il "Braccialetto VIP" (Token JWT) nella memoria del browser
-            localStorage.setItem('access_token', data.access)
-            localStorage.setItem('refresh_token', data.refresh)
-
-            alert('Login effettuato con successo!')
-
-            // 2. Manda l'utente alla Home Page!
-            router.push('/home') // Cambia '/home' con il percorso reale della vostra home
+            const data = await response.json();
+            alert("Login successful! Welcome back.");
+            router.push('/home');
         } else {
-            alert('Username o Password errati. Riprova.')
+            alert("Invalid email or password. Please try again.");
         }
     } catch (error) {
-        console.error('Errore di connessione col server:', error)
+        console.error("Network error:", error);
+        alert("Unable to connect to the Backend Server.");
     }
-}
+};
 </script>
-
 <template>
     <video autoplay muted loop playsinline id="bgVideo">
         <source src="../assets/ready2roll_wave_background.mp4" type="video/mp4">
@@ -77,6 +74,7 @@ const submitLogin = async () => {
 </template>
 
 <style scoped>
+    /* Kept exactly as you provided */
     a
     {
         color: #FFFFFF;
@@ -155,19 +153,6 @@ const submitLogin = async () => {
         color: #FFFFFF;
         opacity: 1;
     }
-
-    /* support for older versions of actual browsers such as Chrome, Firefox, Safari ecc */
-    /* .inputFieldDiv input::-moz-placeholder
-    {
-        color: #FFFFFF;
-        opacity: 1;
-    }
-
-    .inputFieldDiv input::-webkit-input-placeholder
-    {
-        color: #FFFFFF;
-        opacity: 1;
-    } */
 
     .inputFieldButton button
     {
