@@ -10,7 +10,7 @@ all: down up #setup
 
 up:
 	$(COMPOSE) build --parallel
-	$(COMPOSE) up
+	$(COMPOSE) up -d
 # 	@echo Access to https://"$(USER)".42.fr
 
 down:
