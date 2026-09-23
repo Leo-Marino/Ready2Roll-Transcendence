@@ -4,6 +4,7 @@ import LoginPage from '../vue/loginPage.vue' // comment this to test other pages
 import SignupPage from '../vue/signupPage.vue' // ```
 import HomePage from '../vue/HomePage.vue' // ```
 import ChatView from '../vue/ChatView.vue';
+import ProfileView from '../vue/ProfileView.vue';
 
 const routes = [
   {
@@ -33,6 +34,11 @@ const routes = [
     path: '/chat',
     name: 'chat',
     component: ChatView
+  },
+  {
+    path: '/profile',
+    name: '/profile',
+    component: ProfileView
   },
   {
     path: '/CreateEvent',
