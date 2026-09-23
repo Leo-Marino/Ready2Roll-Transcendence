@@ -10,12 +10,11 @@ all: down up #setup
 
 up:
 	$(COMPOSE) build --parallel
-	$(COMPOSE) up
+	$(COMPOSE) up -d
 # 	@echo Access to https://"$(USER)".42.fr
 
 down:
 	$(COMPOSE) down
-# -v cancella volumi?
 
 stop:
 	docker stop vuejs_container
@@ -26,13 +25,16 @@ start:
 
 reup: down up
 
-clean: down
+clean:
+	$(COMPOSE) down -v
 # 	sudo rm -rf $(DATA_DIR)
 
 fclean: clean
 	docker system prune --all --force
 
 enterdb:
-	@docker exec -it ready2roll-db psql -U r2r_admin -d ready2roll
+	@docker exec -it postgre_db psql -U r2r_admin -d ready2roll
 
 re: fclean up
+
+.PHONY: all up down stop start reup clean fclean enterdb re
