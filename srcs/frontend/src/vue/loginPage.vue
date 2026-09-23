@@ -10,17 +10,6 @@ const password = ref('');
 
 // Function to handle login submission and communicate with Django
 const submitLogin = async () => {
-
-    // --- TEMPORARY MOCK LOGIN (Use this while waiting for Django) ---
-    // We hardcode a test account to bypass the backend for now
-    if (email.value === 'test@club.com' && password.value === '1234') {
-        alert("Mock Login successful! Welcome to Ready2Roll.");
-        router.push('/home');
-    } else {
-        alert("Wrong credentials! Please use: test@club.com / 1234");
-    }
-
-    /*
     // --- REAL BACKEND CODE (Commented out until Django is ready) ---
     const payload = {
         email: email.value,
@@ -47,7 +36,6 @@ const submitLogin = async () => {
         console.error("Network error:", error);
         alert("Unable to connect to the Backend Server.");
     }
-    */
 };
 </script>
 <template>
