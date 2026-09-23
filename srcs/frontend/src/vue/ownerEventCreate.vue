@@ -1,11 +1,8 @@
 <template>
   <div class="owner-visual-wrapper">
-    <!-- Sfondo Video -->
     <video autoplay muted loop playsinline id="bgVideo">
       <source src="../assets/ready2roll_wave_background.mp4" type="video/mp4" />
     </video>
-
-    <!-- Input file nascosto per upload media -->
     <input 
       type="file" 
       ref="fileInput" 
@@ -13,8 +10,6 @@
       style="display: none;" 
       @change="handleFileUpload" 
     />
-
-    <!-- HEADER -->
     <header class="app-header">
       <div class="logo">Ready2Roll</div>
       <div class="user-profile">
@@ -24,18 +19,13 @@
     </header>
 
     <main class="main-content">
-      <!-- HEADER PAGINA E PULSANTE NAVIGAZIONE MOSTRA EVENTI -->
       <div v-if="!isExpanded" class="page-title-row">
         <h1 class="page-title">CREA UN NUOVO EVENTO</h1>
         <button class="action-btn nav-visual-btn" @click="goToVisualPage">
           📂 I MIEI EVENTI
         </button>
       </div>
-
-      <!-- MAIN CARD SIMULATORE & FORM -->
       <section class="glass-card" :class="{ 'is-expanded-card': isExpanded }">
-        
-        <!-- PANNELLO DETTAGLI EVENTO (Titolo, Data Calendario, Stato) -->
         <div v-if="!isExpanded" class="event-details-bar">
           <div class="detail-input-group flex-2">
             <label for="event-title">TITOLO EVENTO *</label>
@@ -47,8 +37,6 @@
               class="custom-input"
             />
           </div>
-          
-          <!-- SELEZIONE DATA DA CALENDARIO -->
           <div class="detail-input-group flex-1">
             <label for="event-date">DATA EVENTO *</label>
             <input 
@@ -68,11 +56,7 @@
             </select>
           </div>
         </div>
-
-        <!-- SIMULATORE VISUALIZZAZIONE & MAPPA -->
         <div class="preview-box" :class="{ 'is-expanded-box': isExpanded, 'is-map-view': isMapOpen && !isExpanded }">
-        
-          <!-- Sidebar Sinistra (Menu) - visibile solo espanso -->
           <aside v-if="isExpanded" class="sidebar-left">
             <div class="side-card">
               <h4>Menu</h4>
@@ -90,8 +74,6 @@
               <small class="show-more">show more _</small>
             </div>
           </aside>
-
-          <!-- Content-Dedicated Container (Simulatore Mobile) -->
           <div class="media-outer-wrapper" :class="{ 'is-expanded-wrapper': isExpanded }">
             <div 
               class="media-preview clickable" 
@@ -100,7 +82,6 @@
               @mouseleave="hoverStep = null"
               @click="handleMediaClick"
             >
-              <!-- Icona mappa: toggle apertura mappa -->
               <div 
                 v-if="!isExpanded"
                 class="map-badge clickable"
@@ -112,8 +93,6 @@
                   <circle fill="#FFFFFF" cx="12" cy="9" r="2.5"/>
                 </svg>
               </div>
-
-              <!-- Tasto Espandi / Comprimi Fullscreen -->
               <button 
                 class="expand-btn" 
                 @click.stop="toggleExpand" 
@@ -144,8 +123,6 @@
                   class="uploaded-preview" 
                 />
               </template>
-
-              <!-- Descrizione Evento (Overlay Editable) -->
               <div 
                 class="text-preview overlay-description"
                 @mouseenter="hoverStep = 3"
@@ -162,8 +139,6 @@
               </div>
             </div>
           </div>
-
-          <!-- SEZIONE MAPPA (Visibile solo in modalità compatta e se isMapOpen è true) -->
           <div v-if="isMapOpen && !isExpanded" class="map-container">
             <div class="map-inner-wrapper">
               <div class="map-search-bar">
@@ -187,8 +162,6 @@
               ></iframe>
             </div>
           </div>
-
-          <!-- Sidebar Destra (Info Owner + Commenti) - visibile solo espanso -->
           <aside v-if="isExpanded" class="sidebar-right">
             <div class="side-card owner-info-box">
               <div class="owner-header">
@@ -214,8 +187,6 @@
             </div>
           </aside>
         </div>
-
-        <!-- AZIONE PRINCIPALE: TASTO PUBBLICA -->
         <div v-if="!isExpanded" class="publish-action-bar">
           <button class="publish-btn" @click="handlePublish">
             PUBBLICA EVENTO

@@ -1,6 +1,5 @@
 <template>
   <div class="owner-visual-wrapper">
-    <!-- Sfondo Video -->
     <video autoplay muted loop playsinline id="bgVideo">
       <source src="../assets/ready2roll_wave_background.mp4" type="video/mp4" />
     </video>
@@ -15,15 +14,12 @@
       <div class="page-header">
         <div class="header-top-row">
           <h1 class="page-title">I MIEI EVENTI</h1>
-          <!-- Tasto di navigazione verso la Creazione Eventi -->
           <button class="action-btn create-nav-btn" @click="goToCreateEvent">
             ➕ CREA NUOVO EVENTO
           </button>
         </div>
         <p class="subtitle">Gestisci, modifica e visualizza l'anteprima a schermo intero delle tue serate</p>
       </div>
-
-      <!-- SEZIONE GRID EVENTI -->
       <section class="events-grid">
         <div 
           v-for="event in eventsList" 
@@ -71,8 +67,6 @@
           </div>
         </div>
       </section>
-
-      <!-- MODALE ANTEPRIMA A SCHERMO INTERO (FULLSCREEN) -->
       <div v-if="activePreviewEvent" class="fullscreen-preview-overlay">
         <button class="fullscreen-close-btn" @click="closePreview">✕</button>
         
@@ -85,7 +79,6 @@
                 'is-map-view': isMapOpen && !isExpanded 
               }"
             >
-              <!-- Sidebar Sinistra (Menu) - visibile solo espanso -->
               <aside v-if="isExpanded" class="sidebar-left">
                 <div class="side-card">
                   <h4>Menu</h4>
@@ -103,14 +96,11 @@
                   <small class="show-more">show more _</small>
                 </div>
               </aside>
-
-              <!-- Media Wrapper (Simulatore Mobile 9:16) -->
               <div class="media-outer-wrapper" :class="{ 'is-expanded-wrapper': isExpanded }">
                 <div 
                   class="media-preview" 
                   :class="{ 'has-content': activePreviewEvent.mediaSrc, 'is-expanded': isExpanded }"
                 >
-                  <!-- Icona Mappa Toggle -->
                   <div 
                     v-if="!isExpanded"
                     class="map-badge clickable"
@@ -122,8 +112,6 @@
                       <circle fill="#FFFFFF" cx="12" cy="9" r="2.5"/>
                     </svg>
                   </div>
-
-                  <!-- Tasto Ingrandisci / Comprimi -->
                   <button 
                     class="expand-btn" 
                     @click.stop="toggleExpand" 
@@ -134,8 +122,6 @@
                       <path v-else d="M4 14h6v6M20 10h-6V4M10 14L3 21M14 10l7-7"/>
                     </svg>
                   </button>
-
-                  <!-- Preview Media -->
                   <video 
                     v-if="activePreviewEvent.mediaType === 'video'" 
                     :src="activePreviewEvent.mediaSrc" 
@@ -150,8 +136,6 @@
                     alt="Anteprima" 
                     class="uploaded-preview" 
                   />
-
-                  <!-- Overlay Descrizione -->
                   <div class="text-preview overlay-description">
                     <p class="preview-description-text">
                       {{ activePreviewEvent.description }}
@@ -159,8 +143,6 @@
                   </div>
                 </div>
               </div>
-
-              <!-- Sezione Mappa (OpenStreetMap) -->
               <div v-if="isMapOpen && !isExpanded" class="map-container">
                 <div class="map-inner-wrapper">
                   <div class="map-search-bar">
@@ -183,8 +165,6 @@
                   ></iframe>
                 </div>
               </div>
-
-              <!-- Sidebar Destra (Info Owner + Commenti) -->
               <aside v-if="isExpanded" class="sidebar-right">
                 <div class="side-card owner-info-box">
                   <div class="owner-header">
@@ -214,7 +194,6 @@
         </div>
       </div>
 
-      <!-- MODALE MODIFICA EVENTO -->
       <div v-if="isEditing" class="edit-modal-overlay" @click.self="closeEdit">
         <div class="edit-modal-card glass-card">
           <div class="edit-modal-header">
@@ -311,7 +290,7 @@ export default {
           location: 'YAB, Firenze',
           date: '28 Febbraio 2026',
           status: 'Attivo',
-          description: 'Florence was on fire last night! Incredible sets... #nightlife #party',
+          description: 'hiding my depression rn, also feeling cute might delete l8r',
           mediaType: 'image',
           mediaSrc: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=1000&auto=format&fit=crop'
         },
@@ -321,7 +300,7 @@ export default {
           location: 'Tenax, Firenze',
           date: '05 Marzo 2026',
           status: 'Bozza',
-          description: 'Preparatevi per un viaggio nei ritmi underground più spinti della capitale toscana!',
+          description: 'aint no sigma without a ligma ..',
           mediaType: 'image',
           mediaSrc: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1000&auto=format&fit=crop'
         },
@@ -331,7 +310,7 @@ export default {
           location: 'Parco delle Cascine, Firenze',
           date: '12 Aprile 2026',
           status: 'Programmato',
-          description: 'Musica dal vivo, food truck e relax sotto il sole per l\'apertura della stagione.',
+          description: 'vaping drip n sucking dick today baby',
           mediaType: 'image',
           mediaSrc: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=1000&auto=format&fit=crop'
         }
