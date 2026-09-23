@@ -1,6 +1,55 @@
 <script setup>
-</script>
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 
+const router = useRouter();
+
+// Variables to hold the user's input
+const email = ref('');
+const password = ref('');
+
+// Function to handle login submission and communicate with Django
+const submitLogin = async () => {
+
+    // --- TEMPORARY MOCK LOGIN (Use this while waiting for Django) ---
+    // We hardcode a test account to bypass the backend for now
+    if (email.value === 'test@club.com' && password.value === '1234') {
+        alert("Mock Login successful! Welcome to Ready2Roll.");
+        router.push('/home');
+    } else {
+        alert("Wrong credentials! Please use: test@club.com / 1234");
+    }
+
+    /*
+    // --- REAL BACKEND CODE (Commented out until Django is ready) ---
+    const payload = {
+        email: email.value,
+        password: password.value
+    };
+
+    try {
+        const response = await fetch('/api/login/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            alert("Login successful! Welcome back.");
+            router.push('/home');
+        } else {
+            alert("Invalid email or password. Please try again.");
+        }
+    } catch (error) {
+        console.error("Network error:", error);
+        alert("Unable to connect to the Backend Server.");
+    }
+    */
+};
+</script>
 <template>
     <video autoplay muted loop playsinline id="bgVideo">
         <source src="../assets/ready2roll_wave_background.mp4" type="video/mp4">
@@ -10,16 +59,20 @@
             <img src="../assets/logo_temp.png" alt="logo">
         </div>
         <div id="loginForm" class="centred">
-            <form method="post">
+            <!-- Intercept the form submission to run our Vue function -->
+            <form @submit.prevent="submitLogin">
                 <div class="inputFieldDiv">
-                    <input type="text" placeholder="E-mail">
+                    <!-- Bind the input to the 'email' variable -->
+                    <input type="email" v-model="email" placeholder="E-mail" required>
                 </div>
                 <div class="inputFieldDiv">
-                    <input type="password" placeholder="Password">
+                    <!-- Bind the input to the 'password' variable -->
+                    <input type="password" v-model="password" placeholder="Password" required>
                 </div>
                 <br>
                 <div class="inputFieldButton">
-                    <button>Log-in</button>
+                    <!-- Submit button triggers the form event -->
+                    <button type="submit">Log-in</button>
                 </div>
                 <div class="or-separator">
                     <hr class="dashedSeparator">
@@ -35,6 +88,7 @@
 </template>
 
 <style scoped>
+    /* Kept exactly as you provided */
     a
     {
         color: #FFFFFF;
@@ -113,19 +167,6 @@
         color: #FFFFFF;
         opacity: 1;
     }
-
-    /* support for older versions of actual browsers such as Chrome, Firefox, Safari ecc */
-    /* .inputFieldDiv input::-moz-placeholder
-    {
-        color: #FFFFFF;
-        opacity: 1;
-    }
-
-    .inputFieldDiv input::-webkit-input-placeholder
-    {
-        color: #FFFFFF;
-        opacity: 1;
-    } */
 
     .inputFieldButton button
     {

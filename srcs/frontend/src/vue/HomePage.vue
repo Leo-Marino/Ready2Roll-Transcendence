@@ -70,17 +70,30 @@ onMounted(() => {
 
   <div class="app-container">
 
-    <!-- Top Navbar -->
+<!-- Top Navbar -->
     <header class="navbar glass-panel">
+
+      <!-- NEW: Logo Section with Image and Text -->
       <div class="logo">
-        <span style="color: #00f2fe; font-weight: bold;">R</span> Ready2Roll
+        <img src="../assets/logo_temp.png" alt="Ready2Roll Logo" class="nav-logo-img">
+        <span class="logo-text">Ready2Roll</span>
       </div>
       <div class="search-bar">
         <input type="text" placeholder="Search...">
       </div>
       <div class="nav-icons">
-        <span>✈️</span>
-        <span>💬</span>
+        <!-- Message / Send Icon (Pro style) -->
+<!-- Message / Send Icon wrapped in a router-link -->
+        <router-link to="/chat" class="nav-icon-link">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+          </svg>
+        </router-link>
+
+        <!-- Chat / Notifications Icon (Pro style) -->
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+        </svg>
       </div>
     </header>
 
@@ -390,6 +403,47 @@ li {
   padding: 10px;
   border-radius: 10px;
   cursor: pointer;
+}
+/* Styling for the Logo and Text in Navbar */
+.logo {
+  display: flex;
+  align-items: center; /* Centers the image and text vertically */
+  gap: 10px; /* Space between the logo image and the text */
+  cursor: pointer;
+}
+
+.nav-logo-img {
+  height: 35px; /* Adjust this value to make the logo bigger or smaller */
+  width: auto;
+  object-fit: contain; /* Ensures the logo doesn't get stretched */
+}
+
+.logo-text {
+  font-family: "Bruno Ace", sans-serif; /* Using the same font from your login page */
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: #FFFFFF;
+}
+
+/* Pro Nav Icons Styling */
+.nav-icons {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.nav-icon {
+  width: 26px; /* الحجم ديال الأيقونة */
+  height: 26px;
+  color: #FFFFFF; /* اللون الأصلي أبيض */
+  cursor: pointer;
+  transition: all 0.3s ease; /* باش الأنيميشن تجي سموث */
+}
+
+/* Hover Effect: كيبدلو اللون وكيكبارو شوية ملي تحط عليهم الماوس */
+.nav-icon:hover {
+  color: #00f2fe;
+  transform: scale(1.15);
 }
 
 .comment {
