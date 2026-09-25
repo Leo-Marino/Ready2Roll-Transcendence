@@ -214,18 +214,14 @@ const submitSignup = async () => {
         flex-grow: 1;
         margin: 0;
     }
-
-    .or-text
-    {
+    .or-text {
         padding: 0 15px;
         color: rgb(255, 255, 255);
         font-family: "Bruno Ace", sans-serif;
         font-style: normal;
         font-size: 14px;
     }
-
-    #signupLink
-    {
+    #signupLink {
         font-family: "Bruno Ace", sans-serif;
         color: #FFFFFF;
         font-size: 14px;
