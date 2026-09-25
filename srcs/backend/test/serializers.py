@@ -16,3 +16,19 @@ class UserSerializer(serializers.ModelSerializer):
             password=validated_data['password']
         )
         return user
+
+class UserProfileUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            'username',
+            'first_name',
+            'last_name',
+            'bio',
+            'avatar_url',
+            'instagram_handle',
+            'phone_number',
+            'legal_name',
+            'date_of_birth',
+            'bs_website'
+        ]
