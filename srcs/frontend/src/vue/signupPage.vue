@@ -55,6 +55,23 @@ const submitSignup = async () => {
             <div id="loginForm" class="centred">
                 <form @submit.prevent="submitSignup">
 
+                    <!-- Role Toggle Button -->
+                    <div class="role-toggle-container">
+                        <button
+                            type="button"
+                            :class="{'active-role': userType === 'Normal'}"
+                            @click="userType = 'Normal User'">
+                            Normal User
+                        </button>
+                        <button
+                            type="button"
+                            :class="{'active-role': userType === 'Owner'}"
+                            @click="userType = 'Local Owner'">
+                            Local Owner
+                        </button>
+                    </div>
+
+                    <!-- Common fields for all users -->
                     <div class="inputFieldDiv">
                         <input type="text" v-model="username" placeholder="Username" required>
                     </div>
