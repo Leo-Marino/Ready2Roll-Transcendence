@@ -1,6 +1,43 @@
 <script setup>
-</script>
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 
+const router = useRouter();
+
+// Variables to hold the user's input
+const username = ref('');
+const password = ref('');
+
+// Function to handle login submission and communicate with Django
+const submitLogin = async () => {
+    // --- REAL BACKEND CODE (Commented out until Django is ready) ---
+    const payload = {
+        username: username.value,
+        password: password.value
+    };
+
+    try {
+        const response = await fetch('/api/login/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            alert("Login successful! Welcome back.");
+            router.push('/home');
+        } else {
+            alert("Invalid username or password. Please try again.");
+        }
+    } catch (error) {
+        console.error("Network error:", error);
+        alert("Unable to connect to the Backend Server.");
+    }
+};
+</script>
 <template>
     <video autoplay muted loop playsinline id="bgVideo">
         <source src="../assets/ready2roll_wave_background.mp4" type="video/mp4">
@@ -10,16 +47,18 @@
             <img src="../assets/logo_temp.png" alt="logo">
         </div>
         <div id="loginForm" class="centred">
-            <form method="post">
+            <!-- Rimosso method="post" e aggiunto @submit.prevent -->
+            <form @submit.prevent="submitLogin">
                 <div class="inputFieldDiv">
-                    <input type="text" placeholder="E-mail">
+                    <!-- Nota: ho cambiato il placeholder in Username perché Django di default usa quello per il login -->
+                    <input type="text" placeholder="Username" v-model="username" required>
                 </div>
                 <div class="inputFieldDiv">
-                    <input type="password" placeholder="Password">
+                    <input type="password" placeholder="Password" v-model="password" required>
                 </div>
                 <br>
                 <div class="inputFieldButton">
-                    <button>Log-in</button>
+                    <button type="submit">Log-in</button>
                 </div>
                 <div class="or-separator">
                     <hr class="dashedSeparator">
@@ -35,6 +74,7 @@
 </template>
 
 <style scoped>
+    /* Kept exactly as you provided */
     a
     {
         color: #FFFFFF;
@@ -113,19 +153,6 @@
         color: #FFFFFF;
         opacity: 1;
     }
-
-    /* support for older versions of actual browsers such as Chrome, Firefox, Safari ecc */
-    /* .inputFieldDiv input::-moz-placeholder
-    {
-        color: #FFFFFF;
-        opacity: 1;
-    }
-
-    .inputFieldDiv input::-webkit-input-placeholder
-    {
-        color: #FFFFFF;
-        opacity: 1;
-    } */
 
     .inputFieldButton button
     {

@@ -1,11 +1,11 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY package*.json ./
+COPY frontend/package*.json ./
 RUN npm install
-COPY . .
+COPY frontend/. .
 EXPOSE 5173
-# CMD ["npm", "run", "dev"]
-RUN npm run build
+CMD ["npm", "run", "dev", "--", "--host"]
+# RUN npm run build
 
 # =========================================
 # Stage 2: Prepare Nginx to Serve Static Files
@@ -27,5 +27,5 @@ USER nginx
 EXPOSE 5173
 
 # Start Nginx directly with custom config
-ENTRYPOINT ["nginx", "-c", "/etc/nginx/nginx.conf"]
-CMD ["-g", "daemon off;"]
+ENTRYPOINT ["nginx", "-c", "/etc/nginx/nginx.conf"]//i have to take this
+CMD ["-g", "daemon off;"]//i have to take this back

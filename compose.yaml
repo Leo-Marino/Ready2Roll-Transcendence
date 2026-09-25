@@ -18,8 +18,9 @@ services:
 
   vuejs-prod:
     build:
-      context: ./srcs/frontend
-      dockerfile: Dockerfile
+      context: ./srcs
+      dockerfile: frontend/Dockerfile
+      target: builder
     container_name: vuejs_container
     image: vue_frontend
     ports:
@@ -108,27 +109,39 @@ services:
 
 #---------------------------------------------------------------------------
 
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+        PGADMIN_DEFAULT_EMAIL: "admin@ready2roll.com"
+        PGADMIN_DEFAULT_PASSWORD: "admin"
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgre_db
+    networks:
+      - backend-net
+
 #MinIO — Object Storage (Event Posters & Media)
 
 #---------------------------------------------------------------------------
 
-  minio_storage:
-    image: minio/minio
-    container_name: ready2roll-storage
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - minio_data:/data
-    env_file:
-      - .env
-    networks:
-      - backend-net
-      - frontend-net
+  # minio_storage:
+  #   image: minio/minio
+  #   container_name: ready2roll-storage
+  #   command: server /data --console-address ":9001"
+  #   environment:
+  #     MINIO_ROOT_USER: ${MINIO_USER}
+  #     MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
+  #   ports:
+  #     - "9000:9000"
+  #     - "9001:9001"
+  #   volumes:
+  #     - minio_data:/data
+  #   env_file:
+  #     - .env
+  #   networks:
+  #     - backend-net
+  #     - frontend-net
 
 #---------------------------------------------------------------------------
 

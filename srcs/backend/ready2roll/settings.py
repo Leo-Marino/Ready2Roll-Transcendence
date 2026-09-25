@@ -86,7 +86,7 @@ DATABASES = {
        'NAME': os.environ['POSTGRES_DB'],
        'USER': os.environ['POSTGRES_USER'],
        'PASSWORD': os.environ['POSTGRES_PASSWORD'],
-       'HOST': 'postgre_db',
+       'HOST': os.environ['POSTGRES_HOST'],
        'POST': os.environ.get('POSTGRES_PORT', '5432'),
 
     }
@@ -111,6 +111,11 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
@@ -143,3 +148,6 @@ ALLOWED_HOSTS = ['*']
 # ]
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+# Custom User Model
+AUTH_USER_MODEL = 'test.User'

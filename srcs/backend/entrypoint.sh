@@ -6,8 +6,12 @@
 # Stop the script if teher is an error
 set -e
 
+echo "Drawing the blueprints..."
+python manage.py makemigrations test
+python manage.py makemigrations
+
 echo "Execution of the migration of the db..."
-python manage.py migrate
+python manage.py migrate --fake-initial
 
 echo "Automatic creation of the superuser (if he dosen't exixt)... "
 python manage.py createsuperuser --noinput || true
