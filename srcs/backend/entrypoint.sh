@@ -9,6 +9,8 @@ set -e
 echo "Execution of the migration of the db..."
 python manage.py migrate
 
+python manage.py makemigrations test
+
 echo "Automatic creation of the superuser (if he dosen't exixt)... "
 python manage.py createsuperuser --noinput || true
 
