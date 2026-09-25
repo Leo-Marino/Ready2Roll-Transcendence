@@ -109,12 +109,25 @@ onMounted(() => {
 
       <!-- 1. Left Sidebar -->
       <aside class="left-sidebar glass-panel">
-        <nav class="main-menu">
+<nav class="main-menu">
           <h3>Menu</h3>
           <ul>
-            <li>🏠 For you</li>
-            <li>👤 Subscription</li>
-            <li>🧭 Discover</li>
+            <li>
+              <!-- Replace '/home' with your actual route path if different -->
+              <router-link to="/home" class="menu-item">
+                🏠 For you
+              </router-link>
+            </li>
+            <li>
+              <router-link to="/subscriptions" class="menu-item">
+                👤 Subscription
+              </router-link>
+            </li>
+            <li>
+              <router-link to="/discover" class="menu-item">
+                🧭 Discover
+              </router-link>
+            </li>
           </ul>
         </nav>
 
@@ -441,14 +454,12 @@ li {
 }
 
 .nav-icon {
-  width: 26px; /* الحجم ديال الأيقونة */
+  width: 26px;
   height: 26px;
-  color: #FFFFFF; /* اللون الأصلي أبيض */
+  color: #FFFFFF;
   cursor: pointer;
-  transition: all 0.3s ease; /* باش الأنيميشن تجي سموث */
+  transition: all 0.3s ease;
 }
-
-/* Hover Effect: كيبدلو اللون وكيكبارو شوية ملي تحط عليهم الماوس */
 .nav-icon:hover {
   color: #00f2fe;
   transform: scale(1.15);
@@ -460,4 +471,42 @@ li {
   margin-bottom: 15px;
   font-size: 14px;
 }
+
+/* Sidebar Menu Link Styles */
+.main-menu ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  color: #FFFFFF;
+  text-decoration: none;
+  border-radius: 10px;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+/* Hover effect for all links */
+.menu-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/*
+  VUE ROUTER MAGIC:
+  This class is automatically added to the link of the page you are on.
+*/
+.router-link-active {
+  background: rgba(0, 242, 254, 0.15); /* Light cyan background */
+  color: #00f2fe; /* Cyan text */
+  font-weight: bold;
+  border-left: 4px solid #00f2fe; /* Cyan indicator line on the left */
+}
+
 </style>
