@@ -5,14 +5,14 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 
 // Variables to hold the user's input
-const email = ref('');
+const username = ref('');
 const password = ref('');
 
 // Function to handle login submission and communicate with Django
 const submitLogin = async () => {
     // --- REAL BACKEND CODE (Commented out until Django is ready) ---
     const payload = {
-        email: email.value,
+        username: username.value,
         password: password.value
     };
 
@@ -30,7 +30,7 @@ const submitLogin = async () => {
             alert("Login successful! Welcome back.");
             router.push('/home');
         } else {
-            alert("Invalid email or password. Please try again.");
+            alert("Invalid username or password. Please try again.");
         }
     } catch (error) {
         console.error("Network error:", error);

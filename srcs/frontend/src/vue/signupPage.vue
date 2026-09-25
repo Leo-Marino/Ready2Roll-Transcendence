@@ -1,37 +1,22 @@
 <script setup>
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
 
-const router = useRouter();
-
-// User variables
-const userType = ref('Normal User'); // Default role
+// 1. Creiamo le variabili per salvare quello che l'utente digita
 const username = ref('');
 const email = ref('');
 const password = ref('');
 
-// Extra variables for Local Owner
-const clubName = ref('');
-const taxId = ref(''); // Tax ID / VAT Number
-
-// Function to send data to the Django backend
+// 2. La funzione che spedisce i dati al tuo Django
 const submitSignup = async () => {
-    // Prepare the payload
+    // Impacchettiamo i dati
     const payload = {
-        role: userType.value,
         username: username.value,
         email: email.value,
         password: password.value
     };
 
-    // If the user is a Local Owner, append the extra fields
-    if (userType.value === 'Local Owner') {
-        payload.clubName = clubName.value;
-        payload.taxId = taxId.value;
-    }
-
     try {
-        // Send POST request to the backend
+        // Bussiamo alla porta del backend!
         const response = await fetch('/api/signup/', {
             method: 'POST',
             headers: {
@@ -42,17 +27,17 @@ const submitSignup = async () => {
 
         if (response.ok) {
             const data = await response.json();
-            alert("Registration completed successfully! Welcome to Ready2Roll!");
-            // Redirect to the home page after successful signup
-            router.push('/home');
+            alert("Registrazione completata con successo! Benvenuto in Ready2Roll!");
+            // Opzionale: qui il tuo amico potrà inserire il codice per cambiare pagina
+            // es: router.push('/login');
         } else {
             const errors = await response.json();
-            console.error("Server error:", errors);
-            alert("Error during registration.");
+            console.error("Errore dal server:", errors);
+            alert("Errore nella registrazione. (Forse l'username esiste già o la password è debole)");
         }
     } catch (error) {
-        console.error("Network error:", error);
-        alert("Unable to connect to the Backend Server.");
+        console.error("Errore di rete:", error);
+        alert("Impossibile connettersi al Server Backend.");
     }
 };
 </script>
@@ -74,13 +59,13 @@ const submitSignup = async () => {
                     <div class="role-toggle-container">
                         <button
                             type="button"
-                            :class="{'active-role': userType === 'Normal User'}"
+                            :class="{'active-role': userType === 'Normal'}"
                             @click="userType = 'Normal User'">
                             Normal User
                         </button>
                         <button
                             type="button"
-                            :class="{'active-role': userType === 'Local Owner'}"
+                            :class="{'active-role': userType === 'Owner'}"
                             @click="userType = 'Local Owner'">
                             Local Owner
                         </button>
@@ -97,16 +82,6 @@ const submitSignup = async () => {
 
                     <div class="inputFieldDiv">
                         <input type="password" v-model="password" placeholder="Password" required>
-                    </div>
-
-                    <!-- Extra fields for Local Owner (visible only if selected) -->
-                    <div v-if="userType === 'Local Owner'">
-                        <div class="inputFieldDiv">
-                            <input type="text" v-model="clubName" placeholder="Club / Venue Name" required>
-                        </div>
-                        <div class="inputFieldDiv">
-                            <input type="text" v-model="taxId" placeholder="Tax ID / VAT Number" required>
-                        </div>
                     </div>
 
                     <br>
@@ -131,19 +106,22 @@ const submitSignup = async () => {
 </template>
 
 <style scoped>
-    a {
+    a
+    {
         color: #FFFFFF;
         text-decoration: underline;
         text-decoration-color: #FFFFFF;
     }
 
-    .centred {
+    .centred
+    {
         display: flex;
         justify-content: center;
         align-items: center;
     }
 
-    #bgVideo {
+    #bgVideo
+    {
         position: fixed;
         top: 0;
         left: 0;
@@ -157,30 +135,34 @@ const submitSignup = async () => {
         object-fit: cover;
     }
 
-    .signup-container {
+    .signup-container
+    {
         display: flex;
         flex-direction: row;
         align-items: center;
         justify-content: center;
         width: 100%;
         max-width: 900px;
-        margin: 200px auto; /* Adjusted margin to accommodate extra fields */
+        margin: 250px auto;
         gap: 50px;
     }
 
-    #logoDiv {
+    #logoDiv
+    {
         width: 350px;
         height: 350px;
         max-width: 100%;
     }
 
-    #logoDiv img {
+    #logoDiv img
+    {
         max-width: 100%;
         max-height: 100%;
         object-fit: contain;
     }
 
-    #loginForm {
+    #loginForm
+    {
         width: 350px;
         height: auto;
         background: rgba(255, 255, 255, 0.1);
@@ -189,42 +171,14 @@ const submitSignup = async () => {
         box-sizing: border-box;
     }
 
-    /* Toggle Button Styles */
-    .role-toggle-container {
-        display: flex;
-        background: rgba(20, 20, 40, 0.5);
-        border-radius: 25px;
-        margin-bottom: 20px;
-        padding: 4px;
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    .role-toggle-container button {
-        flex: 1;
-        background: transparent;
-        color: #999999;
-        border: none;
-        padding: 10px 0;
-        border-radius: 21px;
-        font-family: "Bruno Ace", sans-serif;
-        font-size: 13px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-
-    .role-toggle-container button.active-role {
-        background: #00d2d3;
-        color: #ffffff;
-        font-weight: bold;
-    }
-
-    .inputFieldDiv {
+    .inputFieldDiv
+    {
         margin: 10px auto 10px auto;
         width: 100%;
     }
 
-    .inputFieldDiv input {
+    .inputFieldDiv input
+    {
         width: 100%;
         box-sizing: border-box;
         padding: 10px;
@@ -236,12 +190,14 @@ const submitSignup = async () => {
         font-style: normal;
     }
 
-    .inputFieldDiv input::placeholder {
+    .inputFieldDiv input::placeholder
+    {
         color: #FFFFFF;
         opacity: 1;
     }
 
-    .inputFieldButton button {
+    .inputFieldButton button
+    {
         background: rgba(0, 242, 254, 67.65%);
         color: #FFFFFF;
         width: 100%;
@@ -254,11 +210,13 @@ const submitSignup = async () => {
         font-style: normal;
     }
 
-    .inputFieldButton button:hover {
+    .inputFieldButton button:hover
+    {
         background: rgba(5, 212, 202, 0.61);
     }
 
-    .or-separator {
+    .or-separator
+    {
         display: flex;
         align-items: center;
         justify-content: center;
@@ -266,13 +224,13 @@ const submitSignup = async () => {
         margin: 20px 0;
     }
 
-    .dashedSeparator {
+    .dashedSeparator
+    {
         border: none;
         border-top: 2px solid rgb(255, 255, 255);
         flex-grow: 1;
         margin: 0;
     }
-
     .or-text {
         padding: 0 15px;
         color: rgb(255, 255, 255);
@@ -280,7 +238,6 @@ const submitSignup = async () => {
         font-style: normal;
         font-size: 14px;
     }
-
     #signupLink {
         font-family: "Bruno Ace", sans-serif;
         color: #FFFFFF;

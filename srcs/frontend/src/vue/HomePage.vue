@@ -109,12 +109,25 @@ onMounted(() => {
 
       <!-- 1. Left Sidebar -->
       <aside class="left-sidebar glass-panel">
-        <nav class="main-menu">
+<nav class="main-menu">
           <h3>Menu</h3>
           <ul>
-            <li>🏠 For you</li>
-            <li>👤 Subscription</li>
-            <li>🧭 Discover</li>
+            <li>
+              <!-- Replace '/home' with your actual route path if different -->
+              <router-link to="/home" class="menu-item">
+                🏠 For you
+              </router-link>
+            </li>
+            <li>
+              <router-link to="/subscriptions" class="menu-item">
+                👤 Subscription
+              </router-link>
+            </li>
+            <li>
+              <router-link to="/discover" class="menu-item">
+                🧭 Discover
+              </router-link>
+            </li>
           </ul>
         </nav>
 
@@ -154,9 +167,11 @@ onMounted(() => {
             <button>ᐱ</button>
             <button>ᐯ</button>
             <div class="volume-slider">|</div>
-            <button @click="isMuted = !isMuted">
-              {{ isMuted ? '🔇' : '🔊' }}
-            </button>
+          <button class="volume-btn" @click="toggleMute">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="video-icon">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+            </svg>
+          </button>
           </div>
 
         </div>
@@ -441,14 +456,12 @@ li {
 }
 
 .nav-icon {
-  width: 26px; /* الحجم ديال الأيقونة */
+  width: 26px;
   height: 26px;
-  color: #FFFFFF; /* اللون الأصلي أبيض */
+  color: #FFFFFF;
   cursor: pointer;
-  transition: all 0.3s ease; /* باش الأنيميشن تجي سموث */
+  transition: all 0.3s ease;
 }
-
-/* Hover Effect: كيبدلو اللون وكيكبارو شوية ملي تحط عليهم الماوس */
 .nav-icon:hover {
   color: #00f2fe;
   transform: scale(1.15);
@@ -460,4 +473,42 @@ li {
   margin-bottom: 15px;
   font-size: 14px;
 }
+
+/* Sidebar Menu Link Styles */
+.main-menu ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  color: #FFFFFF;
+  text-decoration: none;
+  border-radius: 10px;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+/* Hover effect for all links */
+.menu-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/*
+  VUE ROUTER MAGIC:
+  This class is automatically added to the link of the page you are on.
+*/
+.router-link-active {
+  background: rgba(0, 242, 254, 0.15); /* Light cyan background */
+  color: #00f2fe; /* Cyan text */
+  font-weight: bold;
+  border-left: 4px solid #00f2fe; /* Cyan indicator line on the left */
+}
+
 </style>
