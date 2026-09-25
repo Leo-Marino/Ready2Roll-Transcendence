@@ -5,6 +5,7 @@ import SignupPage from '../vue/signupPage.vue' // ```
 import HomePage from '../vue/HomePage.vue' // ```
 import ChatView from '../vue/ChatView.vue';
 import ProfileView from '../vue/ProfileView.vue';
+import SubscriptionsView from '../vue/SubscriptionsView.vue';
 
 const routes = [
   {
@@ -39,6 +40,11 @@ const routes = [
     path: '/profile',
     name: '/profile',
     component: ProfileView
+  },
+  {
+    path: '/subscriptions',
+    name: 'subscriptions',
+    component: SubscriptionsView
   },
   {
     path: '/CreateEvent',
