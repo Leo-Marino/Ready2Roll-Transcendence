@@ -29,7 +29,7 @@ onMounted(async () => {
     const token = localStorage.getItem('token');
 
     // Replace '/api/profile/' with the actual URL your Django dev sets up
-    const response = await fetch('/api/profile/', {
+    const response = await fetch('api/profile/', {
       headers: {
         'Authorization': `Bearer ${token}`
       }
