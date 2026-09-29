@@ -1,22 +1,47 @@
 <script setup>
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { z } from 'zod';
 
-// 1. Creiamo le variabili per salvare quello che l'utente digita
+const router = useRouter();
+
+const loginSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Must contain at least one uppercase letter')
+    .regex(/[0-9]/, 'Must contain at least one number')
+});
+
+// form related vairables
+const userType = ref('Normal User'); // 'Normal User' oppure 'Local Owner'
 const username = ref('');
 const email = ref('');
 const password = ref('');
 
-// 2. La funzione che spedisce i dati al tuo Django
+// local ownner related variables
+const clubName = ref('');
+const taxId = ref(''); // partita iva or codice iscale
+
+// send data to backend Django
 const submitSignup = async () => {
-    // Impacchettiamo i dati
+    // prepare payload for the POST request
     const payload = {
+        user_type: userType.value,
         username: username.value,
         email: email.value,
         password: password.value
     };
 
+    // if the user is a Local Owner, add local owner variables to the payload
+    if (userType.value === 'Local Owner') {
+        payload.club_name = clubName.value;
+        payload.tax_id = taxId.value;
+    }
+
     try {
-        // Bussiamo alla porta del backend!
+        // send the POST request to the Django backend through api
         const response = await fetch('/api/signup/', {
             method: 'POST',
             headers: {
@@ -25,19 +50,24 @@ const submitSignup = async () => {
             body: JSON.stringify(payload)
         });
 
+        const data = await response.json();
+
         if (response.ok) {
-            const data = await response.json();
-            alert("Registrazione completata con successo! Benvenuto in Ready2Roll!");
-            // Opzionale: qui il tuo amico potrà inserire il codice per cambiare pagina
-            // es: router.push('/login');
+            // if all good then store the token in local storage for future authenticated requests
+            if (data.token) {
+                localStorage.setItem('token', data.token);
+            }
+
+            alert("Registrazione completata con successo! Benvenuto su Ready2Roll!");
+            // go back to home page after successful signup
+            router.push('/home');
         } else {
-            const errors = await response.json();
-            console.error("Errore dal server:", errors);
-            alert("Errore nella registrazione. (Forse l'username esiste già o la password è debole)");
+            console.error("Errore risposta dal server:", data);
+            alert(data.error || "Errore durante la registrazione. Controlla i dati inseriti.");
         }
     } catch (error) {
         console.error("Errore di rete:", error);
-        alert("Impossibile connettersi al Server Backend.");
+        alert("Impossibile connettersi al server backend.");
     }
 };
 </script>
@@ -55,23 +85,23 @@ const submitSignup = async () => {
             <div id="loginForm" class="centred">
                 <form @submit.prevent="submitSignup">
 
-                    <!-- Role Toggle Button -->
+                    <!-- Selettore Ruolo Utente -->
                     <div class="role-toggle-container">
                         <button
                             type="button"
-                            :class="{'active-role': userType === 'Normal'}"
+                            :class="{'active-role': userType === 'Normal User'}"
                             @click="userType = 'Normal User'">
                             Normal User
                         </button>
                         <button
                             type="button"
-                            :class="{'active-role': userType === 'Owner'}"
+                            :class="{'active-role': userType === 'Local Owner'}"
                             @click="userType = 'Local Owner'">
                             Local Owner
                         </button>
                     </div>
 
-                    <!-- Common fields for all users -->
+                    <!-- Campi Comuni -->
                     <div class="inputFieldDiv">
                         <input type="text" v-model="username" placeholder="Username" required>
                     </div>
@@ -82,6 +112,16 @@ const submitSignup = async () => {
 
                     <div class="inputFieldDiv">
                         <input type="password" v-model="password" placeholder="Password" required>
+                    </div>
+
+                    <!-- Campi Extra per Local Owner -->
+                    <div v-if="userType === 'Local Owner'">
+                        <div class="inputFieldDiv">
+                            <input type="text" v-model="clubName" placeholder="Club / Venue Name" required>
+                        </div>
+                        <div class="inputFieldDiv">
+                            <input type="text" v-model="taxId" placeholder="Tax ID / VAT Number" required>
+                        </div>
                     </div>
 
                     <br>
@@ -100,7 +140,6 @@ const submitSignup = async () => {
                     </div>
                 </form>
             </div>
-
         </div>
     </div>
 </template>
@@ -143,7 +182,7 @@ const submitSignup = async () => {
         justify-content: center;
         width: 100%;
         max-width: 900px;
-        margin: 250px auto;
+        margin: 200px auto;
         gap: 50px;
     }
 
