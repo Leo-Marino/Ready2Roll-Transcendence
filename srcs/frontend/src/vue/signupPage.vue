@@ -74,13 +74,13 @@ const submitSignup = async () => {
                     <div class="role-toggle-container">
                         <button
                             type="button"
-                            :class="{'active-role': userType === 'Normal User'}"
+                            :class="{'active-role': userType === 'Normal'}"
                             @click="userType = 'Normal User'">
                             Normal User
                         </button>
                         <button
                             type="button"
-                            :class="{'active-role': userType === 'Local Owner'}"
+                            :class="{'active-role': userType === 'Owner'}"
                             @click="userType = 'Local Owner'">
                             Local Owner
                         </button>
@@ -272,7 +272,6 @@ const submitSignup = async () => {
         flex-grow: 1;
         margin: 0;
     }
-
     .or-text {
         padding: 0 15px;
         color: rgb(255, 255, 255);
@@ -280,7 +279,6 @@ const submitSignup = async () => {
         font-style: normal;
         font-size: 14px;
     }
-
     #signupLink {
         font-family: "Bruno Ace", sans-serif;
         color: #FFFFFF;

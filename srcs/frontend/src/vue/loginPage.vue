@@ -47,19 +47,17 @@ const submitLogin = async () => {
             <img src="../assets/logo_temp.png" alt="logo">
         </div>
         <div id="loginForm" class="centred">
-            <!-- Intercept the form submission to run our Vue function -->
+            <!-- Rimosso method="post" e aggiunto @submit.prevent -->
             <form @submit.prevent="submitLogin">
                 <div class="inputFieldDiv">
-                    <!-- Bind the input to the 'email' variable -->
-                    <input type="email" v-model="email" placeholder="E-mail" required>
+                    <!-- Nota: ho cambiato il placeholder in Username perché Django di default usa quello per il login -->
+                    <input type="text" placeholder="Username" v-model="username" required>
                 </div>
                 <div class="inputFieldDiv">
-                    <!-- Bind the input to the 'password' variable -->
-                    <input type="password" v-model="password" placeholder="Password" required>
+                    <input type="password" placeholder="Password" v-model="password" required>
                 </div>
                 <br>
                 <div class="inputFieldButton">
-                    <!-- Submit button triggers the form event -->
                     <button type="submit">Log-in</button>
                 </div>
                 <div class="or-separator">
