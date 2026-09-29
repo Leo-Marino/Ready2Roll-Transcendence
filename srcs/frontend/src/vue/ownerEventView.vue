@@ -15,7 +15,7 @@
         <div class="header-top-row">
           <h1 class="page-title">I MIEI EVENTI</h1>
           <button class="action-btn create-nav-btn" @click="goToCreateEvent">
-            ➕ CREA NUOVO EVENTO
+            CREA NUOVO EVENTO
           </button>
         </div>
         <p class="subtitle">Gestisci, modifica e visualizza l'anteprima a schermo intero delle tue serate</p>
