@@ -27,6 +27,7 @@ const submitLogin = async () => {
 
         if (response.ok) {
             const data = await response.json();
+            localStorage.setItem('access', data.access);
             alert("Login successful! Welcome back.");
             router.push('/home');
         } else {

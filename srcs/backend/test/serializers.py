@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
+
+
 User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
@@ -16,6 +18,26 @@ class UserSerializer(serializers.ModelSerializer):
             password=validated_data['password']
         )
         return user
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    """Used to READ the logged-in user's profile (GET /api/profile/)."""
+    following_count = serializers.SerializerMethodField()
+    followers_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            'username', 'email', 'first_name', 'last_name', 'bio',
+            'avatar_url', 'instagram_handle', 'bs_website',
+            'following_count', 'followers_count',
+        ]
+
+    # Placeholders until you build a follow system
+    def get_following_count(self, obj):
+        return 0
+
+    def get_followers_count(self, obj):
+        return 0
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:

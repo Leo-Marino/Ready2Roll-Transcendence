@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 const router = useRouter();
 
-const userType = ref('Normal User'); // 'Normal User' | 'Local Owner'
+const userType = ref('standard'); // 'Normal User' | 'business'
 const username = ref('');
 const email = ref('');
 const password = ref('');
@@ -25,7 +25,7 @@ const getSignupSchema = () => {
         .regex(/[A-Z]/, 'Must contain at least one uppercase letter')
         .regex(/[0-9]/, 'Must contain at least one number')
     };
-    if (userType.value === 'Local Owner') {
+    if (userType.value === 'business') {
         baseSchema.clubName = z.string().min(1, 'Club / Venue Name is required');
         baseSchema.taxId = z.string().min(1, 'Tax ID / VAT Number is required');
     }
@@ -39,7 +39,7 @@ const submitSignup = async () => {
     username: username.value,
         email: email.value,
         password: password.value,
-        ...(userType.value === 'Local Owner' && {
+        ...(userType.value === 'business' && {
             clubName: clubName.value,
             taxId: taxId.value
         })
@@ -66,7 +66,7 @@ const submitSignup = async () => {
         password: password.value
     };
 
-    if (userType.value === 'Local Owner') {
+    if (userType.value === 'business') {
         payload.club_name = clubName.value;
         payload.tax_id = taxId.value;
     }
@@ -144,7 +144,7 @@ const submitSignup = async () => {
         <span v-if="errors.password" class="error-text">{{ errors.password }}</span>
         </div>
 
-        <!-- Campi Extra per Local Owner -->
+        <!-- Campi Extra per business -->
         <div v-if="userType === 'business'">
         <div class="inputFieldDiv">
             <input type="text" v-model="clubName" placeholder="Club / Venue Name">
