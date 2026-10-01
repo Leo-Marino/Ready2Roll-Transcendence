@@ -89,8 +89,8 @@ onMounted(async () => {
     userProfile.value.name = data.username || '';
     userProfile.value.description = data.bio || '';
     if (data.avatar_url) userProfile.value.avatar = data.avatar_url;
-    userProfile.value.following = userProfile.value.following_count || 2;
-    userProfile.value.followers = userProfile.value.followers_count || 3;
+    userProfile.value.following = userProfile.value.following_count || 0;
+    userProfile.value.followers = userProfile.value.followers_count || 0;
   } catch (error) {
     console.error('Fetch failed (CORS or server off?)', error);
   }
@@ -264,7 +264,6 @@ const saveProfile = async () => {
         <h3>Edit profile</h3>
         <button class="close-modal-btn" @click="closeEditModal">✕</button>
       </div>
-
 
       <!-- Modal Body -->
       <div class="modal-body">
