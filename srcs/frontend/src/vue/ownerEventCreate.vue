@@ -1,86 +1,80 @@
 <template>
-<div class="owner-visual-wrapper">
+  <div class="owner-visual-wrapper">
     <video autoplay muted loop playsinline id="bgVideo">
-    <source src="../assets/ready2roll_wave_background.mp4" type="video/mp4">
+      <source src="../assets/ready2roll_wave_background.mp4" type="video/mp4" />
     </video>
     <input 
-    type="file" 
-    ref="fileInput" 
-    accept="image/png, video/mp4" 
-    style="display: none;" 
-    @change="handleFileUpload" 
+      type="file" 
+      ref="fileInput" 
+      accept="image/png, image/jpeg, video/mp4" 
+      style="display: none;" 
+      @change="handleFileUpload" 
     />
-    <!-- PRIMA PAGINA - CREAZINE DI UN EVENTO NUOVO-->
     <header class="app-header">
-    <div class="logo">Ready2Roll</div>
-    <div class="user-profile">
+      <div class="logo">Ready2Roll</div>
+      <div class="user-profile">
         <span>Alek (OWNER)</span>
         <span class="avatar">👤</span>
-    </div>
+      </div>
     </header>
 
     <main class="main-content">
-    <h1 v-if="!isExpanded" class="page-title">CREA UN NUOVO EVENTO</h1>
+      <div v-if="!isExpanded" class="page-title-row">
+        <h1 class="page-title">CREA UN NUOVO EVENTO</h1>
+        <button class="action-btn nav-visual-btn" @click="goToVisualPage">
+          📂 I MIEI EVENTI
+        </button>
+      </div>
+      <section class="glass-card" :class="{ 'is-expanded-card': isExpanded }">
+        <div v-if="!isExpanded" class="event-details-bar">
+          <div class="detail-input-group flex-2">
+            <label for="event-title">TITOLO EVENTO *</label>
+            <input 
+              id="event-title"
+              type="text" 
+              v-model="eventTitle" 
+              placeholder="Es. YAB Night Club Party" 
+              class="custom-input"
+            />
+          </div>
+          <div class="detail-input-group flex-1">
+            <label for="event-date">DATA EVENTO *</label>
+            <input 
+              id="event-date"
+              type="date" 
+              v-model="eventDate" 
+              class="custom-input date-picker"
+            />
+          </div>
 
-    <!-- step navigation 1 / 2 / 3 / 4 -->
-    <nav v-if="!isExpanded" class="stepper">
-        <button 
-          class="step-btn" 
-          :class="{ active: currentStep === 1 }" 
-          @click="currentStep = 1"
-        >
-          1. Scenery
-        </button>
-        <button 
-          class="step-btn" 
-          :class="{ active: currentStep === 2 }" 
-          @click="currentStep = 2"
-        >
-          2. Location
-        </button>
-        <button 
-          class="step-btn" 
-          :class="{ active: currentStep === 3 }" 
-          @click="currentStep = 3"
-        >
-          3. Riepilogo
-        </button>
-        <button 
-          class="step-btn" 
-          :class="{ active: currentStep === 4 }" 
-          @click="currentStep = 4"
-        >
-          4. Pubblica
-        </button>
-    </nav>
-
-    <!-- simulatore visualizzazione -->
-    <section class="glass-card" :class="{ 'is-expanded-card': isExpanded }">
-        <h3 v-if="!isExpanded">* Simulatore visualizzazione *</h3>
-
-        <div class="preview-box" :class="{ 'is-expanded-box': isExpanded }">
-        <!-- Sidebar Sinistra (Menu) -->
-        <aside v-if="isExpanded" class="sidebar-left">
+          <div class="detail-input-group flex-1">
+            <label for="event-status">STATO</label>
+            <select id="event-status" v-model="eventStatus" class="custom-input custom-select">
+              <option value="Attivo">Attivo</option>
+              <option value="Bozza">Bozza</option>
+              <option value="Programmato">Programmato</option>
+            </select>
+          </div>
+        </div>
+        <div class="preview-box" :class="{ 'is-expanded-box': isExpanded, 'is-map-view': isMapOpen && !isExpanded }">
+          <aside v-if="isExpanded" class="sidebar-left">
             <div class="side-card">
-            <h4>Menu</h4>
-            <ul class="nav-menu">
+              <h4>Menu</h4>
+              <ul class="nav-menu">
                 <li>🔥 For you</li>
                 <li>📱 Subscription</li>
                 <li>🧩 Discover</li>
-            </ul>
-            <h4 style="margin-top: 20px;">Subscribed accounts</h4>
-            <ul class="sub-list">
+              </ul>
+              <h4 style="margin-top: 20px;">Subscribed accounts</h4>
+              <ul class="sub-list">
                 <li>👤 Xhul</li>
                 <li>👤 Anna</li>
                 <li>👤 thilina</li>
-            </ul>
-            <small class="show-more">show more _</small>
+              </ul>
+              <small class="show-more">show more _</small>
             </div>
-        </aside>
-
-        <!-- Contenitore centrale (Box trasparente esterno) -->
-        <div class="media-outer-wrapper" :class="{ 'is-expanded-wrapper': isExpanded }">
-            <!-- 2 - background photos/videos area (Box interna tratteggiata) -->
+          </aside>
+          <div class="media-outer-wrapper" :class="{ 'is-expanded-wrapper': isExpanded }">
             <div 
               class="media-preview clickable" 
               :class="{ 'has-content': uploadedMediaSrc, 'is-expanded': isExpanded }"
@@ -88,33 +82,32 @@
               @mouseleave="hoverStep = null"
               @click="handleMediaClick"
             >
-                <!-- 1 - icona google maps -->
-                <div 
-                  v-if="!isExpanded"
-                  class="map-badge clickable"
-                  @click.stop="selectStep(2)"
-                >
-                    <svg class="maps-icon" viewBox="0 0 24 24" width="20" height="20">
-                    <path fill="#EA4335" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
-                    <circle fill="#FFFFFF" cx="12" cy="9" r="2.5"/>
-                    </svg>
-                </div>
+              <div 
+                v-if="!isExpanded"
+                class="map-badge clickable"
+                :class="{ active: isMapOpen }"
+                @click.stop="toggleMap"
+              >
+                <svg class="maps-icon" viewBox="0 0 24 24" width="20" height="20">
+                  <path fill="#EA4335" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+                  <circle fill="#FFFFFF" cx="12" cy="9" r="2.5"/>
+                </svg>
+              </div>
+              <button 
+                class="expand-btn" 
+                @click.stop="toggleExpand" 
+                title="Ingrandisci"
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <path v-if="!isExpanded" d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                  <path v-else d="M4 14h6v6M20 10h-6V4M10 14L3 21M14 10l7-7"/>
+                </svg>
+              </button>
 
-                <button 
-                  class="expand-btn" 
-                  @click.stop="toggleExpand" 
-                  title="Ingrandisci"
-                >
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                    <path v-if="!isExpanded" d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
-                    <path v-else d="M4 14h6v6M20 10h-6V4M10 14L3 21M14 10l7-7"/>
-                  </svg>
-                </button>
-
-                <template v-if="!uploadedMediaSrc">
-                <span>Scegli foto/video</span>
-                </template>
-                <template v-else>
+              <template v-if="!uploadedMediaSrc">
+                <span>Clicca per inserire Foto/Video</span>
+              </template>
+              <template v-else>
                 <video 
                   v-if="mediaType === 'video'" 
                   :src="uploadedMediaSrc" 
@@ -129,218 +122,181 @@
                   alt="Anteprima" 
                   class="uploaded-preview" 
                 />
-                </template>
-
-                <!-- 3 - descrizione evento -->
-                <div 
-                  class="text-preview overlay-description"
-                  @mouseenter="hoverStep = 3"
-                  @mouseleave="hoverStep = null"
-                  @click.stop="selectStep(3)"
-                >
-                    <textarea 
-                    v-model="descriptionText" 
-                    placeholder="Inserisci descrizione"
-                    class="editable-description"
-                    rows="2"
-                    @focus="selectStep(3)"
-                    ></textarea>
-                </div>
+              </template>
+              <div 
+                class="text-preview overlay-description"
+                @mouseenter="hoverStep = 3"
+                @mouseleave="hoverStep = null"
+                @click.stop="selectStep(3)"
+              >
+                <textarea 
+                  v-model="descriptionText" 
+                  placeholder="Inserisci descrizione / hashtag..."
+                  class="editable-description"
+                  rows="2"
+                  @focus="selectStep(3)"
+                ></textarea>
+              </div>
             </div>
-        </div>
-
-        <!-- Sidebar Destra (Info Owner + Commenti) -->
-        <aside v-if="isExpanded" class="sidebar-right">
+          </div>
+          <div v-if="isMapOpen && !isExpanded" class="map-container">
+            <div class="map-inner-wrapper">
+              <div class="map-search-bar">
+                <input 
+                  type="text" 
+                  placeholder="Cerca indirizzo locale..." 
+                  class="custom-input map-input" 
+                  v-model="eventLocation" 
+                />
+                <button class="action-btn-small">Cerca</button>
+              </div>
+              <iframe 
+                width="100%" 
+                height="100%" 
+                frameborder="0" 
+                scrolling="no" 
+                marginheight="0" 
+                marginwidth="0" 
+                :src="`https://maps.google.com/maps?q=${encodeURIComponent(eventLocation)}&t=&z=15&ie=UTF8&iwloc=&output=embed`"
+                class="map-iframe"
+              ></iframe>
+            </div>
+          </div>
+          <aside v-if="isExpanded" class="sidebar-right">
             <div class="side-card owner-info-box">
-            <div class="owner-header">
+              <div class="owner-header">
                 <div>
-                <strong>local owner ✓</strong><br>
-                <small>@club1 · 2h ago</small>
+                  <strong>local owner ✓</strong><br>
+                  <small>@club1 · 2h ago</small>
                 </div>
                 <button class="sub-btn">Subscribe</button>
-            </div>
-            <p class="post-caption">Florence was on fire last night! Incredible sets... #nightlife #party</p>
+              </div>
+              <p class="post-caption">{{ descriptionText || 'Nessuna descrizione.' }}</p>
             </div>
 
             <div class="side-card comments-box">
-            <h4>Comments</h4>
-            <div class="comment-item">
+              <h4>Comments</h4>
+              <div class="comment-item">
                 <strong>Xhul</strong>
                 <p>The drop on that first track was insanity!</p>
-            </div>
-            <div class="comment-item">
+              </div>
+              <div class="comment-item">
                 <strong>Anna</strong>
                 <p>Best set of the year so far!</p>
+              </div>
             </div>
-            </div>
-        </aside>
+          </aside>
         </div>
-    </section>
+        <div v-if="!isExpanded" class="publish-action-bar">
+          <button class="publish-btn" @click="handlePublish">
+            PUBBLICA EVENTO
+          </button>
+        </div>
+
+      </section>
     </main>
-
-    <div class="section-divider"></div>
-
-<!-- PRIMA PAGINA - VISUALIZZAZIONE DI UN EVENTO-->
-    <header class="app-header">
-    <div class="logo">Ready2Roll</div>
-    <div class="user-profile">
-        <span>Alek (<span style="color: #00f2fe;">OWNER</span>)</span>
-        <span class="avatar">👤</span>
-    </div>
-    </header>
-
-    <main class="main-content">
-    <div class="event-title-container">
-        <h2>VISUALIZZA *nome evento*</h2>
-        <span class="status-badge">ATTIVO</span>
-        <span class="info-badge">i</span>
-    </div>
-    <div class="grid-container">
-        <div class="column">
-        <div class="row">
-            <!-- panoramica -->
-            <div class="glass-card card-flex">
-            <h4>PANORAMICA</h4>
-            <div class="stats-box">
-                <div>
-                <div class="stat-number">6</div>
-                <small>PARTECIPANTI</small>
-                </div>
-                <div class="stat-divider">
-                <div class="stat-number">7</div>
-                <small>NON SICURI</small>
-                </div>
-            </div>
-            <div style="margin-top: 15px;">
-                <button class="action-btn">ALTRI DETTAGLI</button>
-            </div>
-            </div>
-
-            <!-- posizione -->
-            <div class="glass-card card-flex">
-            <div class="card-header-flex">
-                <h4>POSIZIONE</h4>
-                <svg class="maps-icon" viewBox="0 0 24 24" width="20" height="20">
-                <path fill="#EA4335" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
-                <circle fill="#FFFFFF" cx="12" cy="9" r="2.5"/>
-                </svg>
-            </div>
-            <div class="map-placeholder">
-                <span>[ MAPPA ]</span>
-            </div>
-            </div>
-        </div>
-
-        <!-- lista iscritti -->
-        <div class="glass-card">
-            <div class="card-header-flex" style="margin-bottom: 15px;">
-            <h4>LISTA ISCRITTI</h4>
-            <button class="action-btn-small">Filtra</button>
-            </div>
-            
-            <div class="input-container">
-            <input type="text" placeholder="Cerca..." class="custom-input" />
-            </div>
-
-            <ul class="user-list">
-            <li>
-                <div><span>👤</span> Alex Degli Innocenti</div>
-                <span>&gt;</span>
-            </li>
-            <li>
-                <div><span>👤</span> Ilyas Mahjoubi</div>
-                <span>&gt;</span>
-            </li>
-            </ul>
-        </div>
-        </div>
-        <div class="column">
-        <!-- preview -->
-        <div class="glass-card">
-            <h4>PREVIEW</h4>
-            <div class="inner-preview-box">
-            <div class="preview-top-bar">
-                <span class="mini-badge">
-                <svg class="maps-icon" viewBox="0 0 24 24" width="14" height="14">
-                    <path fill="#EA4335" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
-                    <circle fill="#FFFFFF" cx="12" cy="9" r="2.5"/>
-                </svg>
-                </span>
-                <span class="dot-indicator"></span>
-            </div>
-            <div class="image-placeholder">
-                [ IMMAGINE ]
-            </div>
-            </div>
-            <div class="preview-details">
-            <strong>FESTA A CASA DI ALEK!</strong>
-            <div>📍 CASA MIA</div>
-            <div>📅 27/07</div>
-            </div>
-        </div>
-
-        <!-- crea comunicazione -->
-        <div class="glass-card">
-            <h4>CREA COMUNICAZIONE</h4>
-            <div class="input-container" style="margin-top: 15px;">
-            <textarea placeholder="Scrivi qualcosa..." class="custom-textarea"></textarea>
-            </div>
-            <div style="text-align: right; margin-top: 15px;">
-            <button class="action-btn">Invia</button>
-            </div>
-        </div>
-        </div>
-    </div>
-    </main>
-</div>
+  </div>
 </template>
 
 <script>
 export default {
-name: 'CreateEvent',
-data() {
+  name: 'CreateEvent',
+  emits: ['navigate-view', 'event-published'],
+  data() {
     return {
-    activeStep: 1,
-    hoverStep: null,
-    descriptionText: '',
-    uploadedMediaSrc: null,
-    mediaType: null,
-    isExpanded: false
+      activeStep: 1,
+      hoverStep: null,
+      eventTitle: '',
+      eventDate: '', // Salva il valore formattato YYYY-MM-DD dal calendario
+      eventStatus: 'Attivo',
+      descriptionText: '',
+      uploadedMediaSrc: null,
+      mediaType: null,
+      isExpanded: false,
+      isMapOpen: false,
+      eventLocation: 'YAB, Firenze'
     }
-},
-computed: {
+  },
+  computed: {
     currentStep() {
-    return this.hoverStep !== null ? this.hoverStep : this.activeStep;
+      return this.hoverStep !== null ? this.hoverStep : this.activeStep;
+    },
+    formattedDate() {
+      if (!this.eventDate) return 'Data da definire';
+      const [year, month, day] = this.eventDate.split('-');
+      return `${day}/${month}/${year}`;
     }
-},
-methods: {
+  },
+  methods: {
     selectStep(stepNumber) {
-    this.activeStep = stepNumber;
+      this.activeStep = stepNumber;
     },
     handleMediaClick() {
-    if (!this.uploadedMediaSrc) {
+      if (!this.uploadedMediaSrc) {
         this.selectStep(1);
         this.triggerFileInput();
-    }
+      }
     },
     triggerFileInput() {
-    this.$refs.fileInput.click();
+      this.$refs.fileInput.click();
     },
     handleFileUpload(event) {
-    const file = event.target.files[0];
-    if (file) {
+      const file = event.target.files[0];
+      if (file) {
         this.uploadedMediaSrc = URL.createObjectURL(file);
         this.mediaType = file.type.startsWith('video') ? 'video' : 'image';
-    }
+      }
     },
     toggleExpand() {
-    this.isExpanded = !this.isExpanded;
+      this.isExpanded = !this.isExpanded;
+      if (this.isExpanded) this.isMapOpen = false;
+    },
+    toggleMap() {
+      this.isMapOpen = !this.isMapOpen;
+      if (this.isMapOpen) {
+        this.selectStep(2);
+      } else {
+        this.selectStep(1);
+      }
+    },
+    handlePublish() {
+      const newEventData = {
+        title: this.eventTitle || 'Nuovo Evento',
+        location: this.eventLocation,
+        date: this.formattedDate,
+        rawDate: this.eventDate,
+        status: this.eventStatus,
+        description: this.descriptionText,
+        mediaSrc: this.uploadedMediaSrc,
+        mediaType: this.mediaType || 'image'
+      };
+
+      this.$emit('event-published', newEventData);
+      this.goToVisualPage();
+    },
+    goToVisualPage() {
+      if (this.$router) {
+        this.$router.push('/ViewEvent');
+      }
+      this.$emit('navigate-view');
     }
-}
+  }
 }
 </script>
 
 <style scoped>
+:root {
+  --font-bruno: 'Bruno Ace', cursive, sans-serif;
+}
+
+html, body, #app {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-bruno);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 .owner-visual-wrapper {
   position: relative;
   min-height: 100vh;
@@ -399,36 +355,37 @@ methods: {
   box-sizing: border-box;
 }
 
+.page-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1000px;
+  margin: 0 auto 20px auto;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
 .page-title {
-  text-align: center;
-  margin-bottom: 25px;
+  margin: 0;
   font-size: 1.8rem;
 }
 
-.stepper {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 30px;
-  flex-wrap: wrap;
-}
-
-.step-btn {
+.nav-visual-btn {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #FFFFFF;
-  padding: 10px 18px;
-  border-radius: 17px;
-  cursor: pointer;
+  color: #ffffff;
+  padding: 10px 20px;
+  border-radius: 14px;
   font-family: "Bruno Ace", sans-serif;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
+  cursor: pointer;
   transition: all 0.3s ease;
 }
 
-.step-btn:hover, .step-btn.active {
-  background: rgba(0, 242, 254, 0.67);
-  border-color: transparent;
-  color: #FFFFFF;
+.nav-visual-btn:hover {
+  background: rgba(0, 242, 254, 0.2);
+  border-color: #00f2fe;
+  color: #00f2fe;
 }
 
 .glass-card {
@@ -438,6 +395,9 @@ methods: {
   box-sizing: border-box;
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.5s ease;
+  max-width: 1100px;
+  margin: 0 auto;
 }
 
 .glass-card.is-expanded-card {
@@ -445,37 +405,87 @@ methods: {
   border: none !important;
   backdrop-filter: none !important;
   padding: 0 !important;
+  max-width: 100% !important;
 }
 
-.card-flex {
-  flex: 1;
-}
-
-.card-header-flex {
+/* Pannello Input Dettagli Evento */
+.event-details-bar {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 15px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  flex-wrap: wrap;
 }
 
+.detail-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.detail-input-group label {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.flex-1 { flex: 1; min-width: 160px; }
+.flex-2 { flex: 2; min-width: 220px; }
+
+.custom-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.3);
+  color: #FFFFFF;
+  font-family: "Bruno Ace", sans-serif;
+  font-size: 0.85rem;
+  color-scheme: dark; /* Fa in modo che l'icona del calendario sia visibile bianca */
+}
+
+.date-picker {
+  cursor: pointer;
+}
+
+.custom-input:focus {
+  outline: none;
+  border-color: #00f2fe;
+}
+
+.custom-select option {
+  background: #111111;
+  color: #ffffff;
+}
+
+/* Simulatore e Box Mappa */
 .preview-box {
   background: rgba(0, 0, 0, 0.25);
   border-radius: 15px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   padding: 20px;
-  margin: 20px auto;
   position: relative;
   text-align: center;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 20px;
+  transition: all 0.5s ease;
+}
+
+.preview-box.is-map-view {
+  justify-content: flex-start;
+  padding: 20px;
 }
 
 .preview-box.is-expanded-box {
   width: 100% !important;
   max-width: 100% !important;
   justify-content: space-between !important;
-  align-items: stretch !important;
   padding: 0 20px !important;
   margin: 0 !important;
   box-sizing: border-box;
@@ -483,7 +493,6 @@ methods: {
   border: none !important;
 }
 
-/* Outer Wrapper trasparente in Fullscreen */
 .media-outer-wrapper {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -496,7 +505,8 @@ methods: {
   align-items: center;
   width: 100%;
   max-width: 360px;
-  transition: all 0.3s ease;
+  flex-shrink: 0;
+  transition: all 0.5s ease;
 }
 
 .media-outer-wrapper.is-expanded-wrapper {
@@ -507,20 +517,15 @@ methods: {
   border-radius: 22px;
   padding: 10px;
   backdrop-filter: blur(16px);
-  box-sizing: border-box;
 }
 
-/* Inner Box tratteggiata per il contenuto */
 .media-preview {
   border: 2px dashed rgba(255, 255, 255, 0.5);
   border-radius: 18px;
   width: 100%;
   aspect-ratio: 9 / 16;
   height: 100%;
-  overflow-y: scroll;
-  scroll-snap-type: y mandatory;
-  scroll-behavior: smooth;
-  scrollbar-width: none;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -536,10 +541,6 @@ methods: {
   height: 100%;
   width: 100%;
   border-radius: 16px;
-}
-
-.media-preview::-webkit-scrollbar {
-  display: none;
 }
 
 .media-preview.clickable {
@@ -569,13 +570,9 @@ methods: {
   cursor: pointer;
 }
 
-.map-badge.clickable:hover {
-  background: rgba(0, 242, 254, 0.4);
-  border-color: rgba(0, 242, 254, 0.8);
-}
-
-.maps-icon {
-  display: block;
+.map-badge.clickable:hover, .map-badge.active {
+  background: rgba(0, 242, 254, 0.6);
+  border-color: #ffffff;
 }
 
 .expand-btn {
@@ -601,7 +598,6 @@ methods: {
   background: rgba(0, 242, 254, 0.6);
 }
 
-/* Regole per Opacità Immagine/Video */
 .uploaded-preview {
   width: 100%;
   height: 100%;
@@ -610,13 +606,12 @@ methods: {
   top: 0;
   left: 0;
   z-index: 1;
-  opacity: 1; /* Default a 100% in fullscreen */
+  opacity: 1;
   transition: opacity 0.3s ease;
 }
 
-/* Semi-trasparente SOLO quando non è in fullscreen */
 .media-preview:not(.is-expanded) .uploaded-preview {
-  opacity: 0.6;
+  opacity: 0.85;
 }
 
 .text-preview.overlay-description {
@@ -628,8 +623,6 @@ methods: {
   box-sizing: border-box;
   padding: 15px;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
-  border-top: none;
-  margin-top: 0;
 }
 
 .editable-description {
@@ -641,7 +634,7 @@ methods: {
   font-family: "Bruno Ace", sans-serif;
   text-align: center;
   resize: none;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
 }
 
@@ -649,29 +642,74 @@ methods: {
   color: rgba(255, 255, 255, 0.7);
 }
 
-/* Sidebars layout ancorate ai bordi laterali */
-.sidebar-left {
-    width: 280px; /* Aumentata da 260px */
-    flex-shrink: 0;
-    height: calc(100vh - 90px);
-}
-
-.sidebar-right {
-    width: 320px; /* Ingrandita come nella seconda immagine */
-  flex-shrink: 0;
+/* Sezione Mappa */
+.map-container {
+  flex-grow: 1;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  padding: 12px;
+  backdrop-filter: blur(12px);
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 20px; /* SEPARA le due box tra di loro */
+  animation: slideInMap 0.5s ease forwards;
+}
+
+.map-inner-wrapper {
+  border: 2px dashed rgba(255, 255, 255, 0.5);
+  border-radius: 18px;
+  width: 100%;
+  height: 100%;
+  min-height: 380px;
+  background: rgba(255, 255, 255, 0.03);
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.map-search-bar {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(5px);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.map-input {
+  flex-grow: 1;
+}
+
+.map-iframe {
+  flex-grow: 1;
+  width: 100%;
+  height: 100%;
+  border-radius: 0 0 16px 16px;
+  filter: invert(90%) hue-rotate(180deg) contrast(80%);
+}
+
+@keyframes slideInMap {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Sidebars Espanse */
+.sidebar-left {
+  width: 280px;
+  flex-shrink: 0;
   height: calc(100vh - 90px);
 }
 
-.sidebar-right .owner-info-box {
-  flex: 0 0 auto;
-}
-
-.sidebar-right .comments-box {
-  flex: 1; /* Riempie lo spazio restante verso il basso */
-  overflow-y: auto;
+.sidebar-right {
+  width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  height: calc(100vh - 90px);
 }
 
 .side-card {
@@ -681,6 +719,7 @@ methods: {
   border-radius: 16px;
   padding: 18px 20px;
   font-size: 0.85rem;
+  text-align: left;
 }
 
 .side-card h4 {
@@ -698,18 +737,6 @@ methods: {
   padding: 6px 0;
   cursor: pointer;
   opacity: 0.85;
-}
-
-.nav-menu li:hover, .sub-list li:hover {
-  opacity: 1;
-  color: #00f2fe;
-}
-
-.show-more {
-  display: block;
-  margin-top: 10px;
-  opacity: 0.6;
-  cursor: pointer;
 }
 
 .owner-header {
@@ -746,218 +773,62 @@ methods: {
   border-bottom: none;
 }
 
-.comment-item p {
-  margin: 2px 0 0 0;
-  font-size: 0.75rem;
-  opacity: 0.8;
-}
-
-.legend-list {
-  text-align: left;
-  margin: 20px auto 0 auto;
-  list-style-type: none;
-  padding: 0;
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.legend-list li {
-  margin-bottom: 6px;
-}
-
-.section-divider {
-  margin: 50px 0;
-  border-top: 1px dashed rgba(255, 255, 255, 0.3);
-}
-
-.event-title-container {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 25px;
-  flex-wrap: wrap;
-}
-
-.status-badge {
-  background: rgba(0, 242, 254, 0.3);
+.action-btn-small {
+  background: rgba(0, 242, 254, 0.6);
   border: 1px solid rgba(0, 242, 254, 0.8);
-  padding: 4px 10px;
+  color: #ffffff;
+  padding: 6px 16px;
   border-radius: 12px;
+  cursor: pointer;
+  font-family: "Bruno Ace", sans-serif;
   font-size: 0.8rem;
+  transition: all 0.3s ease;
 }
 
-.info-badge {
-  border: 1px solid #ffffff;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
+.action-btn-small:hover {
+  background: rgba(0, 242, 254, 0.8);
+}
+
+/* Tasto Pubblica Evento */
+.publish-action-bar {
+  margin-top: 25px;
   display: flex;
-  align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
 }
 
-.grid-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+.publish-btn {
+  background: rgba(0, 242, 254, 0.2);
+  border: 1px solid #00f2fe;
+  color: #00f2fe;
+  padding: 14px 40px;
+  font-size: 0.95rem;
+  font-weight: bold;
+  font-family: "Bruno Ace", sans-serif;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 0 15px rgba(0, 242, 254, 0.3);
+  transition: all 0.3s ease;
+}
+
+.publish-btn:hover {
+  background: #00f2fe;
+  color: #000000;
+  box-shadow: 0 0 25px rgba(0, 242, 254, 0.8);
+  transform: translateY(-2px);
 }
 
 @media (max-width: 768px) {
-  .grid-container {
-    grid-template-columns: 1fr;
+  .preview-box.is-map-view {
+    flex-direction: column;
   }
-  .sidebar-left, .sidebar-right {
-    display: none;
+  .media-outer-wrapper {
+    max-width: 100%;
   }
-}
-
-.column {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.row {
-  display: flex;
-  gap: 20px;
-}
-
-.stats-box {
-  display: flex;
-  justify-content: space-around;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 12px 0;
-  margin-top: 10px;
-  text-align: center;
-}
-
-.stat-number {
-  font-size: 1.4rem;
-  font-weight: bold;
-}
-
-.stat-divider {
-  border-left: 1px solid rgba(255, 255, 255, 0.2);
-  padding-left: 15px;
-}
-
-.map-placeholder {
-  border: 1px dashed rgba(255, 255, 255, 0.3);
-  height: 100px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 10px;
-  background: rgba(0, 0, 0, 0.15);
-}
-
-.action-btn {
-  background: rgba(0, 242, 254, 0.67);
-  color: #FFFFFF;
-  width: 100%;
-  padding: 10px;
-  border: none;
-  border-radius: 17px;
-  cursor: pointer;
-  font-family: "Bruno Ace", sans-serif;
-  font-weight: 900;
-  transition: background 0.3s ease;
-}
-
-.action-btn:hover {
-  background: rgba(5, 212, 202, 0.8);
-}
-
-.action-btn-small {
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #ffffff;
-  padding: 4px 12px;
-  border-radius: 12px;
-  cursor: pointer;
-  font-family: "Bruno Ace", sans-serif;
-  font-size: 0.75rem;
-}
-
-.custom-input, .custom-textarea {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 10px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.1);
-  color: #FFFFFF;
-  font-family: "Bruno Ace", sans-serif;
-}
-
-.custom-textarea {
-  height: 80px;
-  resize: vertical;
-}
-
-.custom-input::placeholder, .custom-textarea::placeholder {
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.user-list {
-  list-style: none;
-  padding: 0;
-  margin: 10px 0 0 0;
-}
-
-.user-list li {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 10px 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.9rem;
-}
-
-.inner-preview-box {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 12px;
-  padding: 12px;
-  margin: 10px 0;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.preview-top-bar {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.mini-badge {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 4px 6px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-}
-
-.dot-indicator {
-  border: 1px solid #ffffff;
-  border-radius: 50%;
-  width: 12px;
-  height: 12px;
-  display: inline-block;
-}
-
-.image-placeholder {
-  border: 1px dashed rgba(255, 255, 255, 0.3);
-  height: 80px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.preview-details {
-  margin-top: 10px;
-  line-height: 1.6;
+  .event-details-bar {
+    flex-direction: column;
+  }
+  .page-title-row {
+    flex-direction: column;
+  }
 }
 </style>

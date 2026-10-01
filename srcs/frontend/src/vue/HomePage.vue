@@ -21,11 +21,16 @@ const videos = ref([
   { id: 2, title: 'Video 2: Crazy Crowd', url: '/videos/video2.mp4' }
 ]);
 
-// 2. ADDED: Array to hold all video elements (This caused the white screen!)
+// 2. ADDED: Array to hold all video elements
 const videoRefs = ref([]);
 
 // Controls global mute state
 const isMuted = ref(true);
+
+// NEW: Function to toggle audio for all videos
+const toggleMute = () => {
+  isMuted.value = !isMuted.value;
+};
 
 // Function to play or pause the video when clicked
 const togglePlay = (event) => {
@@ -41,19 +46,16 @@ const togglePlay = (event) => {
 onMounted(() => {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
-      // If the video comes into view (at least 60% visible)
       if (entry.isIntersecting) {
-        entry.target.play(); // Play the video automatically
+        entry.target.play();
       } else {
-        // If the video leaves the screen, pause it immediately
         entry.target.pause();
       }
     });
   }, {
-    threshold: 0.6 // Trigger when 60% of the video is visible
+    threshold: 0.6
   });
 
-  // Attach the observer to all video elements
   videoRefs.value.forEach((videoEl) => {
     if (videoEl) {
       observer.observe(videoEl);
@@ -63,17 +65,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <!-- Background Video -->
   <video autoplay muted loop playsinline id="bgVideo">
       <source src="../assets/ready2roll_wave_background.mp4" type="video/mp4">
   </video>
 
   <div class="app-container">
-
-<!-- Top Navbar -->
     <header class="navbar glass-panel">
-
-      <!-- NEW: Logo Section with Image and Text -->
       <div class="logo">
         <img src="../assets/logo_temp.png" alt="Ready2Roll Logo" class="nav-logo-img">
         <span class="logo-text">Ready2Roll</span>
@@ -81,43 +78,39 @@ onMounted(() => {
       <div class="search-bar">
         <input type="text" placeholder="Search...">
       </div>
-     <div class="nav-icons">
-
-        <!-- Message / Send Icon -->
+      <div class="nav-icons">
         <router-link to="/chat" class="nav-icon-link">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
           </svg>
         </router-link>
-
-        <!-- Chat / Notifications Icon -->
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
           <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
         </svg>
-
-        <!-- NEW: Profile Icon -->
         <router-link to="/profile" class="nav-icon-link">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
           </svg>
         </router-link>
-
       </div>
     </header>
 
     <div class="main-content">
-
-      <!-- 1. Left Sidebar -->
       <aside class="left-sidebar glass-panel">
         <nav class="main-menu">
           <h3>Menu</h3>
           <ul>
-            <li>🏠 For you</li>
-            <li>👤 Subscription</li>
-            <li>🧭 Discover</li>
+            <li>
+              <router-link to="/home" class="menu-item">🏠 For you</router-link>
+            </li>
+            <li>
+              <router-link to="/subscriptions" class="menu-item">👤 Subscription</router-link>
+            </li>
+            <li>
+              <router-link to="/discover" class="menu-item">🧭 Discover</router-link>
+            </li>
           </ul>
         </nav>
-
         <div class="subscribed-list">
           <h3>Subscribed accounts</h3>
           <ul>
@@ -129,13 +122,9 @@ onMounted(() => {
           <p class="show-more">show more ⌄</p>
         </div>
       </aside>
-<!-- 2. Center (Main Video Feed) -->
+
       <main class="feed-container">
-
-        <!-- NEW: Added 'index' to the v-for loop -->
         <div class="video-wrapper glass-panel" v-for="(video, index) in videos" :key="video.id">
-
-          <!-- NEW: Changed how 'ref' pushes elements into the array in Vue 3 -->
           <video
             :ref="el => { if (el) videoRefs[index] = el }"
             class="feed-video"
@@ -145,27 +134,21 @@ onMounted(() => {
             playsinline
             @click="togglePlay">
           </video>
-
           <div class="video-overlay">
             <h2>{{ video.title }}</h2>
           </div>
-
           <div class="video-controls">
-            <button>ᐱ</button>
-            <button>ᐯ</button>
-            <div class="volume-slider">|</div>
-            <button @click="isMuted = !isMuted">
-              {{ isMuted ? '🔇' : '🔊' }}
+            <!-- <div class="volume-slider">|</div> -->
+            <button class="volume-btn" @click="toggleMute">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="video-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+              </svg>
             </button>
           </div>
-
         </div>
-
       </main>
-      <!-- 3. Right Sidebar -->
-      <aside class="right-sidebar">
 
-        <!-- Video Owner Information -->
+      <aside class="right-sidebar">
         <div class="owner-info glass-panel">
           <div class="owner-header">
             <img src="https://i.pravatar.cc/150?u=4" alt="owner" class="avatar">
@@ -177,15 +160,11 @@ onMounted(() => {
           </div>
           <p class="description">Florence was on fire last night! Incredible sets... #nightlife #party</p>
         </div>
-
-        <!-- Action Buttons (Like, Bookmark, Options) -->
         <div class="action-buttons glass-panel">
           <button>❤️ 3.1k</button>
           <button>🔖 2.2k</button>
           <button>•••</button>
         </div>
-
-        <!-- Comments Section -->
         <div class="comments-section glass-panel">
           <h3>Comments</h3>
           <div class="comment" v-for="comment in comments" :key="comment.id">
@@ -197,267 +176,47 @@ onMounted(() => {
           </div>
         </div>
       </aside>
-
     </div>
   </div>
 </template>
 
 <style scoped>
-/* Styling the actual video tag */
-.feed-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover; /* Ensures the video fills the box without stretching */
-  border-radius: 15px;
-  position: absolute; /* Places the video behind the text and buttons */
-  top: 0;
-  left: 0;
-  z-index: 0;
-}
-
-/* Ensure text and buttons stay above the video */
-.video-overlay, .video-controls {
-  position: relative;
-  z-index: 1;
-}
-
-/* Styling the video title overlay */
-.video-overlay {
-  position: absolute;
-  bottom: 30px;
-  left: 20px;
-  color: white;
-  text-shadow: 1px 1px 4px rgba(0,0,0,0.8); /* Makes text readable over bright videos */
-}
-#bgVideo {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -1;
-    object-fit: cover;
-}
-
-.app-container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  color: #FFFFFF;
-  font-family: sans-serif;
-  padding: 10px 20px; /* Added side padding for better framing */
-  box-sizing: border-box;
-}
-
-.glass-panel {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 15px;
-  padding: 15px;
-  box-sizing: border-box;
-}
-
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  height: 60px;
-  margin-bottom: 15px;
-  flex-shrink: 0;
-}
-
-.search-bar input {
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  border-radius: 17px;
-  padding: 10px 20px;
-  color: white;
-  width: 300px;
-}
-
-.main-content {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between; /* Pushes items to the far left and right */
-  width: 100%;
-  height: calc(100vh - 95px);
-  overflow: hidden;
-}
-
-/* Sidebar sizing */
-.left-sidebar {
-  width: 280px; /* Adjusted width for balance */
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  overflow-y: auto;
-}
-
-.right-sidebar {
-  width: 320px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  overflow-y: auto;
-}
-/*
-  TikTok-style Smooth Scrolling Logic
-*/
-/* Container for the video feed */
-.feed-container {
-  flex-grow: 1;
-  max-width: 550px;
-  height: 100%;
-  overflow-y: scroll;
-
-  /* The magic for snapping */
-  scroll-snap-type: y mandatory;
-
-  /* 1. Add this to make the scrolling movement smooth instead of instant */
-  scroll-behavior: smooth;
-
-  scrollbar-width: none;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Individual video container */
-.video-wrapper {
-  min-height: 100%;
-  width: 100%;
-
-  /* Snaps to the start of the video */
-  scroll-snap-align: start;
-
-  /* 2. Add this! It forces the scroll to STOP at every single video (feels heavier/controlled) */
-  scroll-snap-stop: always;
-
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border-radius: 15px;
-  margin-bottom: 15px;
-}
-
-/* Styling for video placeholder content */
-.video-placeholder {
-  text-align: center;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.video-controls {
-  position: absolute;
-  right: 15px;
-  bottom: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.video-controls button {
-  background: rgba(0, 0, 0, 0.5);
-  border: none;
-  color: white;
-  width: 35px;
-  height: 35px;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-/*
-  General UI Components Styling
-*/
-ul {
-  list-style: none;
-  padding: 0;
-}
-li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 15px;
-  cursor: pointer;
-}
-.avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-}
-
-.subscribe-btn {
-  background: rgba(0, 242, 254, 0.7);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  padding: 8px 15px;
-  cursor: pointer;
-  font-weight: bold;
-}
-.owner-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.action-buttons {
-  display: flex;
-  justify-content: space-around;
-}
-.action-buttons button {
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  color: white;
-  padding: 10px;
-  border-radius: 10px;
-  cursor: pointer;
-}
-/* Styling for the Logo and Text in Navbar */
-.logo {
-  display: flex;
-  align-items: center; /* Centers the image and text vertically */
-  gap: 10px; /* Space between the logo image and the text */
-  cursor: pointer;
-}
-
-.nav-logo-img {
-  height: 35px; /* Adjust this value to make the logo bigger or smaller */
-  width: auto;
-  object-fit: contain; /* Ensures the logo doesn't get stretched */
-}
-
-.logo-text {
-  font-family: "Bruno Ace", sans-serif; /* Using the same font from your login page */
-  font-weight: bold;
-  font-size: 1.2rem;
-  color: #FFFFFF;
-}
-
-/* Pro Nav Icons Styling */
-.nav-icons {
-  display: flex;
-  gap: 20px;
-  align-items: center;
-}
-
-.nav-icon {
-  width: 26px; /* الحجم ديال الأيقونة */
-  height: 26px;
-  color: #FFFFFF; /* اللون الأصلي أبيض */
-  cursor: pointer;
-  transition: all 0.3s ease; /* باش الأنيميشن تجي سموث */
-}
-
-/* Hover Effect: كيبدلو اللون وكيكبارو شوية ملي تحط عليهم الماوس */
-.nav-icon:hover {
-  color: #00f2fe;
-  transform: scale(1.15);
-}
-
-.comment {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 15px;
-  font-size: 14px;
-}
+/* Il tuo stile CSS rimane esattamente lo stesso */
+.feed-video { width: 100%; height: 100%; object-fit: cover; border-radius: 15px; position: absolute; top: 0; left: 0; z-index: 0; }
+.video-overlay, .video-controls { position: relative; z-index: 1; }
+.video-overlay { position: absolute; bottom: 30px; left: 20px; color: white; text-shadow: 1px 1px 4px rgba(0,0,0,0.8); }
+#bgVideo { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; z-index: -1; object-fit: cover; }
+.app-container { display: flex; flex-direction: column; height: 100vh; color: #FFFFFF; font-family: sans-serif; padding: 10px 20px; box-sizing: border-box; }
+.glass-panel { background: rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 15px; box-sizing: border-box; }
+.navbar { display: flex; justify-content: space-between; align-items: center; height: 60px; margin-bottom: 15px; flex-shrink: 0; }
+.search-bar input { background: rgba(255, 255, 255, 0.1); border: none; border-radius: 17px; padding: 10px 20px; color: white; width: 300px; }
+.main-content { display: flex; flex-direction: row; justify-content: space-between; width: 100%; height: calc(100vh - 95px); overflow: hidden; }
+.left-sidebar { width: 280px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
+.right-sidebar { width: 320px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
+.feed-container { flex-grow: 1; max-width: 550px; height: 100%; overflow-y: scroll; scroll-snap-type: y mandatory; scroll-behavior: smooth; scrollbar-width: none; display: flex; flex-direction: column; }
+.video-wrapper { min-height: 100%; width: 100%; scroll-snap-align: start; scroll-snap-stop: always; position: relative; display: flex; justify-content: center; align-items: center; border-radius: 15px; margin-bottom: 15px; }
+.video-placeholder { text-align: center; color: rgba(255, 255, 255, 0.7); }
+.video-controls { position: absolute; right: 15px; bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
+.video-controls button { background: rgba(0, 0, 0, 0.5); border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; }
+ul { list-style: none; padding: 0; }
+li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor: pointer; }
+.avatar { width: 40px; height: 40px; border-radius: 50%; }
+.subscribe-btn { background: rgba(0, 242, 254, 0.7); color: white; border: none; border-radius: 10px; padding: 8px 15px; cursor: pointer; font-weight: bold; }
+.owner-header { display: flex; align-items: center; gap: 10px; }
+.action-buttons { display: flex; justify-content: space-around; }
+.action-buttons button { background: rgba(255, 255, 255, 0.1); border: none; color: white; padding: 10px; border-radius: 10px; cursor: pointer; }
+.logo { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.nav-logo-img { height: 35px; width: auto; object-fit: contain; }
+.logo-text { font-family: "Bruno Ace", sans-serif; font-weight: bold; font-size: 1.2rem; color: #FFFFFF; }
+.nav-icons { display: flex; gap: 20px; align-items: center; }
+.nav-icon { width: 26px; height: 26px; color: #FFFFFF; cursor: pointer; transition: all 0.3s ease; }
+.nav-icon:hover { color: #00f2fe; transform: scale(1.15); }
+.comment { display: flex; gap: 10px; margin-bottom: 15px; font-size: 14px; }
+.main-menu ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 5px; }
+.menu-item { display: flex; align-items: center; padding: 12px 15px; color: #FFFFFF; text-decoration: none; border-radius: 10px; transition: all 0.2s ease-in-out; cursor: pointer; }
+.menu-item:hover { background: rgba(255, 255, 255, 0.1); }
+.router-link-active { background: rgba(0, 242, 254, 0.15); color: #00f2fe; font-weight: bold; border-left: 4px solid #00f2fe; }
+.volume-btn { background: rgba(0, 0, 0, 0.4); border: none; border-radius: 50%; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s ease-in-out; position: absolute; bottom: 20px; right: 20px; }
+.volume-btn:hover { background: rgba(0, 242, 254, 0.4); transform: scale(1.1); }
+.video-icon { width: 22px; height: 22px; color: white; }
 </style>

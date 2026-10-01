@@ -35,6 +35,9 @@ clean: down
 fclean: clean
 	docker system prune --all --force
 
+cleardatabase: fclean
+	docker volume rm ready2roll_pg_data
+
 enterdb:
 	@docker exec -it ready2roll-db psql -U r2r_admin -d ready2roll
 
