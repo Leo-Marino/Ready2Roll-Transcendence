@@ -6,7 +6,11 @@ import { computed } from 'vue';
 
 const router = useRouter();
 
+<<<<<<< HEAD
 const userType = ref('standard'); // 'Normal User' | 'Local Owner'
+=======
+const userType = ref('standard'); // 'Normal User' | 'business'
+>>>>>>> mergePreMain
 const username = ref('');
 const email = ref('');
 const password = ref('');
@@ -182,6 +186,7 @@ const submitSignup = async () => {
             </ul>
         </div>
 
+        <!-- Campi Extra per business -->
         <div v-if="userType === 'business'">
         <div class="inputFieldDiv">
             <input type="text" v-model="clubName" placeholder="Club / Venue Name">
