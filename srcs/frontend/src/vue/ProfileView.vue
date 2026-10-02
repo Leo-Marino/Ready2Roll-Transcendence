@@ -1,5 +1,15 @@
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+const API = 'http://localhost:8000/api';
+
+//to read the name token
+const getToken = () =>
+  localStorage.getItem('token') ||
+  localStorage.getItem('access') ||
+  localStorage.getItem('access_token');
 
 // Mock data for the left sidebar
 const subscribedAccounts = ref([
@@ -7,6 +17,7 @@ const subscribedAccounts = ref([
   { id: 2, name: 'Anna', img: 'https://i.pravatar.cc/150?u=2' },
   { id: 3, name: 'thilina', img: 'https://i.pravatar.cc/150?u=3' },
 ]);
+
 
 // The active user's profile data
 const userProfile = ref({
@@ -24,30 +35,38 @@ const likedVideos = ref([
 
 // --- FETCH DATA ON LOAD ---
 onMounted(async () => {
+  const token = getToken();
+  if (!token) {
+    router.push('/login'); // not logged in
+    return;
+  }
   try {
-    // Get the auth token saved during Login
-    const token = localStorage.getItem('token');
-
-    // Replace '/api/profile/' with the actual URL your Django dev sets up
-    const response = await fetch('/api/profile/', {
+    const response = await fetch(`${API}/profile/`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
     });
 
-    if (response.ok) {
-      const data = await response.json();
-      // Update UI with real data from Django
-      userProfile.value.name = data.username || userProfile.value.name;
-      userProfile.value.description = data.bio || userProfile.value.description;
-      if (data.avatar_url) {
-        userProfile.value.avatar = data.avatar_url;
-      }
-      userProfile.value.following = data.following_count || 0;
-      userProfile.value.followers = data.followers_count || 0;
+    if (response.status === 401) {
+      // token expired or invalid
+      localStorage.removeItem('token');
+      localStorage.removeItem('access');
+      localStorage.removeItem('access_token');
+      router.push('/login');
+      return;
     }
+    if (!response.ok) {
+      console.error('could not load profile, status', response.status)
+      return ;
+    }
+    const data = await response.json();
+    userProfile.value.name = data.username || '';
+    userProfile.value.description = data.bio || '';
+    if (data.avatar_url) userProfile.value.avatar = data.avatar_url;
+    userProfile.value.following = userProfile.value.following_count || 0;
+    userProfile.value.followers = userProfile.value.followers_count || 0;
   } catch (error) {
-    console.error("Failed to load profile data:", error);
+    console.error('Fetch failed (CORS or server off?)', error);
   }
 });
 
@@ -87,48 +106,34 @@ const handleImageUpload = (event) => {
 };
 
 const saveProfile = async () => {
-  // Use FormData because we are sending a file (image) alongside text
-  const formData = new FormData();
-  formData.append('username', editForm.value.username);
-  formData.append('bio', editForm.value.bio);
-
-  if (selectedFile.value) {
-    formData.append('avatar', selectedFile.value);
-  }
-
   try {
-    const token = localStorage.getItem('token');
-
-    // Send data to Django. Do NOT manually set 'Content-Type'.
-    // Fetch automatically sets it to 'multipart/form-data' when it detects FormData.
-    const response = await fetch('/api/profile/update/', {
-      method: 'POST', // or PUT, depending on what your Django dev prefers
+    const response = await fetch(`${API}/profile/update/`, {
+      method: 'PATCH',
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
       },
-      body: formData
+      body: JSON.stringify({
+        username: editForm.value.username,
+        bio: editForm.value.bio
+      })
     });
 
+    const data = await response.json();
+
     if (response.ok) {
-      const data = await response.json();
-
-      // Update UI with the confirmed save data
-      userProfile.value.name = data.username || editForm.value.username;
-      userProfile.value.description = data.bio || editForm.value.bio;
-      if (data.avatar_url) {
-        userProfile.value.avatar = data.avatar_url;
-      } else if (tempAvatar.value) {
-        userProfile.value.avatar = tempAvatar.value; // Fallback to preview if backend doesn't return URL
-      }
-
+      userProfile.value.name = data.username ?? editForm.value.username;
+      userProfile.value.description = data.bio ?? editForm.value.bio;
+      // NOTE: avatar upload needs an ImageField on the backend; not saved yet.
       showEditModal.value = false;
     } else {
-      console.error("Backend rejected the save request");
-      alert("Error saving profile. Please check your inputs.");
+      console.error('Backend rejected the save:', data);
+      const firstError = Object.values(data)[0];
+      alert(Array.isArray(firstError) ? firstError[0] : 'Error saving profile.');
     }
   } catch (error) {
-    console.error("Network error saving profile:", error);
-    alert("Unable to connect to the server.");
+    console.error('Network error saving profile:', error);
+    alert('Unable to connect to the server.');
   }
 };
 </script>

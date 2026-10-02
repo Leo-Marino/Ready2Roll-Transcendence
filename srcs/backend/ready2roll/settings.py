@@ -85,10 +85,11 @@ DATABASES = {
        'USER': os.environ['POSTGRES_USER'],
        'PASSWORD': os.environ['POSTGRES_PASSWORD'],
        'HOST': os.environ['POSTGRES_HOST'],
-       'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+       'POST': os.environ.get('POSTGRES_PORT', '5432'),
 
     }
 }
+
 
 
 # Password validation
@@ -113,6 +114,12 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     )
+}
+
+from datetime import timedelta
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
 }
 
 # Internationalization

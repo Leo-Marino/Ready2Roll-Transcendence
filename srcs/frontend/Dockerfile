@@ -1,7 +1,7 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY frontend/package*.json ./
-RUN npm install
+RUN npm install && npm install zod
 COPY frontend/. .
 EXPOSE 5173
 CMD ["npm", "run", "dev", "--", "--host"]
