@@ -13,6 +13,9 @@ up:
 	$(COMPOSE) up -d
 # 	@echo Access to https://"$(USER)".42.fr
 
+clear:
+	$(COMPOSE) down -v
+
 down:
 	$(COMPOSE) down
 

@@ -3,6 +3,9 @@ import CreateEvent from '../vue/ownerEventCreate.vue'
 import LoginPage from '../vue/loginPage.vue' // comment this to test other pages n therefore to put privilege on
 import SignupPage from '../vue/signupPage.vue' // ```
 import HomePage from '../vue/HomePage.vue' // ```
+import ChatView from '../vue/ChatView.vue';
+import ProfileView from '../vue/ProfileView.vue';
+import SubscriptionsView from '../vue/SubscriptionsView.vue';
 
 const routes = [
   {
@@ -27,6 +30,21 @@ const routes = [
     path: '/home',
     name: 'home',
     component: HomePage
+  },
+  {
+    path: '/chat',
+    name: 'chat',
+    component: ChatView
+  },
+  {
+    path: '/profile',
+    name: '/profile',
+    component: ProfileView
+  },
+  {
+    path: '/subscriptions',
+    name: 'subscriptions',
+    component: SubscriptionsView
   },
   {
     path: '/CreateEvent',

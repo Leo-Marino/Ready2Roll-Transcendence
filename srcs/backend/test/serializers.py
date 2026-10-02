@@ -1,14 +1,14 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['username', 'email', 'password']
-        # Diciamo a Django che la password si può solo SCRIVERE, ma mai LEGGERE per sicurezza
         extra_kwargs = {'password': {'write_only': True}}
 
-    # Intercettiamo il salvataggio per "criptare" (hash) la password
     def create(self, validated_data):
         user = User.objects.create_user(
             username=validated_data['username'],
@@ -17,4 +17,18 @@ class UserSerializer(serializers.ModelSerializer):
         )
         return user
 
-
+class UserProfileUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            'username',
+            'first_name',
+            'last_name',
+            'bio',
+            'avatar_url',
+            'instagram_handle',
+            'phone_number',
+            'legal_name',
+            'date_of_birth',
+            'bs_website'
+        ]
