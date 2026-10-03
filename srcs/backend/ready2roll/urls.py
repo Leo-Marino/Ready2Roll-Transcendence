@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from test.views import signup_view, update_profile_view, profile_view
+from users.views import signup_view, update_profile_view, profile_view
 from rest_framework_simplejwt.views import TokenObtainPairView # Aggiungi questa importazione
 
 urlpatterns = [

@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
 
-    'test'
+    'users'
 ]
 
 MIDDLEWARE = [
@@ -87,7 +87,7 @@ DATABASES = {
        'USER': os.environ['POSTGRES_USER'],
        'PASSWORD': os.environ['POSTGRES_PASSWORD'],
        'HOST': os.environ['POSTGRES_HOST'],
-       'POST': os.environ.get('POSTGRES_PORT', '5432'),
+       'PORT': os.environ.get('POSTGRES_PORT', '5432'),
 
     }
 }
@@ -157,4 +157,4 @@ ALLOWED_HOSTS = ['*']
 CORS_ALLOW_ALL_ORIGINS = True
 
 # Custom User Model
-AUTH_USER_MODEL = 'test.User'
+AUTH_USER_MODEL = 'users.User'
