@@ -2,17 +2,39 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { z } from 'zod';
+import { computed } from 'vue';
 
 const router = useRouter();
 
-const userType = ref('standard'); // 'Normal User' | 'business'
+const type_of_user = ref('standard'); // 'standard' | 'business'
 const username = ref('');
 const email = ref('');
 const password = ref('');
-const clubName = ref('');
-const taxId = ref('');
+const legalName = ref('');
+const vatTax = ref('');
 
-// Validation errors state
+const passwordRules = computed(() => [
+{
+    id: 'length',
+    label: 'At least 8 characters',
+    valid: password.value.length >= 8
+},
+{
+    id: 'uppercase',
+    label: 'At least one uppercase letter',
+    valid: /[A-Z]/.test(password.value)
+},
+{
+    id: 'number',
+    label: 'At least one number',
+    valid: /[0-9]/.test(password.value)
+}
+]);
+
+const isPasswordValid = computed(() =>
+    passwordRules.value.every(rule => rule.valid)
+);
+
 const errors = ref({});
 
 const getSignupSchema = () => {
@@ -25,9 +47,9 @@ const getSignupSchema = () => {
         .regex(/[A-Z]/, 'Must contain at least one uppercase letter')
         .regex(/[0-9]/, 'Must contain at least one number')
     };
-    if (userType.value === 'business') {
-        baseSchema.clubName = z.string().min(1, 'Club / Venue Name is required');
-        baseSchema.taxId = z.string().min(1, 'Tax ID / VAT Number is required');
+  if (type_of_user.value === 'business') {
+        baseSchema.legalName = z.string().min(1, 'Business / Venue Name is required');
+        baseSchema.vatTax = z.string().min(1, 'Tax ID / VAT Number is required');
     }
     return z.object(baseSchema);
 };
@@ -39,9 +61,9 @@ const submitSignup = async () => {
     username: username.value,
         email: email.value,
         password: password.value,
-        ...(userType.value === 'business' && {
-            clubName: clubName.value,
-            taxId: taxId.value
+        ...(type_of_user.value === 'business' && {
+            legalName: legalName.value,
+            vatTax: vatTax.value
         })
     };
 
@@ -52,7 +74,10 @@ const submitSignup = async () => {
         validationResult.error.issues.forEach((issue) => {
             const fieldName = issue.path[0];
             if (fieldName) {
-                fieldErrors[fieldName] = issue.message;
+                if (!fieldErrors[fieldName]) {
+                    fieldErrors[fieldName] = [];
+                }
+                fieldErrors[fieldName].push(issue.message);
             }
         });
         errors.value = fieldErrors;
@@ -60,19 +85,19 @@ const submitSignup = async () => {
     }
 
     const payload = {
-        user_type: userType.value,
+        type_of_user: type_of_user.value,
         username: username.value,
         email: email.value,
         password: password.value
     };
 
-    if (userType.value === 'business') {
-        payload.club_name = clubName.value;
-        payload.tax_id = taxId.value;
+    if (type_of_user.value === 'business') {
+        payload.legal_name = legalName.value;
+        payload.vat_tax = vatTax.value;
     }
 
     try {
-    const response = await fetch('/api/signup/', {
+    const response = await fetch('http://localhost:8000/api/signup/', {
         method: 'POST',
         headers: {
         'Content-Type': 'application/json'
@@ -86,8 +111,8 @@ const submitSignup = async () => {
         if (data.token) {
         localStorage.setItem('token', data.token);
         }
-        alert('Registrazione completata con successo! Benvenuto su Ready2Roll!');
-        router.push('/home');
+        alert('Registrazione completata con successo!');
+        router.push('/login');
     } else {
         console.error('Errore risposta dal server:', data);
         alert(data.error || 'Errore durante la registrazione, controlla meglio i dati che hai inserito');
@@ -116,14 +141,14 @@ const submitSignup = async () => {
         <div class="role-toggle-container">
         <button
             type="button"
-            :class="{'active-role': userType === 'standard'}"
-            @click="userType = 'standard'; errors = {};">
+            :class="{'active-role': type_of_user === 'standard'}"
+            @click="type_of_user = 'standard'; errors = {};">
             standard
         </button>
         <button
             type="button"
-            :class="{'active-role': userType === 'business'}"
-            @click="userType = 'business'; errors = {};">
+            :class="{'active-role': type_of_user === 'business'}"
+            @click="type_of_user = 'business'; errors = {};">
             business
         </button>
         </div>
@@ -140,19 +165,32 @@ const submitSignup = async () => {
         </div>
 
         <div class="inputFieldDiv">
-        <input type="password" v-model="password" placeholder="Password">
-        <span v-if="errors.password" class="error-text">{{ errors.password }}</span>
+            <input
+                type="password"
+                v-model="password"
+                placeholder="Password"
+            />
+            <ul class="password-checklist">
+            <li
+                v-for="rule in passwordRules"
+                :key="rule.id"
+                :class="rule.valid ? 'rule-valid' : 'rule-invalid'"
+            >
+                <span class="rule-icon">{{ rule.valid ? '✓' : '✖' }}</span>
+                <span>{{ rule.label }}</span>
+            </li>
+            </ul>
         </div>
 
         <!-- Campi Extra per business -->
-        <div v-if="userType === 'business'">
+        <div v-if="type_of_user === 'business'">
         <div class="inputFieldDiv">
-            <input type="text" v-model="clubName" placeholder="Club / Venue Name">
-            <span v-if="errors.clubName" class="error-text">{{ errors.clubName }}</span>
+            <input type="text" v-model="legalName" placeholder="Club / Venue Name">
+            <span v-if="errors.legalName" class="error-text">{{ errors.legalName }}</span>
         </div>
         <div class="inputFieldDiv">
-            <input type="text" v-model="taxId" placeholder="Tax ID / VAT Number">
-            <span v-if="errors.taxId" class="error-text">{{ errors.taxId }}</span>
+            <input type="text" v-model="vatTax" placeholder="Tax ID / VAT Number">
+            <span v-if="errors.vatTax" class="error-text">{{ errors.vatTax }}</span>
         </div>
         </div>
 
@@ -344,5 +382,30 @@ font-size: 14px;
 font-family: "Bruno Ace", sans-serif;
 color: #FFFFFF;
 font-size: 14px;
+}
+
+.password-checklist {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0 8px;
+  text-align: left;
+}
+
+.password-checklist li {
+  font-size: 11px;
+  font-family: "Bruno Ace", sans-serif;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.2s ease;
+}
+
+.rule-invalid {
+  color: #0a0a0a;
+}
+
+.rule-valid {
+  color: #00e676;
 }
 </style>
