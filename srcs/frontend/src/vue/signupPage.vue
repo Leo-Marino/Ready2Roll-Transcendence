@@ -97,7 +97,7 @@ const submitSignup = async () => {
     }
 
     try {
-    const response = await fetch('http://localhost:8000/api/signup/', {
+    const response = await fetch('/api/signup/', {
         method: 'POST',
         headers: {
         'Content-Type': 'application/json'
@@ -402,7 +402,7 @@ font-size: 14px;
 }
 
 .rule-invalid {
-  color: #0a0a0a;
+  color: #ff4d4d;
 }
 
 .rule-valid {
