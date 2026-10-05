@@ -7,7 +7,7 @@
 set -e
 
 echo "Execution of the migration of the db..."
-python manage.py makemigrations users
+python manage.py makemigrations users events social notifications
 
 python manage.py migrate
 
