@@ -54,24 +54,24 @@
 	</div>
 
 	<section class="events-grid">
-	<div 
-		v-for="event in eventsList" 
-		:key="event.id" 
+	<div
+		v-for="event in eventsList"
+		:key="event.id"
 		class="event-card glass-card"
 	>
 		<div class="card-media-header">
-		<img 
-			v-if="event.media_type === 'image'" 
-			:src="event.media_src" 
-			alt="Cover evento" 
-			class="card-thumb" 
+		<img
+			v-if="event.media_type === 'image'"
+			:src="event.media_src"
+			alt="Cover evento"
+			class="card-thumb"
 		/>
-		<video 
-			v-else 
-			:src="event.media_src" 
-			autoplay 
-			muted 
-			loop 
+		<video
+			v-else
+			:src="event.media_src"
+			autoplay
+			muted
+			loop
 			class="card-thumb"
 		></video>
 		<span class="status-badge" :class="event.status ? event.status.toLowerCase() : ''">
@@ -104,14 +104,14 @@
 	<!-- Preview Modal -->
 	<div v-if="activePreviewEvent" class="fullscreen-preview-overlay">
 	<button class="fullscreen-close-btn" @click="closePreview">✕</button>
-	
+
 	<div class="fullscreen-content-container">
 		<section class="glass-card" :class="{ 'is-expanded-card': isExpanded }">
-		<div 
-			class="preview-box" 
-			:class="{ 
-			'is-expanded-box': isExpanded, 
-			'is-map-view': isMapOpen && !isExpanded 
+		<div
+			class="preview-box"
+			:class="{
+			'is-expanded-box': isExpanded,
+			'is-map-view': isMapOpen && !isExpanded
 			}"
 		>
 			<aside v-if="isExpanded" class="sidebar-left">
@@ -132,11 +132,11 @@
 			</div>
 			</aside>
 			<div class="media-outer-wrapper" :class="{ 'is-expanded-wrapper': isExpanded }">
-			<div 
-				class="media-preview" 
+			<div
+				class="media-preview"
 				:class="{ 'has-content': activePreviewEvent.media_src, 'is-expanded': isExpanded }"
 			>
-				<div 
+				<div
 				v-if="!isExpanded"
 				class="map-badge clickable"
 				:class="{ active: isMapOpen }"
@@ -147,9 +147,9 @@
 					<circle fill="#FFFFFF" cx="12" cy="9" r="2.5"/>
 				</svg>
 				</div>
-				<button 
-				class="expand-btn" 
-				@click.stop="toggleExpand" 
+				<button
+				class="expand-btn"
+				@click.stop="toggleExpand"
 				title="Ingrandisci"
 				>
 				<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
@@ -157,19 +157,19 @@
 					<path v-else d="M4 14h6v6M20 10h-6V4M10 14L3 21M14 10l7-7"/>
 				</svg>
 				</button>
-				<video 
-				v-if="activePreviewEvent.media_type === 'video'" 
-				:src="activePreviewEvent.media_src" 
-				autoplay 
-				loop 
-				muted 
+				<video
+				v-if="activePreviewEvent.media_type === 'video'"
+				:src="activePreviewEvent.media_src"
+				autoplay
+				loop
+				muted
 				class="uploaded-preview"
 				></video>
-				<img 
-				v-else 
-				:src="activePreviewEvent.media_src" 
-				alt="Anteprima" 
-				class="uploaded-preview" 
+				<img
+				v-else
+				:src="activePreviewEvent.media_src"
+				alt="Anteprima"
+				class="uploaded-preview"
 				/>
 				<div class="text-preview overlay-description">
 				<p class="preview-description-text">
@@ -181,20 +181,20 @@
 			<div v-if="isMapOpen && !isExpanded" class="map-container">
 			<div class="map-inner-wrapper">
 				<div class="map-search-bar">
-				<input 
-					type="text" 
-					v-model="activePreviewEvent.location" 
-					class="custom-input map-input" 
-					readonly 
+				<input
+					type="text"
+					v-model="activePreviewEvent.location"
+					class="custom-input map-input"
+					readonly
 				/>
 				</div>
-				<iframe 
-				width="100%" 
-				height="100%" 
-				frameborder="0" 
-				scrolling="no" 
-				marginheight="0" 
-				marginwidth="0" 
+				<iframe
+				width="100%"
+				height="100%"
+				frameborder="0"
+				scrolling="no"
+				marginheight="0"
+				marginwidth="0"
 				:src="`https://maps.google.com/maps?q=${encodeURIComponent(activePreviewEvent.location)}&t=&z=15&ie=UTF8&iwloc=&output=embed`"
 				class="map-iframe"
 				></iframe>
@@ -273,13 +273,13 @@
 			<div class="media-edit-preview-box">
 			<img v-if="editForm.media_type === 'image'" :src="editForm.media_src" class="edit-thumb-preview" />
 			<video v-else :src="editForm.media_src" class="edit-thumb-preview" autoplay muted loop></video>
-			
-			<input 
-				type="file" 
-				ref="editFileInput" 
-				accept="image/png, image/jpeg, video/mp4" 
-				style="display: none;" 
-				@change="handleEditFileUpload" 
+
+			<input
+				type="file"
+				ref="editFileInput"
+				accept="image/png, image/jpeg, video/mp4"
+				style="display: none;"
+				@change="handleEditFileUpload"
 			/>
 			<button type="button" class="action-btn upload-change-btn" @click="triggerEditFileInput">
 				📷 Cambia Foto/Video

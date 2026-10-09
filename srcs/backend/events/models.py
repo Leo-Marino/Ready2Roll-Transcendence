@@ -14,6 +14,7 @@ class Event(models.Model):
     event_date = models.DateTimeField()
     max_capacity = models.IntegerField(blank=True, null=True)
     ticket_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    start_time = models.DateTimeField(blank=True, null=True)
     end_time = models.DateTimeField(blank=True, null=True)
     tags = models.ManyToManyField(Tag, related_name='events', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
