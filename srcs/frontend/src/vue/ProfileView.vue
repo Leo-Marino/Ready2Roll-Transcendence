@@ -51,7 +51,8 @@ const userProfile = ref({
   following: 0,
   followers: 0,
   description: 'Loading...',
-  avatar: 'https://i.pravatar.cc/150?u=6' // Default fallback
+  avatar: 'https://i.pravatar.cc/150?u=6', // Default fallback
+  isBusiness: false
 });
 
 const likedVideos = ref([
@@ -91,6 +92,7 @@ onMounted(async () => {
     if (data.avatar_url) userProfile.value.avatar = data.avatar_url;
     userProfile.value.following = userProfile.value.following_count || 0;
     userProfile.value.followers = userProfile.value.followers_count || 0;
+    userProfile.value.isBusiness = (data.type_of_user === 'business');
   } catch (error) {
     console.error('Fetch failed (CORS or server off?)', error);
   }
@@ -237,6 +239,11 @@ const saveProfile = async () => {
               <p>{{ userProfile.description }}</p>
             </div>
           </div>
+          <div class="action-buttons">
+          <button v-if="userProfile.isBusiness" class="create-event-btn" @click="$router.push('/create-events')">
+            Create Event 📅
+          </button>
+        </div>
           <!-- Click qui apre il modal -->
           <button class="edit-btn" @click="openEditModal">edit profile</button>
         </div>
@@ -519,4 +526,36 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   border-radius: 50%;
   object-fit: cover;
 }
+
+.action-buttons {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.edit-btn {
+  background: #d63031;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+.edit-btn:hover { background: #ff7675; }
+
+.create-event-btn {
+  background: #00f2fe;
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+.create-event-btn:hover { background: #05d4ca; }
 </style>

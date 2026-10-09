@@ -1,21 +1,12 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
-<<<<<<< HEAD
-
-
-=======
->>>>>>> origin/Database_changes
 User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-<<<<<<< HEAD
-        fields = ['username', 'email', 'password']
-=======
         fields = ['username', 'email', 'password', 'type_of_user', 'legal_name', 'vat_tax']
->>>>>>> origin/Database_changes
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
@@ -39,7 +30,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = [
             'username', 'email', 'first_name', 'last_name', 'bio',
             'avatar_url', 'instagram_handle', 'bs_website',
-            'following_count', 'followers_count',
+            'following_count', 'followers_count', 'type_of_user'
         ]
 
     # Placeholders until you build a follow system

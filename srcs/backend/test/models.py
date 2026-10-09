@@ -38,11 +38,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     bio = models.TextField(blank=True, null=True)
     bs_website = models.CharField(max_length=512, blank=True, null=True)
     is_verified = models.BooleanField(default=False)
-<<<<<<< HEAD
-=======
     vat_tax = models.CharField(max_length=50, blank=True, null=True)
 
->>>>>>> origin/Database_changes
 
     # Required for Django authentication & admin
     is_staff = models.BooleanField(default=False)
@@ -56,8 +53,6 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     class Meta:
         db_table = 'users'
-<<<<<<< HEAD
-=======
         constraints = [
                 models.CheckConstraint(
                         check=models.Q(type_of_user='standard')
@@ -67,4 +62,3 @@ class User(AbstractBaseUser, PermissionsMixin):
                         name='check_business_legality'
                 )
         ]
->>>>>>> origin/Database_changes
