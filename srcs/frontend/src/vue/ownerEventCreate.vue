@@ -3,12 +3,12 @@
   <video autoplay muted loop playsinline id="bgVideo">
     <source src="../assets/ready2roll_wave_background.mp4" type="video/mp4" />
   </video>
-  <input 
-    type="file" 
-    ref="fileInput" 
-    accept="image/png, image/jpeg, video/mp4" 
-    style="display: none;" 
-    @change="handleFileUpload" 
+  <input
+    type="file"
+    ref="fileInput"
+    accept="image/png, image/jpeg, video/mp4"
+    style="display: none;"
+    @change="handleFileUpload"
   />
   <header class="navbar glass-panel">
 <!-- 1. Left: Logo -->
@@ -51,20 +51,20 @@
       <div v-if="!isExpanded" class="event-details-bar">
         <div class="detail-input-group flex-2">
           <label for="event-title">TITOLO EVENTO *</label>
-          <input 
+          <input
             id="event-title"
-            type="text" 
-            v-model="eventTitle" 
-            placeholder="Es. YAB Night Club Party" 
+            type="text"
+            v-model="eventTitle"
+            placeholder="Es. YAB Night Club Party"
             class="custom-input"
           />
         </div>
         <div class="detail-input-group flex-1">
           <label for="event-date">DATA EVENTO *</label>
-          <input 
+          <input
             id="event-date"
-            type="date" 
-            v-model="eventDate" 
+            type="date"
+            v-model="eventDate"
             class="custom-input date-picker"
           />
         </div>
@@ -97,14 +97,14 @@
           </div>
         </aside>
         <div class="media-outer-wrapper" :class="{ 'is-expanded-wrapper': isExpanded }">
-          <div 
-            class="media-preview clickable" 
+          <div
+            class="media-preview clickable"
             :class="{ 'has-content': uploadedMediaSrc, 'is-expanded': isExpanded }"
             @mouseenter="hoverStep = 1"
             @mouseleave="hoverStep = null"
             @click="handleMediaClick"
           >
-            <div 
+            <div
               v-if="!isExpanded"
               class="map-badge clickable"
               :class="{ active: isMapOpen }"
@@ -115,9 +115,9 @@
                 <circle fill="#FFFFFF" cx="12" cy="9" r="2.5"/>
               </svg>
             </div>
-            <button 
-              class="expand-btn" 
-              @click.stop="toggleExpand" 
+            <button
+              class="expand-btn"
+              @click.stop="toggleExpand"
               title="Ingrandisci"
             >
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
@@ -130,29 +130,29 @@
               <span>Clicca per inserire Foto/Video</span>
             </template>
             <template v-else>
-              <video 
-                v-if="mediaType === 'video'" 
-                :src="uploadedMediaSrc" 
-                autoplay 
-                loop 
-                muted 
+              <video
+                v-if="mediaType === 'video'"
+                :src="uploadedMediaSrc"
+                autoplay
+                loop
+                muted
                 class="uploaded-preview"
               ></video>
-              <img 
-                v-else 
-                :src="uploadedMediaSrc" 
-                alt="Anteprima" 
-                class="uploaded-preview" 
+              <img
+                v-else
+                :src="uploadedMediaSrc"
+                alt="Anteprima"
+                class="uploaded-preview"
               />
             </template>
-            <div 
+            <div
               class="text-preview overlay-description"
               @mouseenter="hoverStep = 3"
               @mouseleave="hoverStep = null"
               @click.stop="selectStep(3)"
             >
-              <textarea 
-                v-model="descriptionText" 
+              <textarea
+                v-model="descriptionText"
                 placeholder="Inserisci descrizione / hashtag..."
                 class="editable-description"
                 rows="2"
@@ -164,21 +164,21 @@
         <div v-if="isMapOpen && !isExpanded" class="map-container">
           <div class="map-inner-wrapper">
             <div class="map-search-bar">
-              <input 
-                type="text" 
-                placeholder="Cerca indirizzo locale..." 
-                class="custom-input map-input" 
-                v-model="eventLocation" 
+              <input
+                type="text"
+                placeholder="Cerca indirizzo locale..."
+                class="custom-input map-input"
+                v-model="eventLocation"
               />
               <button class="action-btn-small">Cerca</button>
             </div>
-            <iframe 
-              width="100%" 
-              height="100%" 
-              frameborder="0" 
-              scrolling="no" 
-              marginheight="0" 
-              marginwidth="0" 
+            <iframe
+              width="100%"
+              height="100%"
+              frameborder="0"
+              scrolling="no"
+              marginheight="0"
+              marginwidth="0"
               :src="`https://maps.google.com/maps?q=${encodeURIComponent(eventLocation)}&t=&z=15&ie=UTF8&iwloc=&output=embed`"
               class="map-iframe"
             ></iframe>
@@ -211,7 +211,7 @@
       </div>
       <div v-if="!isExpanded" class="publish-action-bar">
         <button class="publish-btn" @click="handlePublish">
-          PUBBLICA EVENTO
+          PUBBLICA EVENTO1
         </button>
       </div>
 
@@ -326,9 +326,9 @@ padding-bottom: 50px;
   text-transform: uppercase;
   }
 
-input, 
-select, 
-textarea, 
+input,
+select,
+textarea,
 button,
 label,
 h1, h2, h3, h4,
@@ -348,7 +348,7 @@ textarea::placeholder {
 font-family: 'jf-openhuninn', 'Huninn', sans-serif !important;
 }
 
-.logo, 
+.logo,
 .logo-text {
 font-family: "Bruno Ace", sans-serif !important;
 font-weight: bold;

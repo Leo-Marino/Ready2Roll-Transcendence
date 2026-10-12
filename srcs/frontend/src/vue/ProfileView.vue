@@ -272,6 +272,10 @@ const saveProfile = async () => {
         <button class="close-modal-btn" @click="closeEditModal">✕</button>
       </div>
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> backend
       <!-- Modal Body -->
       <div class="modal-body">
 
