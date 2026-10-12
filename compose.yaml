@@ -1,9 +1,6 @@
 #=============================================================================
-
 #Ready2Roll — docker-compose.yml
-
 #Stack: Vue.js + Django + PostgreSQL + Nginx + MinIO + Redis
-
 #=============================================================================
 
 name: ready2roll
@@ -11,11 +8,8 @@ name: ready2roll
 services:
 
 #---------------------------------------------------------------------------
-
 #Vue.js — frontend
-
 #---------------------------------------------------------------------------
-
   vuejs-prod:
     build:
       context: ./srcs
@@ -34,11 +28,8 @@ services:
       - frontend-net
 
 #---------------------------------------------------------------------------
-
 #Reverse proxy — Nginx
-
 #---------------------------------------------------------------------------
-
   nginx:
     image: nginx:latest
     container_name: nginx_proxy
@@ -54,11 +45,8 @@ services:
       - django_backend
 
 #---------------------------------------------------------------------------
-
 #Django — backend
-
 #---------------------------------------------------------------------------
-
   django_backend:
     build:
       context: ./srcs/backend
@@ -81,11 +69,8 @@ services:
           condition: service_healthy
 
 #---------------------------------------------------------------------------
-
 #PostgreSQL — Database (Relational Data & Text)
-
 #---------------------------------------------------------------------------
-
   postgre_db:
     image: postgres:16
     container_name: postgre_db
@@ -95,7 +80,7 @@ services:
     ports:
     - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - /tmp/${USER}_ready2roll_pg_data:/var/lib/postgresql/data
       - ./srcs/postgre_db/init:/docker-entrypoint-initdb.d
     networks:
       - backend-net
@@ -108,7 +93,6 @@ services:
       retries: 5
 
 #---------------------------------------------------------------------------
-
   pgadmin:
     image: dpage/pgadmin4
     environment:
@@ -120,52 +104,71 @@ services:
       - postgre_db
     networks:
       - backend-net
+    volumes:
+      - ./srcs/postgre_db/servers.json:/pgadmin4/servers.json:ro
 
 #MinIO — Object Storage (Event Posters & Media)
+#---------------------------------------------------------------------------
+  minio_storage:
+    image: golang:alpine
+    container_name: ready2roll-storage
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - /sgoinfre/${USER}/ready2roll/minio_data:/data
+    env_file:
+      - .env
+    networks:
+      - backend-net
+      - frontend-net
+    command: >
+      /bin/sh -c "
+      apk add --no-cache git gcc musl-dev > /dev/null;
+      echo 'Building MinIO from source (this takes 1-2 minutes)...';
+      go install github.com/minio/minio@latest > /dev/null 2>&1;
+      /go/bin/minio server /data --console-address ':9001';
+      "
+
+  minio_setup:
+    image: golang:alpine
+    container_name: ready2roll-minio-setup
+    depends_on:
+      - minio_storage
+    env_file:
+      - .env
+    networks:
+      - backend-net
+    command: >
+      /bin/sh -c "
+      apk add --no-cache git gcc musl-dev > /dev/null;
+      echo 'Building MinIO Client from source...';
+      go install github.com/minio/mc@latest > /dev/null 2>&1;
+      until (/go/bin/mc alias set myminio http://ready2roll-storage:9000 $${MINIO_USER} $${MINIO_PASSWORD} > /dev/null 2>&1) do echo 'Waiting for MinIO...' && sleep 2; done;
+      /go/bin/mc mb myminio/media || true;
+      /go/bin/mc anonymous set public myminio/media;
+      echo 'MinIO Bucket setup complete!';
+      exit 0;
+      "
 
 #---------------------------------------------------------------------------
-
-  # minio_storage:
-  #   image: minio/minio
-  #   container_name: ready2roll-storage
-  #   command: server /data --console-address ":9001"
-  #   environment:
-  #     MINIO_ROOT_USER: ${MINIO_USER}
-  #     MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
-  #   ports:
-  #     - "9000:9000"
-  #     - "9001:9001"
-  #   volumes:
-  #     - minio_data:/data
-  #   env_file:
-  #     - .env
-  #   networks:
-  #     - backend-net
-  #     - frontend-net
-
-#---------------------------------------------------------------------------
-
 #Redis — In-Memory Datastore (WebSockets & Live Chat)
-
 #---------------------------------------------------------------------------
-
   redis_cache:
     image: redis:7-alpine
     container_name: ready2roll-redis
     restart: unless-stopped
-# --appendonly yes tells Redis to save a persistent log to the hard drive
+    user: "${UID:-1000}:${GID:-1000}"
     command: redis-server --appendonly yes
     ports:
       - "6380:6379"
     volumes:
-      - redis_data:/data
+      - /sgoinfre/${USER}/ready2roll/redis_data:/data
     networks:
       - backend-net
-
-volumes:
-  pg_data:
-  minio_data:
-  redis_data: # Volume added so chat history survives container restarts
 
 networks:
   frontend-net:

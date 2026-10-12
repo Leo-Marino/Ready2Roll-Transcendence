@@ -28,7 +28,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=50, unique=True)
     email = models.EmailField(max_length=255, unique=True)
     type_of_user = models.CharField(max_length=20, choices=USER_TYPE_CHOICES, default='standard')
-    avatar_url = models.CharField(max_length=512, blank=True, null=True)
+    avatar_url = models.ImageField(upload_to='avatars/', blank=True, null=True)
     instagram_handle = models.CharField(max_length=55, unique=True, blank=True, null=True)
     phone_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
     legal_name = models.CharField(max_length=255, blank=True, null=True)
