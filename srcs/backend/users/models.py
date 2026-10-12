@@ -40,11 +40,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_verified = models.BooleanField(default=False)
     vat_tax = models.CharField(max_length=50, blank=True, null=True)
 
-<<<<<<< HEAD:srcs/backend/test/models.py
-
-    # Required for Django authentication & admin
-=======
->>>>>>> backend:srcs/backend/users/models.py
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     created_time_stamp = models.DateTimeField(auto_now_add=True)
