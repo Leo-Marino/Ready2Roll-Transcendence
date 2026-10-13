@@ -7,14 +7,19 @@ export default {
       activeStep: 1,
       hoverStep: null,
       eventTitle: '',
-      eventDate: '',
-      eventStatus: 'Attivo',
       descriptionText: '',
+      eventLocation: 'YAB, Firenze',
+      eventDate: '',
+      maxCapacity: '',
+      ticketPrice: '',
+      startTime: '',
+      endTime: '',
+      eventTags: '',
+      eventStatus: 'Draft',
       uploadedMediaSrc: null,
       actualFile: null,
       mediaType: null,
-      isMapOpen: false,
-      eventLocation: 'YAB, Firenze'
+      isMapOpen: false
     }
   },
   computed: {
@@ -23,8 +28,12 @@ export default {
     },
     formattedDate() {
       if (!this.eventDate) return 'Data da definire';
-      const [year, month, day] = this.eventDate.split('-');
-      return `${day}/${month}/${year}`;
+      const parts = this.eventDate.split('T')[0].split('-');
+      if (parts.length === 3) {
+        const [year, month, day] = parts;
+        return `${day}/${month}/${year}`;
+      }
+      return this.eventDate;
     }
   },
   methods: {
@@ -32,10 +41,8 @@ export default {
       this.activeStep = stepNumber;
     },
     handleMediaClick() {
-      if (!this.uploadedMediaSrc) {
-        this.selectStep(1);
-        this.triggerFileInput();
-      }
+      this.selectStep(1);
+      this.triggerFileInput();
     },
     triggerFileInput() {
       this.$refs.fileInput.click();
@@ -47,6 +54,7 @@ export default {
         this.actualFile = file;
         this.mediaType = file.type.startsWith('video') ? 'video' : 'image';
       }
+      event.target.value = '';
     },
     toggleMap() {
       this.isMapOpen = !this.isMapOpen;
@@ -57,22 +65,34 @@ export default {
       }
     },
     async handlePublish() {
-      const token = localStorage.getItem('token');
+      if (!this.eventTitle || !this.descriptionText || !this.eventDate || !this.eventStatus) {
+        alert("All mandatory fields must be filled!");
+        return;
+      }
+
+      const token = localStorage.getItem('token') || localStorage.getItem('access');
+	  const APIUrl = 'http://localhost:8000/api';
 
       const formData = new FormData();
-      formData.append('title', this.eventTitle || 'Nuovo Evento');
+      formData.append('title', this.eventTitle);
+      formData.append('description', this.descriptionText);
       formData.append('location', this.eventLocation);
       formData.append('event_date', this.eventDate);
       formData.append('status', this.eventStatus);
-      formData.append('description', this.descriptionText);
-      formData.append('media_type', this.mediaType || 'image');
+
+      if (this.maxCapacity) formData.append('max_capacity', this.maxCapacity);
+      if (this.ticketPrice) formData.append('ticket_price', this.ticketPrice);
+      if (this.startTime) formData.append('start_time', this.startTime);
+      if (this.endTime) formData.append('end_time', this.endTime);
+      if (this.eventTags) formData.append('tags', this.eventTags);
 
       if (this.actualFile) {
         formData.append('media_file', this.actualFile);
+        formData.append('media_type', this.mediaType);
       }
 
       try {
-        const response = await fetch('/api/events/', {
+        const response = await fetch('${APIUrl}/events/', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -81,11 +101,13 @@ export default {
         });
 
         if (response.ok) {
+          const createdEvent = await response.json();
           alert("Event created successfully !!");
+          this.$emit('event-published', createdEvent);
           this.goToVisualPage();
         } else {
           const errorData = await response.json();
-          console.error("Errore backend:", errorData);
+          console.error("Backend error:", errorData);
           alert("There was an error creating the event");
         }
       } catch (error) {
@@ -197,22 +219,6 @@ export default {
                   class="uploaded-preview"
                 />
               </template>
-
-              <!-- Description Overlay -->
-              <div
-                class="text-preview overlay-description"
-                @mouseenter="hoverStep = 3"
-                @mouseleave="hoverStep = null"
-                @click.stop="selectStep(3)"
-              >
-                <textarea
-                  v-model="descriptionText"
-                  placeholder="Insert event description here..."
-                  class="editable-description"
-                  rows="2"
-                  @focus="selectStep(3)"
-                ></textarea>
-              </div>
             </div>
           </div>
         </div>
@@ -244,38 +250,99 @@ export default {
           </div>
         </transition>
 
-        <!-- RIGHT AREA: Event Title, Date, and Status Controls -->
+        <!-- RIGHT AREA: Expanded Model Input Fields -->
         <div class="right-section">
           <div class="event-details-bar-vertical">
+            
             <div class="detail-input-group">
-              <label for="event-title">EVENT TITLE *</label>
+              <label for="event-title">TITLE *</label>
               <input
                 id="event-title"
                 type="text"
                 v-model="eventTitle"
                 placeholder="Es. YAB Night Club Party"
                 class="custom-input"
+                required
               />
             </div>
 
             <div class="detail-input-group">
-              <label for="event-date">EVENT DATE *</label>
+              <label for="event-description">DESCRIPTION *</label>
+              <textarea
+                id="event-description"
+                v-model="descriptionText"
+                placeholder="Describe your event..."
+                class="custom-input textarea-input"
+                rows="2"
+                required
+              ></textarea>
+            </div>
+
+            <div class="detail-input-group">
+              <label for="event-date">EVENT DATE & TIME *</label>
               <input
                 id="event-date"
-                type="date"
+                type="datetime-local"
                 v-model="eventDate"
                 class="custom-input date-picker"
+                required
               />
             </div>
 
+            <div class="form-row">
+              <div class="detail-input-group">
+                <label for="start-time">START TIME</label>
+                <input
+                  id="start-time"
+                  type="datetime-local"
+                  v-model="startTime"
+                  class="custom-input date-picker"
+                />
+              </div>
+              <div class="detail-input-group">
+                <label for="end-time">END TIME</label>
+                <input
+                  id="end-time"
+                  type="datetime-local"
+                  v-model="endTime"
+                  class="custom-input date-picker"
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="detail-input-group">
+                <label for="max-capacity">MAX CAPACITY</label>
+                <input
+                  id="max-capacity"
+                  type="number"
+                  v-model="maxCapacity"
+                  placeholder="Es. 500"
+                  class="custom-input"
+                />
+              </div>
+              <div class="detail-input-group">
+                <label for="ticket-price">TICKET PRICE (€)</label>
+                <input
+                  id="ticket-price"
+                  type="number"
+                  step="0.01"
+                  v-model="ticketPrice"
+                  placeholder="Es. 15.00"
+                  class="custom-input"
+                />
+              </div>
+            </div>
+
             <div class="detail-input-group">
-              <label for="event-status">STATUS</label>
-              <select id="event-status" v-model="eventStatus" class="custom-input custom-select">
-                <option value="Attivo">In use</option>
-                <option value="Bozza">Draft</option>
-                <option value="Programmato">Scheduled</option>
+              <label for="event-status">STATUS *</label>
+              <select id="event-status" v-model="eventStatus" class="custom-input custom-select" required>
+                <option value="Draft">Draft</option>
+                <option value="Active">Active</option>
+                <option value="Scheduled">Scheduled</option>
               </select>
             </div>
+
           </div>
         </div>
 
@@ -318,12 +385,9 @@ label,
 h1, h2, h3, h4,
 p, span, li, small,
 .custom-input,
-.editable-description,
 .action-btn-small,
 .publish-btn,
-.nav-visual-btn,
-.side-card,
-.sub-btn {
+.nav-visual-btn {
   font-family: 'jf-openhuninn', 'Huninn', sans-serif !important;
 }
 
@@ -364,7 +428,7 @@ textarea::placeholder {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  max-width: 1500px;
+  max-width: 1550px;
   margin: 0 auto 20px auto;
   flex-wrap: wrap;
   gap: 15px;
@@ -472,7 +536,7 @@ textarea::placeholder {
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.15);
   transition: all 0.5s ease;
-  max-width: 1500px;
+  max-width: 1550px;
   margin: 0 auto;
 }
 
@@ -496,7 +560,7 @@ textarea::placeholder {
 }
 
 .right-section {
-  width: 380px;
+  width: 420px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -506,35 +570,51 @@ textarea::placeholder {
 .event-details-bar-vertical {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  background: rgba(0, 0, 0, 0.25);
-  padding: 22px;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 20px;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.12);
+  max-height: 680px;
+  overflow-y: auto;
+}
+
+.form-row {
+  display: flex;
+  gap: 10px;
+}
+
+.form-row .detail-input-group {
+  flex: 1;
 }
 
 .detail-input-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   text-align: left;
 }
 
 .detail-input-group label {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: rgba(255, 255, 255, 0.75);
+  letter-spacing: 0.5px;
 }
 
 .custom-input {
   width: 100%;
   box-sizing: border-box;
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: rgba(0, 0, 0, 0.3);
   color: #FFFFFF;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color-scheme: dark;
+}
+
+.textarea-input {
+  resize: vertical;
 }
 
 .date-picker {
@@ -551,7 +631,6 @@ textarea::placeholder {
   color: #ffffff;
 }
 
-/* Extra-Large Content / Media Box */
 .media-outer-wrapper {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -627,34 +706,6 @@ textarea::placeholder {
   transition: opacity 0.3s ease;
 }
 
-.text-preview.overlay-description {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  z-index: 5;
-  box-sizing: border-box;
-  padding: 15px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
-}
-
-.editable-description {
-  width: 100%;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: #ffffff;
-  text-align: center;
-  resize: none;
-  font-size: 0.85rem;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
-}
-
-.editable-description::placeholder {
-  color: rgba(255, 255, 255, 0.7);
-}
-
-/* Extra-Large Inline Fading Map Container */
 .map-container-inline {
   width: 480px;
   height: 680px;
@@ -704,7 +755,6 @@ textarea::placeholder {
   filter: invert(90%) hue-rotate(180deg) contrast(80%);
 }
 
-/* SMOOTH FADE-SLIDE FLUID ANIMATION */
 .fade-slide-enter-active,
 .fade-slide-leave-active {
   transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
@@ -763,7 +813,7 @@ textarea::placeholder {
   transform: translateY(-2px);
 }
 
-@media (max-width: 1000px) {
+@media (max-width: 1050px) {
   .preview-box {
     flex-direction: column;
   }
