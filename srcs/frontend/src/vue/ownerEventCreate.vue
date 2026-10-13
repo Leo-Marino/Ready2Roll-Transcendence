@@ -1,280 +1,313 @@
-<template>
-<div class="owner-visual-wrapper">
-<video autoplay muted loop playsinline id="bgVideo">
-<source src="../assets/ready2roll_wave_background.mp4" type="video/mp4" />
-</video>
-<input
-type="file"
-ref="fileInput"
-accept="image/png, image/jpeg, video/mp4"
-style="display: none;"
-@change="handleFileUpload"
-/>
-<header class="navbar glass-panel">
-<div class="nav-left">
-<div class="logo">
-<img src="../assets/logo_temp.png" alt="Ready2Roll Logo" class="nav-logo-img" />
-<span class="logo-text">Ready2Roll</span>
-</div>
-</div>
-
-<div class="nav-right">
-<div class="nav-icons">
-<router-link to="/direct" class="nav-icon-link" title="Messaggi diretti">
-<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-</svg>
-</router-link>
-<router-link to="/chat" class="nav-icon-link" title="Chat">
-<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a.75.75 0 01-.81-.54 2.89 2.89 0 01.213-1.637 8.25 8.25 0 01-1.813-5.293C3 7.444 7.03 3.75 12 3.75s9 3.694 9 8.25z" />
-</svg>
-</router-link>
-<router-link to="/profile" class="nav-icon-link" title="Profilo">
-<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-</svg>
-</router-link>
-</div>
-</div>
-</header>
-
-<main class="main-content">
-<div class="page-title-row">
-	<h1 class="page-title">CREATE AN EVENT</h1>
-	<button class="action-btn nav-visual-btn" @click="goToVisualPage">
-	📂 MY EVENTS
-	</button>
-</div>
-
-<section class="glass-card two-column-layout">
-	<div class="left-column">
-	<div class="map-container-permanent">
-		<div class="map-inner-wrapper">
-		<div class="map-search-bar">
-			<input
-			type="text"
-			placeholder="Find desired address or location"
-			class="custom-input map-input"
-			v-model="eventLocation"
-			/>
-			<button class="action-btn-small">Cerca</button>
-		</div>
-		<iframe
-			width="100%"
-			height="100%"
-			frameborder="0"
-			scrolling="no"
-			marginheight="0"
-			marginwidth="0"
-			:src="`https://maps.google.com/maps?q=${encodeURIComponent(eventLocation)}&t=&z=15&ie=UTF8&iwloc=&output=embed`"
-			class="map-iframe"
-		></iframe>
-		</div>
-	</div>
-	</div>
-
-	<div class="right-column">
-	<div class="event-details-vertical">
-		<div class="detail-input-group">
-		<label for="event-title">EVENT TITLE *</label>
-		<input
-			id="event-title"
-			type="text"
-			v-model="eventTitle"
-			placeholder="Es. YAB Night Club Party"
-			class="custom-input"
-		/>
-		</div>
-		
-		<div class="detail-input-group">
-		<label for="event-date">EVENT DATE *</label>
-		<input
-			id="event-date"
-			type="date"
-			v-model="eventDate"
-			class="custom-input date-picker"
-		/>
-		</div>
-
-		<div class="detail-input-group">
-		<label for="event-status">STATUS</label>
-		<select id="event-status" v-model="eventStatus" class="custom-input custom-select">
-			<option value="Attivo">In use</option>
-			<option value="Bozza">Draft</option>
-			<option value="Programmato">Scheduled</option>
-		</select>
-		</div>
-	</div>
-	</div>
-
-	<!--
-	<div class="media-outer-wrapper">
-	<div class="media-preview clickable">
-		<template v-if="!uploadedMediaSrc">
-		<span>Click here to insert content</span>
-		</template>
-		<template v-else>
-		<video
-			v-if="mediaType === 'video'"
-			:src="uploadedMediaSrc"
-			autoplay
-			loop
-			muted
-			class="uploaded-preview"
-		></video>
-		<img
-			v-else
-			:src="uploadedMediaSrc"
-			alt="Anteprima"
-			class="uploaded-preview"
-		/>
-		</template>
-		<div class="text-preview overlay-description">
-		<textarea
-			v-model="descriptionText"
-			placeholder="Insert event description here..."
-			class="editable-description"
-			rows="2"
-		></textarea>
-		</div>
-	</div>
-	</div>
-	-->
-</section>
-
-<div class="publish-action-bar">
-	<button class="publish-btn" @click="handlePublish">
-	PUBLISH EVENT
-	</button>
-</div>
-</main>
-</div>
-</template>
-
 <script>
 export default {
-name: 'CreateEvent',
-emits: ['navigate-view', 'event-published'],
-data() {
-return {
-activeStep: 1,
-hoverStep: null,
-eventTitle: '',
-eventDate: '',
-eventStatus: 'Attivo',
-descriptionText: '',
-uploadedMediaSrc: null,
-actualFile: null,
-mediaType: null,
-isExpanded: false,
-isMapOpen: true,
-eventLocation: 'YAB, Firenze'
-}
-},
-computed: {
-currentStep() {
-return this.hoverStep !== null ? this.hoverStep : this.activeStep;
-},
-formattedDate() {
-if (!this.eventDate) return 'Data da definire';
-const [year, month, day] = this.eventDate.split('-');
-return `${day}/${month}/${year}`;
-}
-},
-methods: {
-selectStep(stepNumber) {
-this.activeStep = stepNumber;
-},
-handleMediaClick() {
-if (!this.uploadedMediaSrc) {
-	this.selectStep(1);
-	this.triggerFileInput();
-}
-},
-triggerFileInput() {
-this.$refs.fileInput.click();
-},
-handleFileUpload(event) {
-const file = event.target.files[0];
-if (file) {
-	this.uploadedMediaSrc = URL.createObjectURL(file);
-	this.actualFile = file;
-	this.mediaType = file.type.startsWith('video') ? 'video' : 'image';
-}
-},
-toggleExpand() {
-this.isExpanded = !this.isExpanded;
-if (this.isExpanded) this.isMapOpen = false;
-},
-toggleMap() {
-this.isMapOpen = !this.isMapOpen;
-},
-async handlePublish() {
-const token = localStorage.getItem('token');
+  name: 'CreateEvent',
+  emits: ['navigate-view', 'event-published'],
+  data() {
+    return {
+      activeStep: 1,
+      hoverStep: null,
+      eventTitle: '',
+      eventDate: '',
+      eventStatus: 'Attivo',
+      descriptionText: '',
+      uploadedMediaSrc: null,
+      actualFile: null,
+      mediaType: null,
+      isMapOpen: false,
+      eventLocation: 'YAB, Firenze'
+    }
+  },
+  computed: {
+    currentStep() {
+      return this.hoverStep !== null ? this.hoverStep : this.activeStep;
+    },
+    formattedDate() {
+      if (!this.eventDate) return 'Data da definire';
+      const [year, month, day] = this.eventDate.split('-');
+      return `${day}/${month}/${year}`;
+    }
+  },
+  methods: {
+    selectStep(stepNumber) {
+      this.activeStep = stepNumber;
+    },
+    handleMediaClick() {
+      if (!this.uploadedMediaSrc) {
+        this.selectStep(1);
+        this.triggerFileInput();
+      }
+    },
+    triggerFileInput() {
+      this.$refs.fileInput.click();
+    },
+    handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        this.uploadedMediaSrc = URL.createObjectURL(file);
+        this.actualFile = file;
+        this.mediaType = file.type.startsWith('video') ? 'video' : 'image';
+      }
+    },
+    toggleMap() {
+      this.isMapOpen = !this.isMapOpen;
+      if (this.isMapOpen) {
+        this.selectStep(2);
+      } else {
+        this.selectStep(1);
+      }
+    },
+    async handlePublish() {
+      const token = localStorage.getItem('token');
 
-const formData = new FormData();
-formData.append('title', this.eventTitle || 'Nuovo Evento');
-formData.append('location', this.eventLocation);
-formData.append('event_date', this.eventDate);
-formData.append('status', this.eventStatus);
-formData.append('description', this.descriptionText);
-formData.append('media_type', this.mediaType || 'image');
+      const formData = new FormData();
+      formData.append('title', this.eventTitle || 'Nuovo Evento');
+      formData.append('location', this.eventLocation);
+      formData.append('event_date', this.eventDate);
+      formData.append('status', this.eventStatus);
+      formData.append('description', this.descriptionText);
+      formData.append('media_type', this.mediaType || 'image');
 
-if (this.actualFile) {
-	formData.append('media_file', this.actualFile);
-}
+      if (this.actualFile) {
+        formData.append('media_file', this.actualFile);
+      }
 
-try {
-	const response = await fetch('/api/events/', {
-		method: 'POST',
-		headers: {
-			'Authorization': `Bearer ${token}`
-		},
-		body: formData
-	});
+      try {
+        const response = await fetch('/api/events/', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
 
-	if (response.ok) {
-		alert("Event created successfully !!");
-		this.goToVisualPage();
-	} else {
-		const errorData = await response.json();
-		console.error("Errore backend:", errorData);
-		alert("There was an error creating the event");
-	}
-} catch (error) {
-	console.error("Network error", error);
-	alert("Unable to connect to the backend server");
-}
-},
-
-goToVisualPage() {
-if (this.$router) {
-	this.$router.push('/ViewEvent');
-}
-this.$emit('navigate-view');
-}
-}
+        if (response.ok) {
+          alert("Event created successfully !!");
+          this.goToVisualPage();
+        } else {
+          const errorData = await response.json();
+          console.error("Errore backend:", errorData);
+          alert("There was an error creating the event");
+        }
+      } catch (error) {
+        console.error("Network error", error);
+        alert("Unable to connect to the backend server");
+      }
+    },
+    goToVisualPage() {
+      if (this.$router) {
+        this.$router.push('/ViewEvent');
+      }
+      this.$emit('navigate-view');
+    }
+  }
 }
 </script>
+
+<template>
+<div class="owner-visual-wrapper">
+  <video autoplay muted loop playsinline id="bgVideo">
+    <source src="../assets/ready2roll_wave_background.mp4" type="video/mp4" />
+  </video>
+  <input
+    type="file"
+    ref="fileInput"
+    accept="image/png, image/jpeg, video/mp4"
+    style="display: none;"
+    @change="handleFileUpload"
+  />
+  <header class="navbar glass-panel">
+    <div class="nav-left">
+      <div class="logo">
+        <img src="../assets/logo_temp.png" alt="Ready2Roll Logo" class="nav-logo-img" />
+        <span class="logo-text">Ready2Roll</span>
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <div class="nav-icons">
+        <router-link to="/direct" class="nav-icon-link" title="Messaggi diretti">
+          <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+          </svg>
+        </router-link>
+        <router-link to="/chat" class="nav-icon-link" title="Chat">
+          <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a.75.75 0 01-.81-.54 2.89 2.89 0 01.213-1.637 8.25 8.25 0 01-1.813-5.293C3 7.444 7.03 3.75 12 3.75s9 3.694 9 8.25z" />
+          </svg>
+        </router-link>
+        <router-link to="/profile" class="nav-icon-link" title="Profilo">
+          <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+          </svg>
+        </router-link>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="page-title-row">
+      <h1 class="page-title">CREATE AN EVENT</h1>
+      <button class="action-btn nav-visual-btn" @click="goToVisualPage">
+        📂 MY EVENTS
+      </button>
+    </div>
+
+    <section class="glass-card">
+      <div class="preview-box">
+        
+        <!-- LEFT AREA: Extra-Large Content / Media Box -->
+        <div class="left-section">
+          <div class="media-outer-wrapper">
+            <div
+              class="media-preview clickable"
+              :class="{ 'has-content': uploadedMediaSrc }"
+              @mouseenter="hoverStep = 1"
+              @mouseleave="hoverStep = null"
+              @click="handleMediaClick"
+            >
+              <!-- Map Pin Icon -->
+              <div
+                class="map-badge clickable"
+                :class="{ active: isMapOpen }"
+                @click.stop="toggleMap"
+              >
+                <svg class="maps-icon" viewBox="0 0 24 24" width="20" height="20">
+                  <path fill="#EA4335" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+                  <circle fill="#FFFFFF" cx="12" cy="9" r="2.5"/>
+                </svg>
+              </div>
+
+              <!-- Media Upload / Preview Display -->
+              <template v-if="!uploadedMediaSrc">
+                <span>Click here to insert content</span>
+              </template>
+              <template v-else>
+                <video
+                  v-if="mediaType === 'video'"
+                  :src="uploadedMediaSrc"
+                  autoplay
+                  loop
+                  muted
+                  class="uploaded-preview"
+                ></video>
+                <img
+                  v-else
+                  :src="uploadedMediaSrc"
+                  alt="Anteprima"
+                  class="uploaded-preview"
+                />
+              </template>
+
+              <!-- Description Overlay -->
+              <div
+                class="text-preview overlay-description"
+                @mouseenter="hoverStep = 3"
+                @mouseleave="hoverStep = null"
+                @click.stop="selectStep(3)"
+              >
+                <textarea
+                  v-model="descriptionText"
+                  placeholder="Insert event description here..."
+                  class="editable-description"
+                  rows="2"
+                  @focus="selectStep(3)"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MIDDLE / SMOOTH FADING INLINE MAP CONTAINER -->
+        <transition name="fade-slide">
+          <div v-if="isMapOpen" class="map-container-inline">
+            <div class="map-inner-wrapper">
+              <div class="map-search-bar">
+                <input
+                  type="text"
+                  placeholder="Find desired address or location"
+                  class="custom-input map-input"
+                  v-model="eventLocation"
+                />
+                <button class="action-btn-small close-map-btn" @click="toggleMap">X</button>
+              </div>
+              <iframe
+                width="100%"
+                height="100%"
+                frameborder="0"
+                scrolling="no"
+                marginheight="0"
+                marginwidth="0"
+                :src="`https://maps.google.com/maps?q=${encodeURIComponent(eventLocation)}&t=&z=15&ie=UTF8&iwloc=&output=embed`"
+                class="map-iframe"
+              ></iframe>
+            </div>
+          </div>
+        </transition>
+
+        <!-- RIGHT AREA: Event Title, Date, and Status Controls -->
+        <div class="right-section">
+          <div class="event-details-bar-vertical">
+            <div class="detail-input-group">
+              <label for="event-title">EVENT TITLE *</label>
+              <input
+                id="event-title"
+                type="text"
+                v-model="eventTitle"
+                placeholder="Es. YAB Night Club Party"
+                class="custom-input"
+              />
+            </div>
+
+            <div class="detail-input-group">
+              <label for="event-date">EVENT DATE *</label>
+              <input
+                id="event-date"
+                type="date"
+                v-model="eventDate"
+                class="custom-input date-picker"
+              />
+            </div>
+
+            <div class="detail-input-group">
+              <label for="event-status">STATUS</label>
+              <select id="event-status" v-model="eventStatus" class="custom-input custom-select">
+                <option value="Attivo">In use</option>
+                <option value="Bozza">Draft</option>
+                <option value="Programmato">Scheduled</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="publish-action-bar">
+        <button class="publish-btn" @click="handlePublish">
+          PUBLISH EVENT
+        </button>
+      </div>
+    </section>
+  </main>
+</div>
+</template>
 
 <style scoped>
 @import url('https://cdn.jsdelivr.net/gh/justfont/open-huninn-font@1.1/font/jf-openhuninn.css');
 
 .owner-visual-wrapper {
-position: relative;
-min-height: 100vh;
-width: 100%;
-color: #ffffff;
-font-family: 'jf-openhuninn', 'Huninn', sans-serif;
-box-sizing: border-box;
-padding-bottom: 50px;
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  color: #ffffff;
+  font-family: 'jf-openhuninn', 'Huninn', sans-serif;
+  box-sizing: border-box;
+  padding-bottom: 50px;
 }
 
 .page-title {
-font-family: 'jf-openhuninn', 'Huninn', sans-serif !important;
-letter-spacing: 3px;
-text-transform: uppercase;
+  font-family: 'jf-openhuninn', 'Huninn', sans-serif !important;
+  letter-spacing: 3px;
+  text-transform: uppercase;
 }
 
 input,
@@ -291,313 +324,455 @@ p, span, li, small,
 .nav-visual-btn,
 .side-card,
 .sub-btn {
-font-family: 'jf-openhuninn', 'Huninn', sans-serif !important;
+  font-family: 'jf-openhuninn', 'Huninn', sans-serif !important;
 }
 
 input::placeholder,
 textarea::placeholder {
-font-family: 'jf-openhuninn', 'Huninn', sans-serif !important;
+  font-family: 'jf-openhuninn', 'Huninn', sans-serif !important;
 }
 
 .logo,
 .logo-text {
-font-family: "Bruno Ace", sans-serif !important;
-font-weight: bold;
-font-size: 1.2rem;
+  font-family: "Bruno Ace", sans-serif !important;
+  font-weight: bold;
+  font-size: 1.2rem;
 }
 
 #bgVideo {
-position: fixed;
-top: 0;
-left: 0;
-right: 0;
-bottom: 0;
-min-width: 100%;
-min-height: 100%;
-width: 100%;
-height: 100%;
-z-index: -1;
-object-fit: cover;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  min-width: 100%;
+  min-height: 100%;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  object-fit: cover;
 }
 
 .main-content {
-max-width: 1200px;
-margin: 0 auto;
-padding: 10px 20px;
-box-sizing: border-box;
+  max-width: 98vw;
+  margin: 0 auto;
+  padding: 10px 20px;
+  box-sizing: border-box;
 }
 
 .page-title-row {
-display: flex;
-justify-content: space-between;
-align-items: center;
-max-width: 1200px;
-margin: 0 auto 20px auto;
-flex-wrap: wrap;
-gap: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1500px;
+  margin: 0 auto 20px auto;
+  flex-wrap: wrap;
+  gap: 15px;
 }
 
 .page-title {
-margin: 0;
-font-size: 1.8rem;
+  margin: 0;
+  font-size: 1.8rem;
 }
 
 .nav-visual-btn {
-background: rgba(255, 255, 255, 0.1);
-border: 1px solid rgba(255, 255, 255, 0.3);
-color: #ffffff;
-padding: 10px 20px;
-border-radius: 14px;
-font-size: 0.8rem;
-cursor: pointer;
-transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  padding: 10px 20px;
+  border-radius: 14px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .nav-visual-btn:hover {
-background: rgba(0, 242, 254, 0.2);
-border-color: #00f2fe;
-color: #00f2fe;
+  background: rgba(0, 242, 254, 0.2);
+  border-color: #00f2fe;
+  color: #00f2fe;
 }
 
 .navbar {
-display: flex;
-align-items: center;
-justify-content: space-between;
-padding: 12px 30px;
-width: 100%;
-box-sizing: border-box;
-background: rgba(255, 255, 255, 0.08);
-backdrop-filter: blur(16px);
--webkit-backdrop-filter: blur(16px);
-border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-position: sticky;
-top: 0;
-z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 30px;
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
 .nav-left, .nav-right {
-display: flex;
-align-items: center;
-flex: 1;
+  display: flex;
+  align-items: center;
+  flex: 1;
 }
 
 .nav-right {
-justify-content: flex-end;
+  justify-content: flex-end;
 }
 
 .logo {
-display: flex;
-align-items: center;
-gap: 12px;
-cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
 }
 
 .nav-logo-img {
-width: 32px;
-height: 32px;
-object-fit: contain;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
 }
 
 .logo-text {
-font-family: 'Bruno Ace', cursive, sans-serif;
-font-weight: 400;
-font-size: 1.25rem;
-color: #ffffff;
-letter-spacing: 0.5px;
+  font-family: 'Bruno Ace', cursive, sans-serif;
+  font-weight: 400;
+  font-size: 1.25rem;
+  color: #ffffff;
+  letter-spacing: 0.5px;
 }
 
 .nav-icons {
-display: flex;
-align-items: center;
-gap: 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
 .nav-icon-link {
-color: rgba(255, 255, 255, 0.85);
-display: flex;
-align-items: center;
-justify-content: center;
-text-decoration: none;
-transition: color 0.2s ease, transform 0.2s ease;
+  color: rgba(255, 255, 255, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: color 0.2s ease, transform 0.2s ease;
 }
 
 .nav-icon-link:hover {
-color: #00f2fe;
-transform: translateY(-1px);
+  color: #00f2fe;
+  transform: translateY(-1px);
 }
 
 .nav-icon {
-width: 24px;
-height: 24px;
+  width: 24px;
+  height: 24px;
 }
 
-.glass-card.two-column-layout {
-background: rgba(255, 255, 255, 0.1);
-border-radius: 15px;
-padding: 25px;
-box-sizing: border-box;
-backdrop-filter: blur(8px);
-border: 1px solid rgba(255, 255, 255, 0.15);
-max-width: 1200px;
-margin: 0 auto;
-display: flex;
-gap: 25px;
-align-items: stretch;
+.glass-card {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  padding: 25px;
+  box-sizing: border-box;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.5s ease;
+  max-width: 1500px;
+  margin: 0 auto;
 }
 
-.left-column {
-flex: 1.6; /* Made wider */
-display: flex;
-flex-direction: column;
+.preview-box {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 25px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 25px;
+  flex-wrap: wrap;
 }
 
-.right-column {
-flex: 1;
-display: flex;
-flex-direction: column;
-justify-content: center;
+.left-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.map-container-permanent {
-background: rgba(255, 255, 255, 0.08);
-border: 1px solid rgba(255, 255, 255, 0.2);
-border-radius: 20px;
-padding: 12px;
-backdrop-filter: blur(12px);
-box-sizing: border-box;
-display: flex;
-flex-direction: column;
-height: 100%;
-min-height: 520px; /* Increased height */
+.right-section {
+  width: 380px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
-.map-inner-wrapper {
-border: 2px dashed rgba(255, 255, 255, 0.5);
-border-radius: 16px;
-width: 100%;
-height: 100%;
-background: rgba(255, 255, 255, 0.03);
-position: relative;
-box-sizing: border-box;
-display: flex;
-flex-direction: column;
-overflow: hidden;
-}
-
-.map-search-bar {
-display: flex;
-gap: 10px;
-padding: 12px;
-background: rgba(0,0,0,0.4);
-backdrop-filter: blur(5px);
-border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-
-.map-input {
-flex-grow: 1;
-}
-
-.map-iframe {
-flex-grow: 1;
-width: 100%;
-height: 100%;
-border-radius: 0 0 14px 14px;
-filter: invert(90%) hue-rotate(180deg) contrast(80%);
-}
-
-.event-details-vertical {
-display: flex;
-flex-direction: column;
-gap: 20px;
-background: rgba(0, 0, 0, 0.25);
-padding: 25px;
-border-radius: 16px;
-border: 1px solid rgba(255, 255, 255, 0.12);
+.event-details-bar-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 22px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .detail-input-group {
-display: flex;
-flex-direction: column;
-gap: 8px;
-text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
 }
 
 .detail-input-group label {
-font-size: 0.75rem;
-color: rgba(255, 255, 255, 0.75);
-letter-spacing: 1px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .custom-input {
-width: 100%;
-box-sizing: border-box;
-padding: 12px 14px;
-border-radius: 12px;
-border: 1px solid rgba(255, 255, 255, 0.2);
-background: rgba(0, 0, 0, 0.3);
-color: #FFFFFF;
-font-size: 0.9rem;
-color-scheme: dark;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.3);
+  color: #FFFFFF;
+  font-size: 0.85rem;
+  color-scheme: dark;
 }
 
 .date-picker {
-cursor: pointer;
+  cursor: pointer;
 }
 
 .custom-input:focus {
-outline: none;
-border-color: #00f2fe;
+  outline: none;
+  border-color: #00f2fe;
 }
 
 .custom-select option {
-background: #111111;
-color: #ffffff;
+  background: #111111;
+  color: #ffffff;
+}
+
+/* Extra-Large Content / Media Box */
+.media-outer-wrapper {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  padding: 16px;
+  backdrop-filter: blur(12px);
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 480px;
+  height: 680px;
+  flex-shrink: 0;
+}
+
+.media-preview {
+  border: 2px dashed rgba(255, 255, 255, 0.5);
+  border-radius: 18px;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.03);
+  position: relative;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.media-preview.clickable {
+  cursor: pointer;
+}
+
+.media-preview.clickable:hover {
+  border-color: rgba(0, 242, 254, 0.8);
+}
+
+.map-badge {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 6px 10px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all 0.3s ease;
+}
+
+.map-badge.clickable {
+  cursor: pointer;
+}
+
+.map-badge.clickable:hover, .map-badge.active {
+  background: rgba(0, 242, 254, 0.6);
+  border-color: #ffffff;
+}
+
+.uploaded-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  opacity: 0.85;
+  transition: opacity 0.3s ease;
+}
+
+.text-preview.overlay-description {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 5;
+  box-sizing: border-box;
+  padding: 15px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
+}
+
+.editable-description {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  text-align: center;
+  resize: none;
+  font-size: 0.85rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.editable-description::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Extra-Large Inline Fading Map Container */
+.map-container-inline {
+  width: 480px;
+  height: 680px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  padding: 16px;
+  backdrop-filter: blur(12px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  transform-origin: left center;
+}
+
+.map-inner-wrapper {
+  border: 2px dashed rgba(255, 255, 255, 0.5);
+  border-radius: 16px;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.map-search-bar {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(5px);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.map-input {
+  flex-grow: 1;
+}
+
+.map-iframe {
+  flex-grow: 1;
+  width: 100%;
+  height: 100%;
+  border-radius: 0 0 14px 14px;
+  filter: invert(90%) hue-rotate(180deg) contrast(80%);
+}
+
+/* SMOOTH FADE-SLIDE FLUID ANIMATION */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: scale(0.95) translateX(-30px);
+  width: 0px;
+  padding-left: 0px;
+  padding-right: 0px;
+  margin-left: 0px;
+  margin-right: 0px;
+  overflow: hidden;
 }
 
 .action-btn-small {
-background: rgba(0, 242, 254, 0.6);
-border: 1px solid rgba(0, 242, 254, 0.8);
-color: #ffffff;
-padding: 6px 16px;
-border-radius: 12px;
-cursor: pointer;
-font-size: 0.8rem;
-transition: all 0.3s ease;
+  background: rgba(255, 71, 87, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: all 0.3s ease;
 }
 
 .action-btn-small:hover {
-background: rgba(0, 242, 254, 0.8);
+  background: #ff4757;
 }
 
 .publish-action-bar {
-margin-top: 25px;
-display: flex;
-justify-content: center;
+  margin-top: 25px;
+  display: flex;
+  justify-content: center;
 }
 
 .publish-btn {
-background: rgba(0, 242, 254, 0.2);
-border: 1px solid #00f2fe;
-color: #00f2fe;
-padding: 14px 40px;
-font-size: 0.95rem;
-font-weight: bold;
-border-radius: 14px;
-cursor: pointer;
-box-shadow: 0 0 15px rgba(0, 242, 254, 0.3);
-transition: all 0.3s ease;
+  background: rgba(0, 242, 254, 0.2);
+  border: 1px solid #00f2fe;
+  color: #00f2fe;
+  padding: 14px 40px;
+  font-size: 0.95rem;
+  font-weight: bold;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 0 15px rgba(0, 242, 254, 0.3);
+  transition: all 0.3s ease;
 }
 
 .publish-btn:hover {
-background: #00f2fe;
-color: #000000;
-box-shadow: 0 0 25px rgba(0, 242, 254, 0.8);
-transform: translateY(-2px);
+  background: #00f2fe;
+  color: #000000;
+  box-shadow: 0 0 25px rgba(0, 242, 254, 0.8);
+  transform: translateY(-2px);
 }
 
-@media (max-width: 768px) {
-.glass-card.two-column-layout {
-flex-direction: column;
-}
+@media (max-width: 1000px) {
+  .preview-box {
+    flex-direction: column;
+  }
+  .right-section {
+    width: 100%;
+  }
+  .media-outer-wrapper,
+  .map-container-inline {
+    width: 100%;
+  }
 }
 </style>
