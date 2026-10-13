@@ -281,21 +281,39 @@ methods: {
       this.selectStep(1);
     }
   },
-  handlePublish() {
-    const newEventData = {
-      title: this.eventTitle || 'Nuovo Evento',
-      location: this.eventLocation,
-      date: this.formattedDate,
-      rawDate: this.eventDate,
-      status: this.eventStatus,
-      description: this.descriptionText,
-      mediaSrc: this.uploadedMediaSrc,
-      mediaType: this.mediaType || 'image'
-    };
+  async handlePublish() {
+  const token = localStorage.getItem('token') || localStorage.getItem('access');
+  const payload = {
+    title: this.eventTitle || 'Nuovo Evento',
+    location: this.eventLocation,
+    event_date: this.eventDate,
+    status: this.eventStatus,
+    description: this.descriptionText,
+    media_src: this.uploadedMediaSrc,
+    media_type: this.mediaType || 'image'
+  };
 
-    this.$emit('event-published', newEventData);
-    this.goToVisualPage();
-  },
+  try {
+    const response = await fetch('/api/events/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (response.ok) {
+      const createdEvent = await response.json();
+      this.$emit('event-published', createdEvent);
+      this.goToVisualPage();
+    } else {
+      alert('Errore durante la pubblicazione dell evento.');
+    }
+  } catch (error) {
+    console.error('Errore di rete:', error);
+  }
+},
   goToVisualPage() {
     if (this.$router) {
       this.$router.push('/ViewEvent');
