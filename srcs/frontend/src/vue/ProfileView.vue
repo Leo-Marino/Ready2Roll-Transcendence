@@ -51,8 +51,7 @@ const userProfile = ref({
   following: 0,
   followers: 0,
   description: 'Loading...',
-  avatar: 'https://i.pravatar.cc/150?u=6', // Default fallback
-  isBusiness: false
+  avatar: 'https://i.pravatar.cc/150?u=6' // Default fallback
 });
 
 const likedVideos = ref([
@@ -89,10 +88,15 @@ onMounted(async () => {
     const data = await response.json();
     userProfile.value.name = data.username || '';
     userProfile.value.description = data.bio || '';
-    if (data.avatar_url) userProfile.value.avatar = data.avatar_url;
-    userProfile.value.following = userProfile.value.following_count || 0;
-    userProfile.value.followers = userProfile.value.followers_count || 0;
-    userProfile.value.isBusiness = (data.type_of_user === 'business');
+    ////////////////////////////////////////////////////////////////
+    if (data.avatar_url) {
+    userProfile.value.avatar = data.avatar_url.startsWith('http')
+    ? data.avatar_url
+    : `http://localhost:9000/media/${data.avatar_url}`;
+    }
+    ///////////////////////////////////////////////////////////////
+    userProfile.value.following = userProfile.value.following_count || 2;
+    userProfile.value.followers = userProfile.value.followers_count || 3;
   } catch (error) {
     console.error('Fetch failed (CORS or server off?)', error);
   }
@@ -133,18 +137,26 @@ const handleImageUpload = (event) => {
   }
 };
 
+/////////////////////////////////////////////
 const saveProfile = async () => {
+  // 1. Create the physical shipping box
+  const formData = new FormData();
+  formData.append('username', editForm.value.username);
+  formData.append('bio', editForm.value.bio);
+
+  // 2. Pack the actual image file if the user selected one
+  if (selectedFile.value) {
+    formData.append('avatar_url', selectedFile.value);
+  }
+
   try {
     const response = await fetch(`${API}/profile/update/`, {
       method: 'PATCH',
       headers: {
-        'Content-Type': 'application/json',
+        // NO 'Content-Type' here! The browser handles it automatically for FormData.
         'Authorization': `Bearer ${getToken()}`
       },
-      body: JSON.stringify({
-        username: editForm.value.username,
-        bio: editForm.value.bio
-      })
+      body: formData // Send the box
     });
 
     const data = await response.json();
@@ -152,7 +164,14 @@ const saveProfile = async () => {
     if (response.ok) {
       userProfile.value.name = data.username ?? editForm.value.username;
       userProfile.value.description = data.bio ?? editForm.value.bio;
-      // NOTE: avatar upload needs an ImageField on the backend; not saved yet.
+
+      // Update the UI with the new MinIO URL returned by Django
+    if (data.avatar_url) {
+      userProfile.value.avatar = data.avatar_url.startsWith('http')
+        ? data.avatar_url
+        : `http://localhost:9000/media/${data.avatar_url}`;
+      }
+
       showEditModal.value = false;
     } else {
       console.error('Backend rejected the save:', data);
@@ -164,6 +183,7 @@ const saveProfile = async () => {
     alert('Unable to connect to the server.');
   }
 };
+
 </script>
 
 <template>
@@ -221,7 +241,7 @@ const saveProfile = async () => {
       <main class="profile-container">
 
         <div class="profile-header glass-panel">
-          <img :src="userProfile.avatar" alt="Profile Avatar" class="profile-avatar">
+          <img :src="userProfile.avatar" alt="Avatar" class="profile-avatar">
           <div class="profile-info">
             <div class="name-row">
               <h2>{{ userProfile.name }} 🔒</h2>
@@ -239,11 +259,6 @@ const saveProfile = async () => {
               <p>{{ userProfile.description }}</p>
             </div>
           </div>
-          <div class="action-buttons">
-          <button v-if="userProfile.isBusiness" class="create-event-btn" @click="$router.push('/create-events')">
-            Create Event 📅
-          </button>
-        </div>
           <!-- Click qui apre il modal -->
           <button class="edit-btn" @click="openEditModal">edit profile</button>
         </div>
@@ -271,6 +286,7 @@ const saveProfile = async () => {
         <h3>Edit profile</h3>
         <button class="close-modal-btn" @click="closeEditModal">✕</button>
       </div>
+
 
       <!-- Modal Body -->
       <div class="modal-body">
@@ -526,36 +542,4 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   border-radius: 50%;
   object-fit: cover;
 }
-
-.action-buttons {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  display: flex;
-  gap: 10px;
-}
-
-.edit-btn {
-  background: #d63031;
-  color: white;
-  border: none;
-  border-radius: 10px;
-  padding: 10px 20px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-.edit-btn:hover { background: #ff7675; }
-
-.create-event-btn {
-  background: #00f2fe;
-  color: #000;
-  border: none;
-  border-radius: 10px;
-  padding: 10px 20px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-.create-event-btn:hover { background: #05d4ca; }
 </style>

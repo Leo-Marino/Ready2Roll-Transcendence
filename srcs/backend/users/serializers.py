@@ -29,7 +29,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = [
             'username', 'email', 'first_name', 'last_name', 'bio',
             'avatar_url', 'instagram_handle', 'bs_website',
-            'following_count', 'followers_count', 'type_of_user'
+            'following_count', 'followers_count',
         ]
 
     # Placeholders until you build a follow system
@@ -40,6 +40,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return 0
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):
+    avatar_url = serializers.ImageField(required=False, allow_null=True)
     class Meta:
         model = User
         fields = [

@@ -262,10 +262,12 @@ methods: {
   triggerFileInput() {
     this.$refs.fileInput.click();
   },
+  ////////////////////////////////////////////////////
   handleFileUpload(event) {
     const file = event.target.files[0];
     if (file) {
       this.uploadedMediaSrc = URL.createObjectURL(file);
+      this.actualFile = file;
       this.mediaType = file.type.startsWith('video') ? 'video' : 'image';
     }
   },
@@ -281,21 +283,48 @@ methods: {
       this.selectStep(1);
     }
   },
-  handlePublish() {
-    const newEventData = {
-      title: this.eventTitle || 'Nuovo Evento',
-      location: this.eventLocation,
-      date: this.formattedDate,
-      rawDate: this.eventDate,
-      status: this.eventStatus,
-      description: this.descriptionText,
-      mediaSrc: this.uploadedMediaSrc,
-      mediaType: this.mediaType || 'image'
-    };
+  /////////////////////////////////////////////////////////
+async handlePublish() {
+    const token = localStorage.getItem('token');
 
-    this.$emit('event-published', newEventData);
-    this.goToVisualPage();
+    // Create a physical shipping box for the data and the file
+    const formData = new FormData();
+    formData.append('title', this.eventTitle || 'Nuovo Evento');
+    formData.append('location', this.eventLocation);
+    formData.append('event_date', this.eventDate);
+    formData.append('status', this.eventStatus);
+    formData.append('description', this.descriptionText);
+    formData.append('media_type', this.mediaType || 'image');
+
+    // Add the actual file bytes!
+    if (this.actualFile) {
+        formData.append('media_file', this.actualFile);
+    }
+
+    try {
+        const response = await fetch('/api/events/', {
+            method: 'POST',
+            headers: {
+                // Notice there is NO 'Content-Type' here!
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData // Send the box
+        });
+
+        if (response.ok) {
+            alert("Evento creato con successo!");
+            this.goToVisualPage();
+        } else {
+            const errorData = await response.json();
+            console.error("Errore backend:", errorData);
+            alert("Errore durante la creazione dell'evento.");
+        }
+    } catch (error) {
+        console.error("Errore di rete:", error);
+        alert("Impossibile connettersi al server backend.");
+    }
   },
+
   goToVisualPage() {
     if (this.$router) {
       this.$router.push('/ViewEvent');
@@ -304,6 +333,7 @@ methods: {
   }
 }
 }
+
 </script>
 
 <style scoped>
