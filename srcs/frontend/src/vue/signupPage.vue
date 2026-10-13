@@ -6,10 +6,11 @@ import { computed } from 'vue';
 
 const router = useRouter();
 
-const userType = ref('standard'); // 'standard' | 'business'
+const userType = ref('standard');
 const username = ref('');
 const email = ref('');
 const password = ref('');
+const showPasswordBox = ref(false);
 const clubName = ref('');
 const taxId = ref('');
 
@@ -28,6 +29,11 @@ const passwordRules = computed(() => [
     id: 'number',
     label: 'At least one number',
     valid: /[0-9]/.test(password.value)
+},
+{
+    id: 'special',
+    label: 'At least one special character (!@#$%^&*)',
+    valid: /[!@#$%^&*(),.?":{}|<>]/.test(password.value)
 }
 ]);
 
@@ -40,12 +46,12 @@ const errors = ref({});
 const getSignupSchema = () => {
     const baseSchema = {
     username: z.string().min(3, 'Username must be at least 3 characters'),
-    email: z.string().email('Please enter a valid email address'),
     password: z
         .string()
         .min(8, 'Password must be at least 8 characters')
         .regex(/[A-Z]/, 'Must contain at least one uppercase letter')
         .regex(/[0-9]/, 'Must contain at least one number')
+        .regex(/[!@#$%^&*(),.?":{}|<>]/, 'Must contain at least one special character')
     };
     if (userType.value === 'business') {
         baseSchema.clubName = z.string().min(1, 'Club / Venue Name is required');
@@ -54,11 +60,10 @@ const getSignupSchema = () => {
     return z.object(baseSchema);
 };
 
-
 const submitSignup = async () => {
     errors.value = {};
     const formData = {
-    username: username.value,
+        username: username.value,
         email: email.value,
         password: password.value,
         ...(userType.value === 'business' && {
@@ -97,29 +102,29 @@ const submitSignup = async () => {
     }
 
     try {
-    const response = await fetch('/api/signup/', {
-        method: 'POST',
-        headers: {
-        'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-    });
+        const response = await fetch('/api/signup/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
 
-    const data = await response.json();
+        const data = await response.json();
 
-    if (response.ok) {
-        if (data.token) {
-        localStorage.setItem('token', data.token);
+        if (response.ok) {
+            if (data.token) {
+                localStorage.setItem('token', data.token);
+            }
+            alert('Registrazione completata con successo!');
+            router.push('/login');
+        } else {
+            console.error('Errore risposta dal server:', data);
+            alert(data.error || 'Errore durante la registrazione, controlla meglio i dati che hai inserito');
         }
-        alert('Registrazione completata con successo!');
-        router.push('/login');
-    } else {
-        console.error('Errore risposta dal server:', data);
-        alert(data.error || 'Errore durante la registrazione, controlla meglio i dati che hai inserito');
-    }
     } catch (error) {
-    console.error('Errore di rete:', error);
-    alert('Impossibile connettersi al server backend');
+        console.error('Errore di rete:', error);
+        alert('Impossibile connettersi al server backend');
     }
 };
 </script>
@@ -137,7 +142,6 @@ const submitSignup = async () => {
     <div id="loginForm" class="centred">
     <form @submit.prevent="submitSignup" novalidate>
 
-        <!-- Selettore Ruolo Utente -->
         <div class="role-toggle-container">
         <button
             type="button"
@@ -153,7 +157,6 @@ const submitSignup = async () => {
         </button>
         </div>
 
-        <!-- Campi Comuni -->
         <div class="inputFieldDiv">
         <input type="text" v-model="username" placeholder="Username">
         <span v-if="errors.username" class="error-text">{{ errors.username }}</span>
@@ -164,25 +167,29 @@ const submitSignup = async () => {
         <span v-if="errors.email" class="error-text">{{ errors.email }}</span>
         </div>
 
-        <div class="inputFieldDiv">
+        <div class="inputFieldDiv password-group">
             <input 
                 type="password" 
                 v-model="password" 
                 placeholder="Password"
+                @focus="showPasswordBox = true"
+                @blur="showPasswordBox = false"
             />
-            <ul class="password-checklist">
-            <li 
-                v-for="rule in passwordRules" 
-                :key="rule.id" 
-                :class="rule.valid ? 'rule-valid' : 'rule-invalid'"
-            >
-                <span class="rule-icon">{{ rule.valid ? '✓' : '✖' }}</span>
-                <span>{{ rule.label }}</span>
-            </li>
-            </ul>
+            <div v-if="showPasswordBox" class="password-dropdown-box">
+              <p class="password-box-title">The password must consist of:</p>
+              <ul class="password-checklist">
+                <li 
+                    v-for="rule in passwordRules" 
+                    :key="rule.id" 
+                    :class="rule.valid ? 'rule-valid' : 'rule-invalid'"
+                >
+                    <span class="rule-icon">{{ rule.valid ? '✓' : '✖' }}</span>
+                    <span>{{ rule.label }}</span>
+                </li>
+              </ul>
+            </div>
         </div>
 
-        <!-- Campi Extra per business -->
         <div v-if="userType === 'business'">
         <div class="inputFieldDiv">
             <input type="text" v-model="clubName" placeholder="Club / Venue Name">
@@ -271,9 +278,9 @@ background: rgba(255, 255, 255, 0.1);
 border-radius: 15px;
 padding: 30px 20px;
 box-sizing: border-box;
+overflow: visible;
 }
 
-/* Toggle Button Styles */
 .role-toggle-container {
 display: flex;
 background: rgba(20, 20, 40, 0.5);
@@ -291,7 +298,7 @@ color: #999999;
 border: none;
 padding: 10px 0;
 border-radius: 21px;
-font-family: "Bruno Ace", sans-serif;
+font-family: "Huninn", sans-serif;
 font-size: 13px;
 cursor: pointer;
 transition: all 0.3s ease;
@@ -317,7 +324,7 @@ padding: 10px;
 border-radius: 17px;
 background: rgba(255, 255, 255, 0.1);
 color: #FFFFFF;
-font-family: "Bruno Ace", sans-serif;
+font-family: "Huninn", sans-serif;
 font-weight: 400;
 font-style: normal;
 border: 1px solid transparent;
@@ -328,11 +335,10 @@ color: #FFFFFF;
 opacity: 1;
 }
 
-/* Validation Error Styles */
 .error-text {
 color: #ff4d4d;
 font-size: 11px;
-font-family: "Bruno Ace", sans-serif;
+font-family: "Huninn", sans-serif;
 margin-top: 4px;
 margin-left: 8px;
 text-align: left;
@@ -346,7 +352,7 @@ height: 40px;
 border: none;
 border-radius: 17px;
 cursor: pointer;
-font-family: "Bruno Ace", sans-serif;
+font-family: "Huninn", sans-serif;
 font-weight: 900;
 font-style: normal;
 }
@@ -373,39 +379,83 @@ margin: 0;
 .or-text {
 padding: 0 15px;
 color: rgb(255, 255, 255);
-font-family: "Bruno Ace", sans-serif;
+font-family: "Huninn", sans-serif;
 font-style: normal;
 font-size: 14px;
 }
 
 #signupLink {
-font-family: "Bruno Ace", sans-serif;
+font-family: "Huninn", sans-serif;
 color: #FFFFFF;
 font-size: 14px;
+}
+
+.password-group {
+  position: relative;
+}
+
+.password-dropdown-box {
+  position: absolute;
+  top: 50%;
+  left: 105%;
+  transform: translateY(-50%);
+  width: 275px;
+  background: #ffffff;
+  border: 1px solid #dcdcdc;
+  border-radius: 8px;
+  padding: 12px 14px;
+  box-sizing: border-box;
+  z-index: 100;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.password-dropdown-box::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -6px;
+  transform: translateY(-50%) rotate(45deg);
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  border-left: 1px solid #dcdcdc;
+  border-bottom: 1px solid #dcdcdc;
+}
+
+.password-box-title {
+  font-size: 11px;
+  font-family: "Huninn", sans-serif;
+  color: #333333;
+  font-weight: bold;
+  margin: 0 0 8px 0;
+  text-align: left;
 }
 
 .password-checklist {
   list-style: none;
   padding: 0;
-  margin: 8px 0 0 8px;
+  margin: 0;
   text-align: left;
 }
 
 .password-checklist li {
   font-size: 11px;
-  font-family: "Bruno Ace", sans-serif;
-  margin-bottom: 4px;
+  font-family: "Huninn", sans-serif;
+  margin-bottom: 5px;
   display: flex;
   align-items: center;
   gap: 6px;
-  transition: color 0.2s ease;
+}
+
+.password-checklist li:last-child {
+  margin-bottom: 0;
 }
 
 .rule-invalid {
-  color: #ff4d4d;
+  color: #d32f2f;
 }
 
 .rule-valid {
-  color: #00e676;
+  color: #2e7d32;
 }
 </style>
