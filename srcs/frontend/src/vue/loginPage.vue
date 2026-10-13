@@ -4,13 +4,10 @@ import { useRouter } from 'vue-router';
 
 const router = useRouter();
 
-// Variables to hold the user's input
 const username = ref('');
 const password = ref('');
 
-// Function to handle login submission and communicate with Django
 const submitLogin = async () => {
-    // --- REAL BACKEND CODE (Commented out until Django is ready) ---
     const payload = {
         username: username.value,
         password: password.value
@@ -39,6 +36,7 @@ const submitLogin = async () => {
     }
 };
 </script>
+
 <template>
     <video autoplay muted loop playsinline id="bgVideo">
         <source src="../assets/ready2roll_wave_background.mp4" type="video/mp4">
@@ -48,10 +46,8 @@ const submitLogin = async () => {
             <img src="../assets/logo_temp.png" alt="logo">
         </div>
         <div id="loginForm" class="centred">
-            <!-- Rimosso method="post" e aggiunto @submit.prevent -->
             <form @submit.prevent="submitLogin">
                 <div class="inputFieldDiv">
-                    <!-- Nota: ho cambiato il placeholder in Username perché Django di default usa quello per il login -->
                     <input type="text" placeholder="Username" v-model="username" required>
                 </div>
                 <div class="inputFieldDiv">
@@ -75,134 +71,122 @@ const submitLogin = async () => {
 </template>
 
 <style scoped>
-    /* Kept exactly as you provided */
-    a
-    {
-        color: #FFFFFF;
-        text-decoration: underline;
-        text-decoration-color: #FFFFFF;
-    }
-    .centred
-    {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-    #bgVideo
-    {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        min-width: 100%;
-        min-height: 100%;
-        width: 100%;
-        height: 100%;
-        z-index: -1;
-        object-fit: cover;
-    }
+@import url('https://cdn.jsdelivr.net/gh/justfont/open-huninn-font@1.1/font/jf-openhuninn.css');
 
-    #logoDiv
-    {
-        width: 250px;
-        height: 250px;
-        margin: 150px auto 30px auto;
-        max-width: 100%;
-    }
+.wrapper {
+    font-family: 'jf-openhuninn', 'Huninn', sans-serif;
+    width: 100%;
+    min-height: 100vh;
+}
 
-    #logoDiv img
-    {
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
-        padding-left: 0;
-    }
+a {
+    color: #FFFFFF;
+    text-decoration: underline;
+    text-decoration-color: #FFFFFF;
+}
 
-    #loginForm
-    {
-        width: 350px;
-        height: 350px;
-        margin: 0 auto;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 15px;
-        padding: 20px;
-        box-sizing: border-box;
-    }
+.centred {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 
-    .inputFieldDiv
-    {
-        margin: 10px auto 10px auto;
-        width: 100%;
-    }
+#bgVideo {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    min-width: 100%;
+    min-height: 100%;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    object-fit: cover;
+}
 
-    .inputFieldDiv input
-    {
-        width: 100%;
-        box-sizing: border-box;
-        padding: 10px;
-        border-radius: 17px;
-        background: rgba(255, 255, 255, 0.1);
-        color: #FFFFFF;
-        font-family: "Bruno Ace", sans-serif;
-        font-weight: 400;
-        font-style: normal;
-    }
+#logoDiv {
+    width: 250px;
+    height: 250px;
+    margin: 150px auto 30px auto;
+    max-width: 100%;
+}
 
-    .inputFieldDiv input::placeholder
-    {
-        color: #FFFFFF;
-        opacity: 1;
-    }
+#logoDiv img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    padding-left: 0;
+}
 
-    .inputFieldButton button
-    {
-        background: rgba(0, 242, 254, 67.65%);
-        color: #FFFFFF;
-        width: 100%;
-        height: 40px;
-        border: none;
-        border-radius: 17px;
-        cursor: pointer;
-        font-family: "Bruno Ace", sans-serif;
-        font-weight: 900;
-        font-style: normal;
-    }
-    .inputFieldButton button:hover
-    {
-        background: rgba(5, 212, 202, 0.61);
-    }
+#loginForm {
+    width: 350px;
+    height: 350px;
+    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 20px;
+    box-sizing: border-box;
+}
 
-    .or-separator
-    {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        margin: 20px 0;
-    }
+.inputFieldDiv {
+    margin: 10px auto 10px auto;
+    width: 100%;
+}
 
-    .dashedSeparator
-    {
-        border: none;
-        border-top: 2px solid rgb(255, 255, 255);
-        flex-grow: 1;
-        margin: 0;
-    }
+.inputFieldDiv input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px;
+    border-radius: 17px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #FFFFFF;
+    border: 1px solid transparent;
+}
 
-    .or-text
-    {
-        padding: 0 15px;
-        color: rgb(255, 255, 255);
-        font-family: "Bruno Ace", sans-serif;
-        font-style: normal;
-        font-size: 14px;
-    }
+.inputFieldDiv input::placeholder {
+    color: #FFFFFF;
+    opacity: 1;
+}
 
-    #signupLink
-    {
-        font-family: "Bruno Ace", sans-serif;
-        color: #FFFFFF;
-        font-size: 14px;
-    }
+.inputFieldButton button {
+    background: rgba(0, 242, 254, 67.65%);
+    color: #FFFFFF;
+    width: 100%;
+    height: 40px;
+    border: none;
+    border-radius: 17px;
+    cursor: pointer;
+    font-weight: 900;
+}
+
+.inputFieldButton button:hover {
+    background: rgba(5, 212, 202, 0.61);
+}
+
+.or-separator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin: 20px 0;
+}
+
+.dashedSeparator {
+    border: none;
+    border-top: 2px solid rgb(255, 255, 255);
+    flex-grow: 1;
+    margin: 0;
+}
+
+.or-text {
+    padding: 0 15px;
+    color: rgb(255, 255, 255);
+    font-size: 14px;
+}
+
+#signupLink {
+    color: #FFFFFF;
+    font-size: 14px;
+}
 </style>
