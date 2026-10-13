@@ -1,7 +1,0 @@
-1) Metti l'immagine/video caricato nella creazione dell'evento semi trasparente
-2) aggiungi un pulsante su un angolo che permette di ingrandire il video/immagine come
-se fosse nella home page.
-3) appena inserisci il testo della descrizione, questo dovra' apparire nella parte in basso del video,
-sempre e comunque sopra esso
-4) la risoluzione dell'immagine/video deve sempre mantenere la tipica risoluzione da telefono,
-come se si stesse vedendo il sito da telefono
