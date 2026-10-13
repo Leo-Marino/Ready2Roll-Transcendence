@@ -1,0 +1,13 @@
+{
+    "Servers": {
+        "1": {
+            "Name": "Ready2Roll DB",
+            "Group": "Servers",
+            "Host": "postgre_db",
+            "Port": 5432,
+            "MaintenanceDB": "ready2roll",
+            "Username": "r2r_admin",
+            "SSLMode": "prefer"
+        }
+    }
+}

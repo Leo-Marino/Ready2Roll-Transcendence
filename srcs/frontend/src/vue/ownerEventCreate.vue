@@ -262,10 +262,12 @@ methods: {
   triggerFileInput() {
     this.$refs.fileInput.click();
   },
+  ////////////////////////////////////////////////////
   handleFileUpload(event) {
     const file = event.target.files[0];
     if (file) {
       this.uploadedMediaSrc = URL.createObjectURL(file);
+      this.actualFile = file;
       this.mediaType = file.type.startsWith('video') ? 'video' : 'image';
     }
   },
@@ -281,39 +283,48 @@ methods: {
       this.selectStep(1);
     }
   },
-  async handlePublish() {
-  const token = localStorage.getItem('token') || localStorage.getItem('access');
-  const payload = {
-    title: this.eventTitle || 'Nuovo Evento',
-    location: this.eventLocation,
-    event_date: this.eventDate,
-    status: this.eventStatus,
-    description: this.descriptionText,
-    media_src: this.uploadedMediaSrc,
-    media_type: this.mediaType || 'image'
-  };
+  /////////////////////////////////////////////////////////
+async handlePublish() {
+    const token = localStorage.getItem('token');
 
-  try {
-    const response = await fetch('/api/events/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(payload)
-    });
+    // Create a physical shipping box for the data and the file
+    const formData = new FormData();
+    formData.append('title', this.eventTitle || 'Nuovo Evento');
+    formData.append('location', this.eventLocation);
+    formData.append('event_date', this.eventDate);
+    formData.append('status', this.eventStatus);
+    formData.append('description', this.descriptionText);
+    formData.append('media_type', this.mediaType || 'image');
 
-    if (response.ok) {
-      const createdEvent = await response.json();
-      this.$emit('event-published', createdEvent);
-      this.goToVisualPage();
-    } else {
-      alert('Errore durante la pubblicazione dell evento.');
+    // Add the actual file bytes!
+    if (this.actualFile) {
+        formData.append('media_file', this.actualFile);
     }
-  } catch (error) {
-    console.error('Errore di rete:', error);
-  }
-},
+
+    try {
+        const response = await fetch('/api/events/', {
+            method: 'POST',
+            headers: {
+                // Notice there is NO 'Content-Type' here!
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData // Send the box
+        });
+
+        if (response.ok) {
+            alert("Evento creato con successo!");
+            this.goToVisualPage();
+        } else {
+            const errorData = await response.json();
+            console.error("Errore backend:", errorData);
+            alert("Errore durante la creazione dell'evento.");
+        }
+    } catch (error) {
+        console.error("Errore di rete:", error);
+        alert("Impossibile connettersi al server backend.");
+    }
+  },
+
   goToVisualPage() {
     if (this.$router) {
       this.$router.push('/ViewEvent');
@@ -322,6 +333,7 @@ methods: {
   }
 }
 }
+
 </script>
 
 <style scoped>

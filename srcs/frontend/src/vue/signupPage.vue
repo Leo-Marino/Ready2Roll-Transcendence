@@ -6,13 +6,12 @@ import { computed } from 'vue';
 
 const router = useRouter();
 
-const userType = ref('standard');
+const type_of_user = ref('standard'); // 'standard' | 'business'
 const username = ref('');
 const email = ref('');
 const password = ref('');
-const showPasswordBox = ref(false);
-const clubName = ref('');
-const taxId = ref('');
+const legalName = ref('');
+const vatTax = ref('');
 
 const passwordRules = computed(() => [
 {
@@ -53,9 +52,9 @@ const getSignupSchema = () => {
         .regex(/[0-9]/, 'Must contain at least one number')
         .regex(/[!@#$%^&*(),.?":{}|<>]/, 'Must contain at least one special character')
     };
-    if (userType.value === 'business') {
-        baseSchema.clubName = z.string().min(1, 'Club / Venue Name is required');
-        baseSchema.taxId = z.string().min(1, 'Tax ID / VAT Number is required');
+  if (type_of_user.value === 'business') {
+        baseSchema.legalName = z.string().min(1, 'Business / Venue Name is required');
+        baseSchema.vatTax = z.string().min(1, 'Tax ID / VAT Number is required');
     }
     return z.object(baseSchema);
 };
@@ -66,9 +65,9 @@ const submitSignup = async () => {
         username: username.value,
         email: email.value,
         password: password.value,
-        ...(userType.value === 'business' && {
-            clubName: clubName.value,
-            taxId: taxId.value
+        ...(type_of_user.value === 'business' && {
+            legalName: legalName.value,
+            vatTax: vatTax.value
         })
     };
 
@@ -90,15 +89,15 @@ const submitSignup = async () => {
     }
 
     const payload = {
-        user_type: userType.value,
+        type_of_user: type_of_user.value,
         username: username.value,
         email: email.value,
         password: password.value
     };
 
-    if (userType.value === 'business') {
-        payload.club_name = clubName.value;
-        payload.tax_id = taxId.value;
+    if (type_of_user.value === 'business') {
+        payload.legal_name = legalName.value;
+        payload.vat_tax = vatTax.value;
     }
 
     try {
@@ -145,14 +144,14 @@ const submitSignup = async () => {
         <div class="role-toggle-container">
         <button
             type="button"
-            :class="{'active-role': userType === 'standard'}"
-            @click="userType = 'standard'; errors = {};">
+            :class="{'active-role': type_of_user === 'standard'}"
+            @click="type_of_user = 'standard'; errors = {};">
             standard
         </button>
         <button
             type="button"
-            :class="{'active-role': userType === 'business'}"
-            @click="userType = 'business'; errors = {};">
+            :class="{'active-role': type_of_user === 'business'}"
+            @click="type_of_user = 'business'; errors = {};">
             business
         </button>
         </div>
@@ -167,37 +166,35 @@ const submitSignup = async () => {
         <span v-if="errors.email" class="error-text">{{ errors.email }}</span>
         </div>
 
-        <div class="inputFieldDiv password-group">
-            <input 
-                type="password" 
-                v-model="password" 
+        <div class="inputFieldDiv">
+            <input
+                type="password"
+                v-model="password"
                 placeholder="Password"
                 @focus="showPasswordBox = true"
                 @blur="showPasswordBox = false"
             />
-            <div v-if="showPasswordBox" class="password-dropdown-box">
-              <p class="password-box-title">The password must consist of:</p>
-              <ul class="password-checklist">
-                <li 
-                    v-for="rule in passwordRules" 
-                    :key="rule.id" 
-                    :class="rule.valid ? 'rule-valid' : 'rule-invalid'"
-                >
-                    <span class="rule-icon">{{ rule.valid ? '✓' : '✖' }}</span>
-                    <span>{{ rule.label }}</span>
-                </li>
-              </ul>
-            </div>
+            <ul class="password-checklist">
+            <li
+                v-for="rule in passwordRules"
+                :key="rule.id"
+                :class="rule.valid ? 'rule-valid' : 'rule-invalid'"
+            >
+                <span class="rule-icon">{{ rule.valid ? '✓' : '✖' }}</span>
+                <span>{{ rule.label }}</span>
+            </li>
+            </ul>
         </div>
 
-        <div v-if="userType === 'business'">
+        <!-- Campi Extra per business -->
+        <div v-if="type_of_user === 'business'">
         <div class="inputFieldDiv">
-            <input type="text" v-model="clubName" placeholder="Club / Venue Name">
-            <span v-if="errors.clubName" class="error-text">{{ errors.clubName }}</span>
+            <input type="text" v-model="legalName" placeholder="Club / Venue Name">
+            <span v-if="errors.legalName" class="error-text">{{ errors.legalName }}</span>
         </div>
         <div class="inputFieldDiv">
-            <input type="text" v-model="taxId" placeholder="Tax ID / VAT Number">
-            <span v-if="errors.taxId" class="error-text">{{ errors.taxId }}</span>
+            <input type="text" v-model="vatTax" placeholder="Tax ID / VAT Number">
+            <span v-if="errors.vatTax" class="error-text">{{ errors.vatTax }}</span>
         </div>
         </div>
 
