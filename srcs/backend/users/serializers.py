@@ -40,6 +40,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return 0
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):
+    avatar_url = serializers.ImageField(required=False, allow_null=True)
     class Meta:
         model = User
         fields = [

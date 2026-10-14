@@ -88,7 +88,13 @@ onMounted(async () => {
     const data = await response.json();
     userProfile.value.name = data.username || '';
     userProfile.value.description = data.bio || '';
-    if (data.avatar_url) userProfile.value.avatar = data.avatar_url;
+    ////////////////////////////////////////////////////////////////
+    if (data.avatar_url) {
+    userProfile.value.avatar = data.avatar_url.startsWith('http')
+    ? data.avatar_url
+    : `http://localhost:9000/media/${data.avatar_url}`;
+    }
+    ///////////////////////////////////////////////////////////////
     userProfile.value.following = userProfile.value.following_count || 2;
     userProfile.value.followers = userProfile.value.followers_count || 3;
   } catch (error) {
@@ -131,18 +137,26 @@ const handleImageUpload = (event) => {
   }
 };
 
+/////////////////////////////////////////////
 const saveProfile = async () => {
+  // 1. Create the physical shipping box
+  const formData = new FormData();
+  formData.append('username', editForm.value.username);
+  formData.append('bio', editForm.value.bio);
+
+  // 2. Pack the actual image file if the user selected one
+  if (selectedFile.value) {
+    formData.append('avatar_url', selectedFile.value);
+  }
+
   try {
     const response = await fetch(`${API}/profile/update/`, {
       method: 'PATCH',
       headers: {
-        'Content-Type': 'application/json',
+        // NO 'Content-Type' here! The browser handles it automatically for FormData.
         'Authorization': `Bearer ${getToken()}`
       },
-      body: JSON.stringify({
-        username: editForm.value.username,
-        bio: editForm.value.bio
-      })
+      body: formData // Send the box
     });
 
     const data = await response.json();
@@ -150,7 +164,14 @@ const saveProfile = async () => {
     if (response.ok) {
       userProfile.value.name = data.username ?? editForm.value.username;
       userProfile.value.description = data.bio ?? editForm.value.bio;
-      // NOTE: avatar upload needs an ImageField on the backend; not saved yet.
+
+      // Update the UI with the new MinIO URL returned by Django
+    if (data.avatar_url) {
+      userProfile.value.avatar = data.avatar_url.startsWith('http')
+        ? data.avatar_url
+        : `http://localhost:9000/media/${data.avatar_url}`;
+      }
+
       showEditModal.value = false;
     } else {
       console.error('Backend rejected the save:', data);
@@ -162,6 +183,7 @@ const saveProfile = async () => {
     alert('Unable to connect to the server.');
   }
 };
+
 </script>
 
 <template>
@@ -219,7 +241,7 @@ const saveProfile = async () => {
       <main class="profile-container">
 
         <div class="profile-header glass-panel">
-          <img :src="userProfile.avatar" alt="Profile Avatar" class="profile-avatar">
+          <img :src="userProfile.avatar" alt="Avatar" class="profile-avatar">
           <div class="profile-info">
             <div class="name-row">
               <h2>{{ userProfile.name }} 🔒</h2>
