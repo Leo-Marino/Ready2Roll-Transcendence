@@ -39,8 +39,12 @@ INSTALLED_APPS = [
 	# Librerie esterne installate via requirements.txt
     'rest_framework',
     'corsheaders',
+    'storages',
 
-    'test'
+    'users',
+    'events',
+    'social',
+    'notifications',
 ]
 
 MIDDLEWARE = [
@@ -155,4 +159,27 @@ ALLOWED_HOSTS = ['*']
 CORS_ALLOW_ALL_ORIGINS = True
 
 # Custom User Model
-AUTH_USER_MODEL = 'test.User'
+AUTH_USER_MODEL = 'users.User'
+
+# MinIO / S3 Configuration
+AWS_ACCESS_KEY_ID = os.environ.get('MINIO_USER')
+AWS_SECRET_ACCESS_KEY = os.environ.get('MINIO_PASSWORD')
+AWS_S3_ENDPOINT_URL = f"http://ready2roll-storage:9000"
+AWS_STORAGE_BUCKET_NAME = 'media'
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+AWS_S3_USE_SSL = False
+AWS_S3_SECURE_URLS = False
+AWS_S3_URL_PROTOCOL = 'http:'
+AWS_S3_FILE_OVERWRITE = False
+AWS_DEFAULT_ACL = 'public-read'
+AWS_S3_REGION_NAME = 'us-east-1'
+AWS_S3_ADDRESSING_STYLE = 'path'
+AWS_S3_CUSTOM_DOMAIN = 'localhost:9000/media'
+MEDIA_URL = f"http://{AWS_S3_CUSTOM_DOMAIN}/"

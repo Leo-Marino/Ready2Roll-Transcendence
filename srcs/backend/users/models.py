@@ -28,7 +28,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=50, unique=True)
     email = models.EmailField(max_length=255, unique=True)
     type_of_user = models.CharField(max_length=20, choices=USER_TYPE_CHOICES, default='standard')
-    avatar_url = models.CharField(max_length=512, blank=True, null=True)
+    avatar_url = models.ImageField(upload_to='avatars/', blank=True, null=True)
     instagram_handle = models.CharField(max_length=55, unique=True, blank=True, null=True)
     phone_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
     legal_name = models.CharField(max_length=255, blank=True, null=True)
@@ -40,12 +40,24 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_verified = models.BooleanField(default=False)
     vat_tax = models.CharField(max_length=50, blank=True, null=True)
 
-
-    # Required for Django authentication & admin
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     created_time_stamp = models.DateTimeField(auto_now_add=True)
 
+    # Updated to point to the events app
+    registered_events = models.ManyToManyField(
+        'events.Event',
+        related_name='attendees',
+        blank=True,
+        db_table='registered_events'
+    )
+    # Updated to point to the events app
+    tags = models.ManyToManyField(
+        'events.Tag',
+        related_name='users',
+        blank=True,
+        db_table='user_tags'
+    )
     objects = UserManager()
 
     USERNAME_FIELD = 'username'
@@ -54,11 +66,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     class Meta:
         db_table = 'users'
         constraints = [
-                models.CheckConstraint(
-                        check=models.Q(type_of_user='standard')
-                            |   (models.Q(type_of_user='business')
-                                & ~models.Q(legal_name__exact='')
-                                & ~models.Q(vat_tax__exact='')),
-                        name='check_business_legality'
-                )
+            models.CheckConstraint(
+                check=models.Q(type_of_user='standard') | (models.Q(type_of_user='business') & ~models.Q(legal_name__exact='') & ~models.Q(vat_tax__exact='')),
+                name='check_business_legality'
+            )
         ]

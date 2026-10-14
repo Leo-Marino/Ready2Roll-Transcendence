@@ -1,20 +1,23 @@
 COMPOSE = docker compose -f compose.yaml
 
-DATA_DIR = ~/data
+DATA_DIR = /sgoinfre/$(USER)/ready2roll
 
 all: down up #setup
 
-# setup:
-# 	@mkdir -p $(DATA_DIR)/mariadb
-# 	@mkdir -p $(DATA_DIR)/wordpress
+setup:
+	@mkdir -p /sgoinfre/$(USER)/ready2roll
+	@mkdir -p $(DATA_DIR)/pg_data
+	@mkdir -p $(DATA_DIR)/minio_data
+	@mkdir -p $(DATA_DIR)/redis_data
 
-up:
+up: setup
 	$(COMPOSE) build --parallel
 	$(COMPOSE) up -d
 # 	@echo Access to https://"$(USER)".42.fr
 
 clear:
 	$(COMPOSE) down -v
+	rm -rf $(DATA_DIR)
 
 down:
 	$(COMPOSE) down

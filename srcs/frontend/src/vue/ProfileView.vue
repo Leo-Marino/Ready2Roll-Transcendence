@@ -5,6 +5,32 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 const API = 'http://localhost:8000/api';
 
+//for the following and followers.
+const showFollowModal = ref(false);
+const followModalType = ref('');
+const followList = ref([]);
+
+const openFollowModal = async (type) => {
+  followModalType.value = type;
+  showFollowModal.value = true;
+  followList.value = [];
+
+  if (type == 'following') {
+    followList.value = [
+      { id: 1, username: 'Xhul', avatar: 'https://i.pravatar.cc/150?u=1' },
+      { id: 2, username: 'Anna', avatar: 'https://i.pravatar.cc/150?u=2' }
+    ];
+  } else if (type == 'followers') {
+    followList.value = [
+      { id: 3, username: 'thilina', avatar: 'https://i.pravatar.cc/150?u=3' },
+      { id: 4, username: 'Milko', avatar: 'https://i.pravatar.cc/150?u=4' }
+    ];
+  }
+};
+
+const closeFollowModal = () => {
+  showFollowModal.value = false;
+};
 //to read the name token
 const getToken = () =>
   localStorage.getItem('token') ||
@@ -62,9 +88,15 @@ onMounted(async () => {
     const data = await response.json();
     userProfile.value.name = data.username || '';
     userProfile.value.description = data.bio || '';
-    if (data.avatar_url) userProfile.value.avatar = data.avatar_url;
-    userProfile.value.following = userProfile.value.following_count || 0;
-    userProfile.value.followers = userProfile.value.followers_count || 0;
+    ////////////////////////////////////////////////////////////////
+    if (data.avatar_url) {
+    userProfile.value.avatar = data.avatar_url.startsWith('http')
+    ? data.avatar_url
+    : `http://localhost:9000/media/${data.avatar_url}`;
+    }
+    ///////////////////////////////////////////////////////////////
+    userProfile.value.following = userProfile.value.following_count || 2;
+    userProfile.value.followers = userProfile.value.followers_count || 3;
   } catch (error) {
     console.error('Fetch failed (CORS or server off?)', error);
   }
@@ -105,18 +137,26 @@ const handleImageUpload = (event) => {
   }
 };
 
+/////////////////////////////////////////////
 const saveProfile = async () => {
+  // 1. Create the physical shipping box
+  const formData = new FormData();
+  formData.append('username', editForm.value.username);
+  formData.append('bio', editForm.value.bio);
+
+  // 2. Pack the actual image file if the user selected one
+  if (selectedFile.value) {
+    formData.append('avatar_url', selectedFile.value);
+  }
+
   try {
     const response = await fetch(`${API}/profile/update/`, {
       method: 'PATCH',
       headers: {
-        'Content-Type': 'application/json',
+        // NO 'Content-Type' here! The browser handles it automatically for FormData.
         'Authorization': `Bearer ${getToken()}`
       },
-      body: JSON.stringify({
-        username: editForm.value.username,
-        bio: editForm.value.bio
-      })
+      body: formData // Send the box
     });
 
     const data = await response.json();
@@ -124,7 +164,14 @@ const saveProfile = async () => {
     if (response.ok) {
       userProfile.value.name = data.username ?? editForm.value.username;
       userProfile.value.description = data.bio ?? editForm.value.bio;
-      // NOTE: avatar upload needs an ImageField on the backend; not saved yet.
+
+      // Update the UI with the new MinIO URL returned by Django
+    if (data.avatar_url) {
+      userProfile.value.avatar = data.avatar_url.startsWith('http')
+        ? data.avatar_url
+        : `http://localhost:9000/media/${data.avatar_url}`;
+      }
+
       showEditModal.value = false;
     } else {
       console.error('Backend rejected the save:', data);
@@ -136,6 +183,7 @@ const saveProfile = async () => {
     alert('Unable to connect to the server.');
   }
 };
+
 </script>
 
 <template>
@@ -193,14 +241,19 @@ const saveProfile = async () => {
       <main class="profile-container">
 
         <div class="profile-header glass-panel">
-          <img :src="userProfile.avatar" alt="Profile Avatar" class="profile-avatar">
+          <img :src="userProfile.avatar" alt="Avatar" class="profile-avatar">
           <div class="profile-info">
             <div class="name-row">
               <h2>{{ userProfile.name }} 🔒</h2>
             </div>
             <div class="stats-row">
-              <span><strong>{{ userProfile.following }}</strong> following</span>
-              <span><strong>{{ userProfile.followers }}</strong> followers</span>
+              <!-- Redinaha span katclicka -->
+              <span class="clickable-stat" @click="openFollowModal('following')">
+                <strong>{{ userProfile.following }}</strong> following
+              </span>
+              <span class="clickable-stat" @click="openFollowModal('followers')">
+                <strong>{{ userProfile.followers }}</strong> followers
+              </span>
             </div>
             <div class="description-box">
               <p>{{ userProfile.description }}</p>
@@ -233,6 +286,7 @@ const saveProfile = async () => {
         <h3>Edit profile</h3>
         <button class="close-modal-btn" @click="closeEditModal">✕</button>
       </div>
+
 
       <!-- Modal Body -->
       <div class="modal-body">
@@ -280,7 +334,23 @@ const saveProfile = async () => {
       </div>
     </div>
   </div>
-
+  <div v-if="showFollowModal" class="modal-overlay" @click.self="closeFollowModal">
+    <div class="mini-modal-content">
+      <div class="modal-header">
+        <h3 style="text-transform: capitalize;">{{ followModalType }}</h3>
+        <button class="close-modal-btn" @click="closeFollowModal">✕</button>
+      </div>
+      <div class="modal-body list-body">
+        <ul class="follow-list">
+          <li v-for="user in followList" :key="user.id" class="follow-item">
+            <img :src="user.avatar" alt="avatar" class="avatar-small">
+            <span>{{ user.username }}</span>
+          </li>
+        </ul>
+        <p v-if="followList.length === 0" style="text-align: center; color: #aaa;">No users found.</p>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
@@ -422,4 +492,54 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 .cancel-btn:hover { background: #444; }
 .save-btn { background: white; color: black; }
 .save-btn:hover { background: #ccc; }
+.clickable-stat {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.clickable-stat:hover {
+  color: #00f2fe; /* Zid lon mli ktdwez 3lih l'souris */
+}
+
+/* Design dyal l'mini window */
+.mini-modal-content {
+  background: #1e1e1e;
+  width: 350px; /* Sghira 3la modal d l'edit */
+  max-width: 90%;
+  border-radius: 12px;
+  border: 1px solid #333;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  max-height: 400px; /* Bach mayfoutch tol dialha o ywli fih scroll */
+}
+
+.list-body {
+  overflow-y: auto; /* Zid scroll ila kano nass bzzaf */
+  padding: 10px;
+}
+
+.follow-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.follow-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 10px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+.follow-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.avatar-small {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
 </style>
