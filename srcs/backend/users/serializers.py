@@ -29,7 +29,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = [
             'username', 'email', 'first_name', 'last_name', 'bio',
             'avatar_url', 'instagram_handle', 'bs_website',
-            'following_count', 'followers_count',
+            'following_count', 'followers_count', 'type_of_user',
         ]
 
     # Placeholders until you build a follow system
