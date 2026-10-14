@@ -4,8 +4,11 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework import status
+from events.models import Event
 
-from .models import Subscription
+from .models import Subscription, Comment
+from .serializers import CommentSerializer
 
 User = get_user_model()
 
@@ -37,3 +40,32 @@ def toggle_follow_view(request, user_id):
         'followers_count': target.followers.count(),
         'following_count': target.following.count(),
     })
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def event_comments_view(request, event_id):
+    # Verifica che l'evento esista
+    event = get_object_or_404(Event, pk=event_id)
+
+    if request.method == 'GET':
+        # Restituisce i commenti dal più recente al più vecchio
+        comments = Comment.objects.filter(event=event).order_by('-created_at')
+        serializer = CommentSerializer(comments, many=True)
+        return Response(serializer.data)
+
+    elif request.method == 'POST':
+        content = request.data.get('content')
+        if not content:
+            return Response({'error': 'Il contenuto del commento è obbligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Crea il record nel database usando il modello Comment
+        comment = Comment.objects.create(
+            user=request.user,
+            event=event,
+            content=content,
+            type_content='text'
+        )
+        serializer = CommentSerializer(comment)
+        # Ritorna il commento appena creato (utile per Vue)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
