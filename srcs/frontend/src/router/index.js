@@ -7,6 +7,7 @@ import HomePage from '../vue/HomePage.vue'
 import ChatView from '../vue/ChatView.vue';
 import ProfileView from '../vue/ProfileView.vue';
 import SubscriptionsView from '../vue/SubscriptionsView.vue';
+import OtherUserProfileView from '../vue/OtherUserProfileView.vue';
 
 const routes = [
   {
@@ -47,6 +48,11 @@ const routes = [
     path: '/CreateEvent',
     name: 'CreateEvent',
     component: CreateEvent
+  },
+  {
+    path: '/user/:id',
+    name: 'UserProfile',
+    component: OtherUserProfileView
   },
   {
     path: '/ViewEvent',
