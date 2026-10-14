@@ -16,7 +16,6 @@ up: setup
 # 	@echo Access to https://"$(USER)".42.fr
 
 
-
 down:
 	$(COMPOSE) down
 

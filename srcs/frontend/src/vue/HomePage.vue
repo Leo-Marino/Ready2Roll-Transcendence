@@ -111,16 +111,19 @@ onMounted(() => {
             </li>
           </ul>
         </nav>
-        <div class="subscribed-list">
-          <h3>Subscribed accounts</h3>
-          <ul>
-            <li v-for="account in subscribedAccounts" :key="account.id">
-              <img :src="account.img" alt="avatar" class="avatar">
-              <span>{{ account.name }}</span>
-            </li>
-          </ul>
-          <p class="show-more">show more ⌄</p>
-        </div>
+          <div class="subscribed-list">
+            <h3>Subscribed accounts</h3>
+            <ul>
+              <li v-for="account in subscribedAccounts" :key="account.id">
+                <!-- ZIDNA HNA ROUTER-LINK -->
+                <router-link :to="{ name: 'UserProfile', params: { id: account.id } }" class="user-link">
+                  <img :src="account.img" alt="avatar" class="avatar">
+                  <span>{{ account.name }}</span>
+                </router-link>
+              </li>
+            </ul>
+            <p class="show-more">show more  </p>
+          </div>
       </aside>
 
       <main class="feed-container">
@@ -219,4 +222,16 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 .volume-btn { background: rgba(0, 0, 0, 0.4); border: none; border-radius: 50%; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s ease-in-out; position: absolute; bottom: 20px; right: 20px; }
 .volume-btn:hover { background: rgba(0, 242, 254, 0.4); transform: scale(1.1); }
 .video-icon { width: 22px; height: 22px; color: white; }
+.user-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: #FFFFFF;
+  width: 100%;
+}
+
+.user-link:hover {
+  color: #00f2fe;
+}
 </style>
