@@ -23,17 +23,22 @@ const likedVideos = ref([
   { id: 2, title: 'Video 2', thumbnail: '' },
 ]);
 
+const DEFAULT_AVATAR = 'https://i.pravatar.cc/150?u=6';
+
 const userProfile = ref({
-  name: 'Loading...',
+  name: '',
   following: 0,
   followers: 0,
-  description: 'Loading...',
-  avatar: 'https://i.pravatar.cc/150?u=6',
+  description: '',
+  avatar: DEFAULT_AVATAR,
 });
 
 const isFollowing = ref(false);
+const isSelf = ref(false);
+const followLoading = ref(false);
+const errorMessage = ref('');
 
-// --- FONCTION BACH NJBDO L'DATA ---
+// GET /api/users/<id>/
 const fetchUserProfile = async (userId) => {
   const token = getToken();
   if (!token) {
@@ -41,89 +46,84 @@ const fetchUserProfile = async (userId) => {
     return;
   }
 
-  // --- BACKEND TODO: Update endpoint when ready ---
-  const USER_PROFILE_ENDPOINT = `${API}/users/${userId}/`;
+  errorMessage.value = '';
 
   try {
-    const response = await fetch(USER_PROFILE_ENDPOINT, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+    const response = await fetch(`${API}/users/${userId}/`, {
+      headers: { Authorization: `Bearer ${token}` },
     });
 
-    if (response.ok) {
-      const data = await response.json();
-      userProfile.value.name = data.username || '';
-      userProfile.value.description = data.bio || '';
-      if (data.avatar_url) {
-          userProfile.value.avatar = data.avatar_url.startsWith('http')
-          ? data.avatar_url
-          : `http://localhost:9000/media/${data.avatar_url}`;
-      }
-      userProfile.value.following = data.following_count || 0;
-      userProfile.value.followers = data.followers_count || 0;
-      isFollowing.value = data.is_following || false;
-
-    } else {
-        throw new Error("Backend not ready yet");
+    if (response.status === 401) {
+      router.push('/login');
+      return;
     }
+    if (response.status === 404) {
+      errorMessage.value = 'User not found';
+      return;
+    }
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    userProfile.value.name = data.username || '';
+    userProfile.value.description = data.bio || '';
+    userProfile.value.avatar = data.avatar_url
+      ? (data.avatar_url.startsWith('http')
+          ? data.avatar_url
+          : `http://localhost:9000/media/${data.avatar_url}`)
+      : DEFAULT_AVATAR;
+    userProfile.value.following = data.following_count || 0;
+    userProfile.value.followers = data.followers_count || 0;
+    isFollowing.value = !!data.is_following;
+    isSelf.value = !!data.is_self;
   } catch (error) {
-    console.warn('Backend not ready. Using dummy data for design purposes.', error);
-    // DUMMY DATA FOR DESIGN
-    userProfile.value.name = `User ${userId}`;
-    userProfile.value.description = 'This is a mock description until the backend is ready.';
-    userProfile.value.followers = 120;
-    userProfile.value.following = 45;
-    isFollowing.value = false;
+    console.error('Error loading profile:', error);
+    errorMessage.value = 'Could not load this profile.';
   }
 };
 
-// Mli katch3el l'page l'awal merra
+// Prima volta che la pagina si carica
 onMounted(() => {
   fetchUserProfile(route.params.id);
 });
 
-// HADA HWA L'QALEB: Mli ytbeddel l'ID f l'URL, 3awd jbed data dyal l'user jdid bla mat-actualiser l'page
+// Se cambia l'ID nell'URL (stesso componente riutilizzato), ricarica i dati
 watch(() => route.params.id, (newId) => {
-  if (newId) { // Ila knt mazal f nfs l'page dyal UserProfile
+  if (newId) {
     fetchUserProfile(newId);
   }
 });
 
-// --- FOLLOW / UNFOLLOW LOGIC ---
+// POST /api/social/follow/<id>/  (toggle follow / unfollow)
 const toggleFollow = async () => {
   const token = getToken();
-  if (!token) return;
-
-  const FOLLOW_TOGGLE_ENDPOINT = `${API}/social/follow/${route.params.id}/`;
-
-  isFollowing.value = !isFollowing.value;
-  if (isFollowing.value) {
-      userProfile.value.followers++;
-  } else {
-      userProfile.value.followers--;
+  if (!token) {
+    router.push('/login');
+    return;
   }
+  if (followLoading.value) return;
 
+  followLoading.value = true;
   try {
-    const response = await fetch(FOLLOW_TOGGLE_ENDPOINT, {
+    const response = await fetch(`${API}/social/follow/${route.params.id}/`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     if (!response.ok) {
-        throw new Error('Failed to follow/unfollow on the backend');
+      throw new Error(`HTTP ${response.status}`);
     }
+
+    // Il backend e' la fonte di verita': uso lo stato che mi ritorna
+    const data = await response.json();
+    isFollowing.value = data.is_following;
+    userProfile.value.followers = data.followers_count;
   } catch (error) {
     console.error('Error toggling follow:', error);
-    alert('Backend not ready for Follow logic yet!');
-    isFollowing.value = !isFollowing.value;
-    if (isFollowing.value) {
-        userProfile.value.followers++;
-    } else {
-        userProfile.value.followers--;
-    }
+    alert('Could not update follow status. Please try again.');
+  } finally {
+    followLoading.value = false;
   }
 };
 </script>
@@ -179,7 +179,8 @@ const toggleFollow = async () => {
       </aside>
 
       <main class="profile-container">
-        <div class="profile-header glass-panel">
+        <p v-if="errorMessage" class="glass-panel error-msg">{{ errorMessage }}</p>
+        <div v-else class="profile-header glass-panel">
           <img :src="userProfile.avatar" alt="Profile Avatar" class="profile-avatar">
           <div class="profile-info">
             <div class="name-row">
@@ -200,7 +201,16 @@ const toggleFollow = async () => {
 
           <div class="action-buttons">
             <button
+                v-if="isSelf"
+                class="follow-btn"
+                @click="$router.push('/profile')"
+            >
+                Edit profile
+            </button>
+            <button
+                v-else
                 :class="isFollowing ? 'unfollow-btn' : 'follow-btn'"
+                :disabled="followLoading"
                 @click="toggleFollow"
             >
                 {{ isFollowing ? 'Unfollow' : 'Follow' }}
@@ -298,7 +308,11 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 }
 .unfollow-btn:hover { background: rgba(255, 71, 87, 0.8); border-color: transparent; }
 
+.error-msg { text-align: center; font-weight: bold; }
+.follow-btn:disabled, .unfollow-btn:disabled { opacity: 0.6; cursor: wait; }
+
 .clickable-stat {
   cursor: default;
 }
 </style>
+

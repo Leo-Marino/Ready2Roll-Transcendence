@@ -1,9 +1,18 @@
+from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import UserSerializer, UserProfileUpdateSerializer, UserProfileSerializer
+from .serializers import (
+    UserSerializer,
+    UserProfileUpdateSerializer,
+    UserProfileSerializer,
+    PublicUserProfileSerializer,
+)
 from rest_framework_simplejwt.tokens import RefreshToken
+
+User = get_user_model()
 
 @api_view(['POST']) # Diciamo a Django di accettare SOLO i dati in entrata (POST)
 def signup_view(request):
@@ -46,3 +55,15 @@ def update_profile_view(request):
         serializer.save()
         return Response({"messaggio": "Utente profile modificato con successo!"}, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_detail_view(request, user_id):
+    """
+    Profilo pubblico di un altro utente (GET /api/users/<id>/).
+    Usato da OtherUserProfileView.vue. Non espone email/telefono.
+    """
+    user = get_object_or_404(User, pk=user_id, is_active=True)
+    serializer = PublicUserProfileSerializer(user, context={'request': request})
+    return Response(serializer.data)
