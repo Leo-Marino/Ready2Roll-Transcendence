@@ -12,7 +12,7 @@ setup:
 
 up: setup
 	$(COMPOSE) build --parallel
-	$(COMPOSE) up
+	$(COMPOSE) up -d
 # 	@echo Access to https://"$(USER)".42.fr
 
 
