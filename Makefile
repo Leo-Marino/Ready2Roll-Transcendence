@@ -15,12 +15,25 @@ up: setup
 	$(COMPOSE) up -d
 # 	@echo Access to https://"$(USER)".42.fr
 
+
+
+down:
+	$(COMPOSE) down
+
 clear:
 	$(COMPOSE) down -v
 	rm -rf $(DATA_DIR)
 
-down:
-	$(COMPOSE) down
+migration-clean: clear
+	@echo "Stopping containers..."
+	@echo "Removing Postgres physical data..."
+	@rm -rf $(DATA_DIR)/pg_data
+	@echo "Cleaning django migrations..."
+	@find srcs/backend -path "*/migrations/*.py" -not -name "__init__.py" -delete
+	@find srcs/backend -path "*/migrations/*.pyc" -delete
+	@find . -name "*.pyc" -delete
+	@find srcs/backend -name "__pycache__" -type d -exec rm -rf {} +
+	@echo "Database and migrations clean completed."
 
 stop:
 	docker stop vuejs_container
