@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import EventMediaGrid from './EventMediaGrid.vue';
 
 const router = useRouter();
 const API = 'http://localhost:8000/api';
@@ -55,6 +56,20 @@ const userProfile = ref({
   isBusiness: false
 });
 
+const myEvents = ref([]);
+const activeTab = ref('likes');
+
+const fetchMyEvents = async () => {
+  try {
+    const response = await fetch(`${API}/owner/events/`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    if (response.ok) myEvents.value = await response.json();
+  } catch (error) {
+    console.error('Could not load my events', error);
+  }
+};
+
 const likedVideos = ref([
   { id: 1, title: 'Video 1', thumbnail: '' },
   { id: 2, title: 'Video 2', thumbnail: '' },
@@ -99,6 +114,10 @@ onMounted(async () => {
     userProfile.value.following = userProfile.value.following_count || 2;
     userProfile.value.followers = userProfile.value.followers_count || 3;
     userProfile.value.isBusiness = (data.type_of_user === 'business');
+    if (userProfile.value.isBusiness) {
+      activeTab.value = 'events';
+      fetchMyEvents();
+    }
   } catch (error) {
     console.error('Fetch failed (CORS or server off?)', error);
   }
@@ -265,7 +284,7 @@ const saveProfile = async () => {
             </div>
           </div>
           <div class="action-buttons">
-            <button v-if="userProfile.isBusiness" class="create-events-btn" @click="$router.push('/CreateEvent')">
+            <button v-if="userProfile.isBusiness" class="create-event-btn" @click="$router.push('/CreateEvent')">
               create Event 📅
             </button>
           <!-- Click qui apre il modal -->
@@ -274,10 +293,18 @@ const saveProfile = async () => {
         </div>
 
         <div class="profile-tabs glass-panel">
-          <div class="tab active"><span>🖤 Likes</span></div>
+          <div v-if="userProfile.isBusiness" class="tab" :class="{ active: activeTab === 'events' }" @click="activeTab = 'events'"><span>🎬 My videos</span></div>
+          <div class="tab" :class="{ active: activeTab === 'likes' }" @click="activeTab = 'likes'"><span>🖤 Likes</span></div>
         </div>
 
-        <div class="video-grid">
+        <EventMediaGrid
+          v-if="userProfile.isBusiness && activeTab === 'events'"
+          :events="myEvents"
+          :show-status="true"
+          empty-text="You haven't created any events yet."
+        />
+
+        <div v-else class="video-grid">
           <div class="video-card glass-panel" v-for="video in likedVideos" :key="video.id">
             <p class="placeholder-text">video</p>
             <span class="heart-icon">🖤</span>
@@ -427,7 +454,8 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 .create-event-btn:hover { background: #05d4ca; }
 
 .profile-tabs { display: flex; justify-content: center; padding: 10px; border-radius: 10px; }
-.tab { padding: 10px 40px; font-weight: bold; cursor: pointer; border-bottom: 2px solid #00f2fe; color: white; }
+.tab { padding: 10px 40px; font-weight: bold; cursor: pointer; border-bottom: 2px solid transparent; color: rgba(255,255,255,0.6); }
+.tab.active { border-bottom-color: #00f2fe; color: white; }
 
 .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
 .video-card { aspect-ratio: 9 / 16; display: flex; justify-content: center; align-items: center; position: relative; cursor: pointer; transition: transform 0.2s; }

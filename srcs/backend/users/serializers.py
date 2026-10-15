@@ -66,7 +66,7 @@ class PublicUserProfileSerializer(FollowCountsMixin, serializers.ModelSerializer
             'id', 'username', 'first_name', 'last_name', 'bio',
             'avatar_url', 'instagram_handle', 'bs_website',
             'following_count', 'followers_count',
-            'is_following', 'is_self',
+            'is_following', 'is_self', 'type_of_user',
         ]
 
     def _viewer(self):

@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import EventMediaGrid from './EventMediaGrid.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -33,6 +34,8 @@ const userProfile = ref({
   avatar: DEFAULT_AVATAR,
 });
 
+const isBusiness = ref(false);
+const userEvents = ref([]);
 const isFollowing = ref(false);
 const isSelf = ref(false);
 const followLoading = ref(false);
@@ -77,9 +80,24 @@ const fetchUserProfile = async (userId) => {
     userProfile.value.followers = data.followers_count || 0;
     isFollowing.value = !!data.is_following;
     isSelf.value = !!data.is_self;
+    isBusiness.value = data.type_of_user === 'business';
+    fetchUserEvents(userId);
   } catch (error) {
     console.error('Error loading profile:', error);
     errorMessage.value = 'Could not load this profile.';
+  }
+};
+
+// GET /api/users/<id>/events/  -> videos created by this owner
+const fetchUserEvents = async (userId) => {
+  userEvents.value = [];
+  try {
+    const response = await fetch(`${API}/users/${userId}/events/`, {
+      headers: { Authorization: `Bearer ${getToken()}` },
+    });
+    if (response.ok) userEvents.value = await response.json();
+  } catch (error) {
+    console.error('Error loading events:', error);
   }
 };
 
@@ -217,6 +235,13 @@ const toggleFollow = async () => {
             </button>
           </div>
         </div>
+
+        <template v-if="!errorMessage && isBusiness">
+          <div class="profile-tabs glass-panel">
+            <div class="tab active"><span>🎬 Videos</span></div>
+          </div>
+          <EventMediaGrid :events="userEvents" empty-text="This business hasn't posted any videos yet." />
+        </template>
       </main>
     </div>
   </div>

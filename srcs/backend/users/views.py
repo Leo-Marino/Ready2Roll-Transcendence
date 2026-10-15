@@ -11,6 +11,8 @@ from .serializers import (
     PublicUserProfileSerializer,
 )
 from rest_framework_simplejwt.tokens import RefreshToken
+from events.models import Event
+from events.serializers import EventSerializer
 
 User = get_user_model()
 
@@ -66,4 +68,20 @@ def user_detail_view(request, user_id):
     """
     user = get_object_or_404(User, pk=user_id, is_active=True)
     serializer = PublicUserProfileSerializer(user, context={'request': request})
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_events_view(request, user_id):
+    """
+    GET /api/users/<id>/events/
+    Events (with their video/image) created by that user.
+    Other people only see ACTIVE events; the owner also sees drafts/scheduled.
+    """
+    user = get_object_or_404(User, pk=user_id, is_active=True)
+    events = Event.objects.filter(organizer=user).order_by('-created_at')
+    if request.user.pk != user.pk:
+        events = events.filter(status__iexact='active')
+    serializer = EventSerializer(events, many=True, context={'request': request})
     return Response(serializer.data)

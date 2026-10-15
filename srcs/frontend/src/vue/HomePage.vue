@@ -1,6 +1,6 @@
 <script setup>
 // 1. ADDED: onMounted import
-import { ref, reactive, onMounted, nextTick } from 'vue';
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 
 // (Mock Data for Left Sidebar)
 const subscribedAccounts = ref([
@@ -15,17 +15,16 @@ const subscribedAccounts = ref([
 //   { id: 2, user: 'Anna', text: 'Best set of the year so far!' }
 // ]);
 
-// (Mock Data for the Video Feed)
-const videos = ref([
-  { id: 1, title: 'Video 1: Awesome DJ Set', url: '/videos/video1.mp4' },
-  { id: 2, title: 'Video 2: Crazy Crowd', url: '/videos/video2.mp4' }
-]);
-//#########
+// --- Video feed: real events published by the owners (GET /api/feed/) ---
+const videos = ref([]);
+const feedLoading = ref(true);
+const activeIndex = ref(0);                       // which video is on screen
+const activeEvent = computed(() => videos.value[activeIndex.value] || null);
+const activeEventId = computed(() => (activeEvent.value ? activeEvent.value.id : null));
+const wrapperRefs = [];                           // one DOM element per video
+
 const comments = ref([]);
 const newCommentText = ref('');
-const activeEventId = ref(1);
-// 2. ADDED: Array to hold all video elements
-const videoRefs = ref([]);
 
 // Controls global mute state
 const isMuted = ref(true);
@@ -77,7 +76,9 @@ const fetchComments = async (eventId) => {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (response.ok) {
-      comments.value = await response.json();
+      const data = await response.json();
+      if (eventId !== activeEventId.value) return; // user already scrolled to another video
+      comments.value = data;
       scrollCommentsToBottom();
     }
   } catch (error) {
@@ -104,7 +105,7 @@ const toggleReplies = (commentId) => {
 // POST: Salva il nuovo commento (or reply)
 const postComment = async () => {
   const text = newCommentText.value.trim();
-  if (!text || isSending.value) return;
+  if (!text || isSending.value || !activeEventId.value) return;
   const token = getToken();
   const parentId = replyingTo.value ? replyingTo.value.parentId : null;
   isSending.value = true;
@@ -121,6 +122,7 @@ const postComment = async () => {
 
     if (response.ok) {
       const added = await response.json();
+      if (activeEvent.value) activeEvent.value.comments_count = (activeEvent.value.comments_count || 0) + 1;
       if (parentId) {
         const parent = comments.value.find(c => c.id === parentId);
         if (parent) {
@@ -145,27 +147,94 @@ const postComment = async () => {
     isSending.value = false;
   }
 };
-// Intersection Observer (The Radar)
-onMounted(() => {
-  const observer = new IntersectionObserver((entries) => {
+const formatCount = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k` : `${n || 0}`);
+
+const authHeaders = () => ({ 'Authorization': `Bearer ${getToken()}` });
+
+// Where the owner's name/avatar leads: own profile or the public profile page
+const ownerLink = computed(() => {
+  const owner = activeEvent.value && activeEvent.value.owner;
+  if (!owner) return '/home';
+  return owner.is_self ? '/profile' : { name: 'UserProfile', params: { id: owner.id } };
+});
+
+// POST like toggle for the video on screen
+const toggleLike = async () => {
+  const ev = activeEvent.value;
+  if (!ev) return;
+  try {
+    const res = await fetch(`${API}/social/events/${ev.id}/like/`, { method: 'POST', headers: authHeaders() });
+    if (res.ok) {
+      const data = await res.json();
+      ev.is_liked = data.is_liked;
+      ev.likes_count = data.likes_count;
+    }
+  } catch (error) {
+    console.error('Like failed:', error);
+  }
+};
+
+// POST subscribe/unsubscribe to the owner of the video on screen
+const toggleSubscribe = async () => {
+  const ev = activeEvent.value;
+  if (!ev || ev.owner.is_self) return;
+  try {
+    const res = await fetch(`${API}/social/follow/${ev.owner.id}/`, { method: 'POST', headers: authHeaders() });
+    if (res.ok) {
+      const data = await res.json();
+      // same owner can have several videos: keep them all in sync
+      videos.value.forEach((v) => { if (v.owner.id === ev.owner.id) v.owner.is_following = data.is_following; });
+    }
+  } catch (error) {
+    console.error('Subscribe failed:', error);
+  }
+};
+
+// The "radar": the video that is >60% visible becomes the active one.
+// It plays, the others pause, and the right panel (owner, stats, comments) follows it.
+let observer = null;
+const setupObserver = async () => {
+  await nextTick();
+  if (observer) observer.disconnect();
+  observer = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
+      const video = entry.target.querySelector('video');
       if (entry.isIntersecting) {
-        entry.target.play();
-      } else {
-        entry.target.pause();
+        activeIndex.value = Number(entry.target.dataset.index);
+        if (video) video.play().catch(() => {});
+      } else if (video) {
+        video.pause();
       }
     });
-  }, {
-    threshold: 0.6
-  });
+  }, { threshold: 0.6 });
+  wrapperRefs.forEach((el) => el && observer.observe(el));
+};
 
-  videoRefs.value.forEach((videoEl) => {
-    if (videoEl) {
-      observer.observe(videoEl);
+const fetchFeed = async () => {
+  try {
+    const res = await fetch(`${API}/feed/`, { headers: authHeaders() });
+    if (res.ok) {
+      videos.value = await res.json();
+      wrapperRefs.length = 0;
     }
-  });
-  fetchComments(activeEventId.value);
+  } catch (error) {
+    console.error('Could not load the feed:', error);
+  } finally {
+    feedLoading.value = false;
+  }
+  setupObserver();
+};
+
+// Scrolled to another video -> load ITS comments
+watch(activeEventId, (id) => {
+  comments.value = [];
+  cancelReply();
+  Object.keys(expandedReplies).forEach((k) => delete expandedReplies[k]);
+  if (id) fetchComments(id);
 });
+
+onMounted(fetchFeed);
+onBeforeUnmount(() => observer && observer.disconnect());
 </script>
 
 <template>
@@ -231,11 +300,22 @@ onMounted(() => {
       </aside>
 
       <main class="feed-container">
-        <div class="video-wrapper glass-panel" v-for="(video, index) in videos" :key="video.id">
+        <p v-if="!feedLoading && videos.length === 0" class="glass-panel empty-feed">
+          No videos yet. Owners will publish their events here.
+        </p>
+
+        <div
+          class="video-wrapper glass-panel"
+          v-for="(video, index) in videos"
+          :key="video.id"
+          :data-index="index"
+          :ref="el => { if (el) wrapperRefs[index] = el }"
+        >
+          <img v-if="video.media_type === 'image'" :src="video.media_src" :alt="video.title" class="feed-video">
           <video
-            :ref="el => { if (el) videoRefs[index] = el }"
+            v-else
             class="feed-video"
-            :src="video.url"
+            :src="video.media_src"
             loop
             :muted="isMuted"
             playsinline
@@ -244,8 +324,7 @@ onMounted(() => {
           <div class="video-overlay">
             <h2>{{ video.title }}</h2>
           </div>
-          <div class="video-controls">
-            <!-- <div class="volume-slider">|</div> -->
+          <div class="video-controls" v-if="video.media_type !== 'image'">
             <button class="volume-btn" @click="toggleMute">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="video-icon">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
@@ -256,20 +335,31 @@ onMounted(() => {
       </main>
 
       <aside class="right-sidebar">
+        <template v-if="activeEvent">
         <div class="owner-info glass-panel">
           <div class="owner-header">
-            <img src="https://i.pravatar.cc/150?u=4" alt="owner" class="avatar">
-            <div>
-              <p class="owner-name">local owner ✔</p>
-              <p class="owner-handle">@club1 · 2h ago</p>
-            </div>
-            <button class="subscribe-btn">Subscribe</button>
+            <router-link :to="ownerLink" class="owner-link">
+              <img :src="activeEvent.owner.avatar" alt="owner" class="avatar">
+              <div class="owner-text">
+                <p class="owner-name">{{ activeEvent.owner.display_name }}</p>
+                <p class="owner-handle">@{{ activeEvent.owner.username }} · {{ timeAgo(activeEvent.created_at) }}</p>
+              </div>
+            </router-link>
+            <button
+              v-if="!activeEvent.owner.is_self"
+              class="subscribe-btn"
+              :class="{ subscribed: activeEvent.owner.is_following }"
+              @click="toggleSubscribe">
+              {{ activeEvent.owner.is_following ? 'Subscribed' : 'Subscribe' }}
+            </button>
           </div>
-          <p class="description">Florence was on fire last night! Incredible sets... #nightlife #party</p>
+          <p class="description">{{ activeEvent.description }}</p>
         </div>
         <div class="action-buttons glass-panel">
-          <button>❤️ 3.1k</button>
-          <button>🔖 2.2k</button>
+          <button :class="{ liked: activeEvent.is_liked }" @click="toggleLike">
+            {{ activeEvent.is_liked ? '❤️' : '🤍' }} {{ formatCount(activeEvent.likes_count) }}
+          </button>
+          <button>💬 {{ formatCount(activeEvent.comments_count) }}</button>
           <button>•••</button>
         </div>
         <div class="comments-section glass-panel">
@@ -333,6 +423,7 @@ onMounted(() => {
             </div>
           </div>
         </div>
+        </template>
       </aside>
     </div>
   </div>
@@ -414,4 +505,14 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 .comment-input:focus { border-color: #00f2fe; }
 .send-comment-btn { background: #00f2fe; color: #000; border: none; border-radius: 10px; padding: 8px 15px; font-weight: bold; cursor: pointer; }
 .send-comment-btn:disabled { opacity: 0.4; cursor: default; }
+.owner-link { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; color: #FFFFFF; text-decoration: none; }
+.owner-link:hover .owner-name { color: #00f2fe; }
+.owner-text { min-width: 0; }
+.owner-name { margin: 0; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.owner-handle { margin: 2px 0 0; font-size: 12px; color: rgba(255,255,255,0.65); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.owner-info .avatar { width: 40px; height: 40px; object-fit: cover; flex-shrink: 0; }
+.owner-info .description { margin: 10px 0 0; font-size: 14px; word-break: break-word; max-height: 90px; overflow-y: auto; }
+.subscribe-btn.subscribed { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); }
+.action-buttons button.liked { background: rgba(255, 71, 87, 0.35); }
+.empty-feed { text-align: center; color: rgba(255,255,255,0.75); margin: auto; }
 </style>
