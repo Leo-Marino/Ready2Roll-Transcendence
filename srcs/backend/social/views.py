@@ -50,7 +50,7 @@ def event_comments_view(request, event_id):
 
     if request.method == 'GET':
         # Restituisce i commenti dal più recente al più vecchio
-        comments = Comment.objects.filter(event=event).select_related('user').order_by('-created_at')
+        comments = Comment.objects.filter(event=event).select_related('user').prefetch_related('replies__user').order_by('-created_at')
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data)
 
@@ -59,13 +59,21 @@ def event_comments_view(request, event_id):
         if not content:
             return Response({'error': 'Il contenuto del commento è obbligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Crea il record nel database usando il modello Comment
-        comment = Comment.objects.create(
-            user=request.user,
-            event=event,
-            content=content,
-            type_content='text'
-        )
-        serializer = CommentSerializer(comment)
-        # Ritorna il commento appena creato (utile per Vue)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    parent = None
+    parent_id = request.data.get('parent_comment')
+    if parent_id:
+        # The parent must belong to the same event
+        parent = get_object_or_404(Comment, pk=parent_id, event=event)
+        # Replying to a reply? Attach it to the root comment (Instagram style)
+        if parent.parent_comment_id is not None:
+            parent = parent.parent_comment
+
+    comment = Comment.objects.create(
+        user=request.user,
+        event=event,
+        content=content,
+        type_content='text',
+        parent_comment=parent,
+    )
+    return Response(CommentSerializer(comment).data, status=status.HTTP_201_CREATED)

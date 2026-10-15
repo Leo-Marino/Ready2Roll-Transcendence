@@ -1,6 +1,6 @@
 <script setup>
 // 1. ADDED: onMounted import
-import { ref, onMounted } from 'vue';
+import { ref, reactive, onMounted, nextTick } from 'vue';
 
 // (Mock Data for Left Sidebar)
 const subscribedAccounts = ref([
@@ -47,7 +47,29 @@ const togglePlay = (event) => {
 
 const getToken = () => localStorage.getItem('token') || localStorage.getItem('access') || localStorage.getItem('access_token');
 const API = 'http://localhost:8000/api';
-// GET: Recupera i commenti
+// --- Comments state ---
+const commentsListRef = ref(null);     // scrollable list element
+const commentInputRef = ref(null);     // input element (to focus on reply)
+const replyingTo = ref(null);          // { parentId, username } or null
+const expandedReplies = reactive({});  // { [commentId]: true } when replies are open
+const isSending = ref(false);
+
+const scrollCommentsToBottom = async () => {
+  await nextTick();
+  const el = commentsListRef.value;
+  if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+};
+
+const timeAgo = (iso) => {
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 60) return 'now';
+  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+  if (diff < 604800) return `${Math.floor(diff / 86400)}d`;
+  return `${Math.floor(diff / 604800)}w`;
+};
+
+// GET: Recupera i commenti (each top-level comment has its replies nested)
 const fetchComments = async (eventId) => {
   const token = getToken();
   try {
@@ -56,16 +78,36 @@ const fetchComments = async (eventId) => {
     });
     if (response.ok) {
       comments.value = await response.json();
+      scrollCommentsToBottom();
     }
   } catch (error) {
     console.error('Errore durante il recupero dei commenti:', error);
   }
 };
 
-// POST: Salva il nuovo commento
+// Click on "Reply": show the "Replying to" bar and prefill @username
+const startReply = (comment, rootComment) => {
+  replyingTo.value = { parentId: rootComment.id, username: comment.user_username };
+  newCommentText.value = `@${comment.user_username} `;
+  nextTick(() => commentInputRef.value && commentInputRef.value.focus());
+};
+
+const cancelReply = () => {
+  replyingTo.value = null;
+  newCommentText.value = '';
+};
+
+const toggleReplies = (commentId) => {
+  expandedReplies[commentId] = !expandedReplies[commentId];
+};
+
+// POST: Salva il nuovo commento (or reply)
 const postComment = async () => {
-  if (!newCommentText.value.trim()) return;
+  const text = newCommentText.value.trim();
+  if (!text || isSending.value) return;
   const token = getToken();
+  const parentId = replyingTo.value ? replyingTo.value.parentId : null;
+  isSending.value = true;
 
   try {
     const response = await fetch(`${API}/social/events/${activeEventId.value}/comments/`, {
@@ -74,18 +116,33 @@ const postComment = async () => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ content: newCommentText.value })
+      body: JSON.stringify({ content: text, parent_comment: parentId })
     });
 
     if (response.ok) {
-      const addedComment = await response.json();
-      comments.value.unshift(addedComment); // Inserisce il commento in cima alla lista
-      newCommentText.value = ''; // Svuota la casella di testo
+      const added = await response.json();
+      if (parentId) {
+        const parent = comments.value.find(c => c.id === parentId);
+        if (parent) {
+          parent.replies = parent.replies || [];
+          parent.replies.push(added);
+          parent.reply_count = parent.replies.length;
+          expandedReplies[parentId] = true;
+        }
+      } else {
+        // New comment goes at the END: right above the input box
+        comments.value.push(added);
+        scrollCommentsToBottom();
+      }
+      newCommentText.value = '';
+      replyingTo.value = null;
     } else {
-        alert("Errore nel salvataggio del commento.");
+      alert("Errore nel salvataggio del commento.");
     }
   } catch (error) {
     console.error('Errore di rete durante l\'invio del commento:', error);
+  } finally {
+    isSending.value = false;
   }
 };
 // Intersection Observer (The Radar)
@@ -215,28 +272,64 @@ onMounted(() => {
           <button>🔖 2.2k</button>
           <button>•••</button>
         </div>
-            <div class="comments-section glass-panel">
-      <h3>Comments</h3>
+        <div class="comments-section glass-panel">
+          <h3>Comments</h3>
 
-      <!-- Sezione input del commento -->
-      <div class="add-comment-area">
-        <input
-          type="text"
-          v-model="newCommentText"
-          placeholder="Scrivi un commento..."
-          @keyup.enter="postComment"
-          class="comment-input"
-        />
-        <button @click="postComment" class="send-comment-btn">Invia</button>
-      </div>
+          <!-- Scrollable list: newest comment is at the bottom, right above the input -->
+          <div class="comments-list" ref="commentsListRef">
+            <p v-if="comments.length === 0" class="no-comments">No comments yet. Be the first!</p>
 
-      <!-- Render dei commenti reali -->
-          <div class="comment" v-for="comment in comments" :key="comment.id">
-            <img :src="comment.user_avatar" alt="avatar" class="avatar">
-            <div class="comment-text">
-              <!-- Mostriamo l'username dell'autore e il testo vero -->
-              <strong>{{ comment.user_username }}</strong>
-              <p>{{ comment.content }}</p>
+            <div class="comment-thread" v-for="comment in comments" :key="comment.id">
+              <div class="comment">
+                <img :src="comment.user_avatar" alt="avatar" class="avatar comment-avatar">
+                <div class="comment-body">
+                  <p class="comment-line"><strong>{{ comment.user_username }}</strong> {{ comment.content }}</p>
+                  <div class="comment-meta">
+                    <span>{{ timeAgo(comment.created_at) }}</span>
+                    <button class="reply-btn" @click="startReply(comment, comment)">Reply</button>
+                  </div>
+
+                  <button
+                    v-if="comment.reply_count > 0"
+                    class="view-replies-btn"
+                    @click="toggleReplies(comment.id)">
+                    <span class="replies-line"></span>
+                    {{ expandedReplies[comment.id] ? 'Hide replies' : `View ${comment.reply_count} ${comment.reply_count === 1 ? 'reply' : 'replies'}` }}
+                  </button>
+
+                  <div v-if="expandedReplies[comment.id]" class="replies">
+                    <div class="comment reply" v-for="reply in comment.replies" :key="reply.id">
+                      <img :src="reply.user_avatar" alt="avatar" class="avatar reply-avatar">
+                      <div class="comment-body">
+                        <p class="comment-line"><strong>{{ reply.user_username }}</strong> {{ reply.content }}</p>
+                        <div class="comment-meta">
+                          <span>{{ timeAgo(reply.created_at) }}</span>
+                          <button class="reply-btn" @click="startReply(reply, comment)">Reply</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Input pinned at the bottom -->
+          <div class="comment-composer">
+            <div v-if="replyingTo" class="replying-bar">
+              <span>Replying to <strong>@{{ replyingTo.username }}</strong></span>
+              <button class="cancel-reply" @click="cancelReply" aria-label="Cancel reply">✕</button>
+            </div>
+            <div class="add-comment-area">
+              <input
+                ref="commentInputRef"
+                type="text"
+                v-model="newCommentText"
+                :placeholder="replyingTo ? 'Write a reply...' : 'Add a comment...'"
+                @keyup.enter="postComment"
+                class="comment-input"
+              />
+              <button @click="postComment" class="send-comment-btn" :disabled="isSending || !newCommentText.trim()">Post</button>
             </div>
           </div>
         </div>
@@ -257,7 +350,8 @@ onMounted(() => {
 .search-bar input { background: rgba(255, 255, 255, 0.1); border: none; border-radius: 17px; padding: 10px 20px; color: white; width: 300px; }
 .main-content { display: flex; flex-direction: row; justify-content: space-between; width: 100%; height: calc(100vh - 95px); overflow: hidden; }
 .left-sidebar { width: 280px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
-.right-sidebar { width: 320px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
+.right-sidebar { width: 320px; display: flex; flex-direction: column; gap: 15px; overflow: hidden; min-height: 0; }
+.owner-info, .action-buttons { flex-shrink: 0; }
 .feed-container { flex-grow: 1; max-width: 550px; height: 100%; overflow-y: scroll; scroll-snap-type: y mandatory; scroll-behavior: smooth; scrollbar-width: none; display: flex; flex-direction: column; }
 .video-wrapper { min-height: 100%; width: 100%; scroll-snap-align: start; scroll-snap-stop: always; position: relative; display: flex; justify-content: center; align-items: center; border-radius: 15px; margin-bottom: 15px; }
 .video-placeholder { text-align: center; color: rgba(255, 255, 255, 0.7); }
@@ -276,7 +370,6 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 .nav-icons { display: flex; gap: 20px; align-items: center; }
 .nav-icon { width: 26px; height: 26px; color: #FFFFFF; cursor: pointer; transition: all 0.3s ease; }
 .nav-icon:hover { color: #00f2fe; transform: scale(1.15); }
-.comment { display: flex; gap: 10px; margin-bottom: 15px; font-size: 14px; }
 .main-menu ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 5px; }
 .menu-item { display: flex; align-items: center; padding: 12px 15px; color: #FFFFFF; text-decoration: none; border-radius: 10px; transition: all 0.2s ease-in-out; cursor: pointer; }
 .menu-item:hover { background: rgba(255, 255, 255, 0.1); }
@@ -297,26 +390,28 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   color: #00f2fe;
 }
 
-.add-comment-area {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-.comment-input {
-  flex-grow: 1;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 17px;
-  padding: 8px 15px;
-  color: white;
-}
-.send-comment-btn {
-  background: #00f2fe;
-  color: #000;
-  border: none;
-  border-radius: 10px;
-  padding: 8px 15px;
-  font-weight: bold;
-  cursor: pointer;
-}
+.comments-section { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.comments-section h3 { margin: 0 0 10px; flex-shrink: 0; }
+.comments-list { flex: 1; min-height: 0; overflow-y: auto; padding-right: 4px; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.3) transparent; }
+.no-comments { color: rgba(255,255,255,0.6); font-size: 13px; text-align: center; margin-top: 20px; }
+.comment { display: flex; gap: 10px; margin-bottom: 14px; font-size: 14px; }
+.comment-avatar { width: 32px; height: 32px; flex-shrink: 0; object-fit: cover; }
+.reply-avatar { width: 24px; height: 24px; flex-shrink: 0; object-fit: cover; }
+.comment-body { min-width: 0; flex: 1; }
+.comment-line { margin: 0; line-height: 1.35; word-break: break-word; }
+.comment-meta { display: flex; gap: 12px; align-items: center; margin-top: 3px; font-size: 12px; color: rgba(255,255,255,0.6); }
+.reply-btn, .view-replies-btn, .cancel-reply { background: none; border: none; color: rgba(255,255,255,0.6); cursor: pointer; font-size: 12px; font-weight: bold; padding: 0; }
+.reply-btn:hover, .view-replies-btn:hover { color: #00f2fe; }
+.view-replies-btn { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.replies-line { display: inline-block; width: 24px; height: 1px; background: rgba(255,255,255,0.4); }
+.replies { margin-top: 10px; }
+.replies .comment { margin-bottom: 10px; font-size: 13px; }
+.comment-composer { flex-shrink: 0; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.15); }
+.replying-bar { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: rgba(255,255,255,0.75); background: rgba(255,255,255,0.08); border-radius: 8px; padding: 6px 10px; margin-bottom: 8px; }
+.cancel-reply { font-size: 14px; }
+.add-comment-area { display: flex; gap: 10px; }
+.comment-input { flex-grow: 1; min-width: 0; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 17px; padding: 8px 15px; color: white; outline: none; }
+.comment-input:focus { border-color: #00f2fe; }
+.send-comment-btn { background: #00f2fe; color: #000; border: none; border-radius: 10px; padding: 8px 15px; font-weight: bold; cursor: pointer; }
+.send-comment-btn:disabled { opacity: 0.4; cursor: default; }
 </style>
