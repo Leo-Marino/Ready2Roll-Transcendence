@@ -29,7 +29,7 @@ methods: {
 async fetchOwnerEvents() {
 try {
 const token = localStorage.getItem('token') || localStorage.getItem('access');
-const response = await fetch('http://localhost:8000/api/owner/events/', {
+const response = await fetch('/api/owner/events/', {
 method: 'GET', // GET request to retrieve created events from the backend
 headers: {
 'Authorization': `Bearer ${token}`
@@ -95,7 +95,7 @@ media_src: this.editForm.media_src
 };
 
 try {
-const response = await fetch(`http://localhost:8000/api/events/${this.editForm.id}/`, {
+const response = await fetch(`/api/events/${this.editForm.id}/`, {
 method: 'PUT',
 headers: {
 'Content-Type': 'application/json',

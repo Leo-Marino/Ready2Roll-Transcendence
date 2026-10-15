@@ -183,5 +183,7 @@ AWS_S3_FILE_OVERWRITE = False
 AWS_DEFAULT_ACL = 'public-read'
 AWS_S3_REGION_NAME = 'us-east-1'
 AWS_S3_ADDRESSING_STYLE = 'path'
-AWS_S3_CUSTOM_DOMAIN = 'localhost:9000/media'
+# Indirizzo con cui i BROWSER raggiungono MinIO (non quello interno di docker).
+# Sul PC che fa da server metti nel .env:  MEDIA_DOMAIN=<IP-del-server>:9000/media
+AWS_S3_CUSTOM_DOMAIN = os.environ.get('MEDIA_DOMAIN', 'localhost:9000/media')
 MEDIA_URL = f"http://{AWS_S3_CUSTOM_DOMAIN}/"

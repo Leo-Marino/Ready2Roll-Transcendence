@@ -86,7 +86,7 @@ export default {
       }
 
       const token = localStorage.getItem('token') || localStorage.getItem('access');
-	  const APIUrl = 'http://localhost:8000/api';
+	  const APIUrl = '/api';
 
       const formData = new FormData();
       formData.append('title', this.eventTitle);

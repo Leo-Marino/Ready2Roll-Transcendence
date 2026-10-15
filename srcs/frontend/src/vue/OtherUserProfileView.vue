@@ -5,7 +5,7 @@ import EventMediaGrid from './EventMediaGrid.vue';
 
 const route = useRoute();
 const router = useRouter();
-const API = 'http://localhost:8000/api';
+const API = '/api';
 
 const getToken = () =>
   localStorage.getItem('token') ||
@@ -71,11 +71,7 @@ const fetchUserProfile = async (userId) => {
     const data = await response.json();
     userProfile.value.name = data.username || '';
     userProfile.value.description = data.bio || '';
-    userProfile.value.avatar = data.avatar_url
-      ? (data.avatar_url.startsWith('http')
-          ? data.avatar_url
-          : `http://localhost:9000/media/${data.avatar_url}`)
-      : DEFAULT_AVATAR;
+    userProfile.value.avatar = data.avatar_url || DEFAULT_AVATAR;   // URL gia' completo dal backend
     userProfile.value.following = data.following_count || 0;
     userProfile.value.followers = data.followers_count || 0;
     isFollowing.value = !!data.is_following;
@@ -340,4 +336,3 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   cursor: default;
 }
 </style>
-

@@ -45,7 +45,7 @@ const togglePlay = (event) => {
 };
 
 const getToken = () => localStorage.getItem('token') || localStorage.getItem('access') || localStorage.getItem('access_token');
-const API = 'http://localhost:8000/api';
+const API = '/api';
 // --- Comments state ---
 const commentsListRef = ref(null);     // scrollable list element
 const commentInputRef = ref(null);     // input element (to focus on reply)

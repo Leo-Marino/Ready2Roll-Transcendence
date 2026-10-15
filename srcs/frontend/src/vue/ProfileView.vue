@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import EventMediaGrid from './EventMediaGrid.vue';
 
 const router = useRouter();
-const API = 'http://localhost:8000/api';
+const API = '/api';
 
 //for the following and followers.
 const showFollowModal = ref(false);
@@ -106,9 +106,7 @@ onMounted(async () => {
     userProfile.value.description = data.bio || '';
     ////////////////////////////////////////////////////////////////
     if (data.avatar_url) {
-    userProfile.value.avatar = data.avatar_url.startsWith('http')
-    ? data.avatar_url
-    : `http://localhost:9000/media/${data.avatar_url}`;
+      userProfile.value.avatar = data.avatar_url;   // URL gia' completo dal backend
     }
     ///////////////////////////////////////////////////////////////
     userProfile.value.following = userProfile.value.following_count || 2;
@@ -188,10 +186,8 @@ const saveProfile = async () => {
 
       // Update the UI with the new MinIO URL returned by Django
     if (data.avatar_url) {
-      userProfile.value.avatar = data.avatar_url.startsWith('http')
-        ? data.avatar_url
-        : `http://localhost:9000/media/${data.avatar_url}`;
-      }
+      userProfile.value.avatar = data.avatar_url;   // URL gia' completo dal backend
+    }
 
       showEditModal.value = false;
     } else {
