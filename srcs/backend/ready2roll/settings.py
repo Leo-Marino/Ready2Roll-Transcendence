@@ -170,7 +170,7 @@ AWS_S3_ENDPOINT_URL = f"http://ready2roll-storage:9000"
 AWS_STORAGE_BUCKET_NAME = 'media'
 STORAGES = {
     "default": {
-        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        "BACKEND": "ready2roll.storage.MediaStorage",
     },
     "staticfiles": {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
@@ -183,7 +183,6 @@ AWS_S3_FILE_OVERWRITE = False
 AWS_DEFAULT_ACL = 'public-read'
 AWS_S3_REGION_NAME = 'us-east-1'
 AWS_S3_ADDRESSING_STYLE = 'path'
-# Indirizzo con cui i BROWSER raggiungono MinIO (non quello interno di docker).
-# Sul PC che fa da server metti nel .env:  MEDIA_DOMAIN=<IP-del-server>:9000/media
-AWS_S3_CUSTOM_DOMAIN = os.environ.get('MEDIA_DOMAIN', 'localhost:9000/media')
-MEDIA_URL = f"http://{AWS_S3_CUSTOM_DOMAIN}/"
+# Gli URL dei file sono relativi (/media/...), vedi ready2roll/storage.py:
+# nginx li inoltra a MinIO, quindi non serve scrivere l'IP del server.
+MEDIA_URL = '/media/'
