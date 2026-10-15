@@ -10,17 +10,20 @@ const subscribedAccounts = ref([
 ]);
 
 // (Mock Data for Right Sidebar Comments)
-const comments = ref([
-  { id: 1, user: 'Xhul', text: 'The drop on that first track was insanity!' },
-  { id: 2, user: 'Anna', text: 'Best set of the year so far!' }
-]);
+// const comments = ref([
+//   { id: 1, user: 'Xhul', text: 'The drop on that first track was insanity!' },
+//   { id: 2, user: 'Anna', text: 'Best set of the year so far!' }
+// ]);
 
 // (Mock Data for the Video Feed)
 const videos = ref([
   { id: 1, title: 'Video 1: Awesome DJ Set', url: '/videos/video1.mp4' },
   { id: 2, title: 'Video 2: Crazy Crowd', url: '/videos/video2.mp4' }
 ]);
-
+//#########
+const comments = ref([]);
+const newCommentText = ref('');
+const activeEventId = ref(1);
 // 2. ADDED: Array to hold all video elements
 const videoRefs = ref([]);
 
@@ -42,6 +45,49 @@ const togglePlay = (event) => {
   }
 };
 
+const getToken = () => localStorage.getItem('token') || localStorage.getItem('access') || localStorage.getItem('access_token');
+const API = 'http://localhost:8000/api';
+// GET: Recupera i commenti
+const fetchComments = async (eventId) => {
+  const token = getToken();
+  try {
+    const response = await fetch(`${API}/social/events/${eventId}/comments/`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (response.ok) {
+      comments.value = await response.json();
+    }
+  } catch (error) {
+    console.error('Errore durante il recupero dei commenti:', error);
+  }
+};
+
+// POST: Salva il nuovo commento
+const postComment = async () => {
+  if (!newCommentText.value.trim()) return;
+  const token = getToken();
+
+  try {
+    const response = await fetch(`${API}/social/events/${activeEventId.value}/comments/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ content: newCommentText.value })
+    });
+
+    if (response.ok) {
+      const addedComment = await response.json();
+      comments.value.unshift(addedComment); // Inserisce il commento in cima alla lista
+      newCommentText.value = ''; // Svuota la casella di testo
+    } else {
+        alert("Errore nel salvataggio del commento.");
+    }
+  } catch (error) {
+    console.error('Errore di rete durante l\'invio del commento:', error);
+  }
+};
 // Intersection Observer (The Radar)
 onMounted(() => {
   const observer = new IntersectionObserver((entries) => {
@@ -61,6 +107,7 @@ onMounted(() => {
       observer.observe(videoEl);
     }
   });
+  fetchComments(activeEventId.value);
 });
 </script>
 
@@ -168,13 +215,28 @@ onMounted(() => {
           <button>🔖 2.2k</button>
           <button>•••</button>
         </div>
-        <div class="comments-section glass-panel">
-          <h3>Comments</h3>
+            <div class="comments-section glass-panel">
+      <h3>Comments</h3>
+
+      <!-- Sezione input del commento -->
+      <div class="add-comment-area">
+        <input
+          type="text"
+          v-model="newCommentText"
+          placeholder="Scrivi un commento..."
+          @keyup.enter="postComment"
+          class="comment-input"
+        />
+        <button @click="postComment" class="send-comment-btn">Invia</button>
+      </div>
+
+      <!-- Render dei commenti reali -->
           <div class="comment" v-for="comment in comments" :key="comment.id">
-            <img :src="'https://i.pravatar.cc/150?u=' + comment.id" alt="avatar" class="avatar">
+            <img :src="comment.user_avatar" alt="avatar" class="avatar">
             <div class="comment-text">
-              <strong>{{ comment.user }}</strong>
-              <p>{{ comment.text }}</p>
+              <!-- Mostriamo l'username dell'autore e il testo vero -->
+              <strong>{{ comment.user_username }}</strong>
+              <p>{{ comment.content }}</p>
             </div>
           </div>
         </div>
@@ -233,5 +295,28 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 
 .user-link:hover {
   color: #00f2fe;
+}
+
+.add-comment-area {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.comment-input {
+  flex-grow: 1;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 17px;
+  padding: 8px 15px;
+  color: white;
+}
+.send-comment-btn {
+  background: #00f2fe;
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 15px;
+  font-weight: bold;
+  cursor: pointer;
 }
 </style>
