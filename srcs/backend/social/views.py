@@ -50,12 +50,12 @@ def event_comments_view(request, event_id):
 
     if request.method == 'GET':
         # Restituisce i commenti dal più recente al più vecchio
-        comments = Comment.objects.filter(event=event).order_by('-created_at')
+        comments = Comment.objects.filter(event=event).select_related('user').order_by('-created_at')
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data)
 
     elif request.method == 'POST':
-        content = request.data.get('content')
+        content = (request.data.get('content') or '').strip()
         if not content:
             return Response({'error': 'Il contenuto del commento è obbligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
 

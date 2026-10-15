@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 
 #extract data and post comment
 class CommentSerializer(serializers.ModelSerializer):
-	user_name = serializers.CharField(source='user.username', read_only=True)
+	user_username = serializers.CharField(source='user.username', read_only=True)
 	user_avatar = serializers.SerializerMethodField()
 
 	class Meta:
@@ -17,5 +17,5 @@ class CommentSerializer(serializers.ModelSerializer):
 			avatar_str = str(obj.user.avatar_url)
 			if avatar_str.startswith('http'):
 				return avatar_str
-			return f"http://localhost:9000/media/{avatar_str}"
+			return obj.user.avatar_url.url
 		return "https://i.pravatar.cc/150?u=6"
