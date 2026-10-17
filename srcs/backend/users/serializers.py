@@ -8,16 +8,26 @@ User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['username', 'email', 'password']
+        fields = ['username', 'email', 'password', 'type_of_user', 'legal_name', 'vat_tax']
         extra_kwargs = {'password': {'write_only': True}}
+    def validate(selfs,attrs):
+        if attrs.get('type_of_user') == 'business':
+            errors = {}
+            if not (attrs.get('legal_name') or '').strip():
+                errors['legal_name'] = 'Business / Venue name is required.'
+            if errors:
+                    raise serializers.ValidationError(errors)
+        return attrs
 
     def create(self, validated_data):
-        user = User.objects.create_user(
+         return User.objects.create_user(
             username=validated_data['username'],
             email=validated_data.get('email', ''),
-            password=validated_data['password']
+            password=validated_data['password'],
+            type_of_user=validated_data.get('type_of_user', 'standard'),
+            legal_name=validated_data.get('legal_name'),
+            vat_tax=validated_data.get('vat_tax'),
         )
-        return user
 
 class FollowCountsMixin(serializers.Serializer):
     """Conteggi reali basati sul modello social.Subscription.
@@ -41,7 +51,7 @@ class UserProfileSerializer(FollowCountsMixin, serializers.ModelSerializer):
         fields = [
             'username', 'email', 'first_name', 'last_name', 'bio',
             'avatar_url', 'instagram_handle', 'bs_website',
-            'following_count', 'followers_count',
+            'following_count', 'followers_count', 'type_of_user',
         ]
 
 
@@ -56,7 +66,7 @@ class PublicUserProfileSerializer(FollowCountsMixin, serializers.ModelSerializer
             'id', 'username', 'first_name', 'last_name', 'bio',
             'avatar_url', 'instagram_handle', 'bs_website',
             'following_count', 'followers_count',
-            'is_following', 'is_self',
+            'is_following', 'is_self', 'type_of_user',
         ]
 
     def _viewer(self):
