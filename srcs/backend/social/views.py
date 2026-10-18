@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from events.models import Event
 
-from .models import Subscription, Comment, Like
+from .models import Subscription, Comment, EventLike
 from .serializers import CommentSerializer
 
 User = get_user_model()
@@ -47,7 +47,7 @@ def toggle_follow_view(request, user_id):
 def toggle_like_view(request, event_id):
     """POST /api/social/events/<id>/like/  -> like / unlike toggle."""
     event = get_object_or_404(Event, pk=event_id)
-    like, created = Like.objects.get_or_create(user=request.user, event=event)
+    like, created = EventLike.objects.get_or_create(user=request.user, event=event)
     if not created:
         like.delete()
     return Response({'is_liked': created, 'likes_count': event.likes.count()})
