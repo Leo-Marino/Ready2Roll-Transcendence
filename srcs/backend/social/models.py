@@ -63,9 +63,9 @@ class Reaction(models.Model):
     class Meta:
         db_table = 'reactions'
         constraints = [
-            models.UniqueConstraint(fields=['user', 'comment'], condition=Q(comment__isnull=False), name='unique_user_comment_reaction'),
-            models.UniqueConstraint(fields=['user', 'direct_message'], condition=Q(direct_message__isnull=False), name='unique_user_dm_reaction'),
-            models.CheckConstraint(check=(Q(comment__isnull=False, direct_message__isnull=True) | Q(comment__isnull=True, direct_message__isnull=False)),
+            models.UniqueConstraint(fields=['user', 'comment'], condition=models.Q(comment__isnull=False), name='unique_user_comment_reaction'),
+            models.UniqueConstraint(fields=['user', 'direct_message'], condition=models.Q(direct_message__isnull=False), name='unique_user_dm_reaction'),
+            models.CheckConstraint(check=(models.Q(comment__isnull=False, direct_message__isnull=True) | models.Q(comment__isnull=True, direct_message__isnull=False)),
                 name='reaction_either_comment_or_dm'
             )
         ]
