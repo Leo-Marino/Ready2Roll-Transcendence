@@ -4,7 +4,7 @@ export default {
   emits: ['navigate-view', 'event-published'],
   data() {
     return {
-      activeStep: 1, // 1: Map (Left), 2: Media (Center), 3: Details Form (Right)
+      // activeStep: 1,
       eventTitle: '',
       descriptionText: '',
       eventLocation: 'YAB Club, Florence',
@@ -157,8 +157,6 @@ export default {
 
     <section class="glass-card">
       <div class="preview-box">
-        
-        <!-- STEP 1: MAP LOCATION (LEFT) -->
         <div class="step-column" :class="{ 'step-active': activeStep === 1 }" @click="goToStep(1)">
           <div class="step-header-label">1. MAP LOCATION</div>
           <div class="map-container-inline">
