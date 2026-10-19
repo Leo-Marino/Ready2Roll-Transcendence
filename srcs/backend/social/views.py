@@ -75,7 +75,6 @@ def event_comments_view(request, event_id):
         if not content:
             return Response({'error': 'Il contenuto del commento è obbligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
 
-
     parent = None
     parent_id = request.data.get('parent_comment')
     if parent_id:
@@ -92,7 +91,9 @@ def event_comments_view(request, event_id):
         type_content='text',
         parent_comment=parent,
     )
-    return Response(CommentSerializer(comment).data, status=status.HTTP_201_CREATED)
+    return Response(
+        CommentSerializer(comment, context={'request':request}).data, status=status.HTTP_201_CREATED,
+        )
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -107,28 +108,24 @@ def toggle_comment_reaction_view(request, comment_id):
     valid_choices = dict(Reaction.REACTION_CHOICES).keys()
     if reaction_type not in valid_choices:
         return Response(
-            {'error': f'Reaction non valida. Scelte: {list(valid_choices)}'},
+            {'error': f'Reaction not valid. Choises: {list(valid_choices)}'},
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    existing = Reaction.objects.filter(user=request.user, comment=comment).first()
+    reaction, created = Reaction.objects.get_or_create(
+        user=request.user,
+        comment=comment,
+        defaults={'reaction_type': reaction_type}
+    )
 
-    if existing:
-        if existing.reaction_type == reaction_type:
-            # Stessa reaction cliccata -> rimuove
-            existing.delete()
-            user_reaction = None
-        else:
-            # Reaction diversa -> aggiorna
-            existing.reaction_type = reaction_type
-            existing.save()
-            user_reaction = reaction_type
+    if created:
+        user_reaction=reaction_type
+    elif reaction.reaction_type == reaction_type:
+        reaction.delete()
+        user_reaction = None
     else:
-        Reaction.objects.create(
-            user=request.user,
-            comment=comment,
-            reaction_type=reaction_type
-        )
+        reaction.reaction_type = reaction_type
+        reaction.save(update_fields=['reaction_type'])
         user_reaction = reaction_type
 
     counts = comment.reactions.values('reaction_type').annotate(count=Count('id'))

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from django.db.models import Count
+from collections import Counter
 from .models import Comment
 
 DEFAULT_AVATAR = "https://i.pravatar.cc/150?u=6"
@@ -12,14 +12,14 @@ class CommentSerializer(serializers.ModelSerializer):
     replies = serializers.SerializerMethodField()
     reply_count = serializers.SerializerMethodField()
     reactions_count = serializers.SerializerMethodField()
-    user_reaction = serializers.SeralizerMethodField()
+    user_reaction = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
         fields = [
             'id', 'content', 'created_at', 'parent_comment',
             'user_username', 'user_avatar', 'reply_count', 'replies',
-            'reaction_count', 'user_reaction',
+            'reactions_count', 'user_reaction',
         ]
 
     def get_user_avatar(self, obj):
@@ -34,21 +34,22 @@ class CommentSerializer(serializers.ModelSerializer):
         # Only top-level comments carry replies (Instagram style: one level deep)
         if obj.parent_comment_id is not None:
             return []
-        replies = obj.replies.select_related('user').order_by('created_at')
+        replies = sorted(obj.replies.all(), key=lambda r: r.created_at)
         return CommentSerializer(replies, many=True, context=self.context).data
 
     def get_reply_count(self, obj):
         if obj.parent_comment_id is not None:
             return 0
-        return obj.replies.count()
+        return len(obj.replies.all())
 
-    def get_reaction_count(self, obj):
-        counts = obj.reactions.values('reaction_type').annotate(count=Count('id'))
-        return {item['reaction_type']: item['count'] for item in counts}
+    def get_reactions_count(self, obj):
+        return dict(Counter(r.reaction_type for r in obj.reactions.all()))
 
     def get_user_reaction(self, obj):
-            request = self.context.get('request')
-            if request and request.user.is_authenticated:
-                reaction = obj.reactions.filter(user=request.user).first()
-                return reaction.reaction_type if reaction else None
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
             return None
+        for reaction in obj.reactions.all():
+            if reaction.user_id == request.user.id:
+                return reaction.reaction_type
+        return None

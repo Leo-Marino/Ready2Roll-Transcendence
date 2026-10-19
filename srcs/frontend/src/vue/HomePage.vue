@@ -1,5 +1,4 @@
 <script setup>
-// 1. ADDED: onMounted import
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 
 // (Mock Data for Left Sidebar)
@@ -9,19 +8,13 @@ const subscribedAccounts = ref([
   { id: 3, name: 'thilina', img: 'https://i.pravatar.cc/150?u=3' }
 ]);
 
-// (Mock Data for Right Sidebar Comments)
-// const comments = ref([
-//   { id: 1, user: 'Xhul', text: 'The drop on that first track was insanity!' },
-//   { id: 2, user: 'Anna', text: 'Best set of the year so far!' }
-// ]);
-
 // --- Video feed: real events published by the owners (GET /api/feed/) ---
 const videos = ref([]);
 const feedLoading = ref(true);
-const activeIndex = ref(0);                       // which video is on screen
+const activeIndex = ref(0);                        // which video is on screen
 const activeEvent = computed(() => videos.value[activeIndex.value] || null);
 const activeEventId = computed(() => (activeEvent.value ? activeEvent.value.id : null));
-const wrapperRefs = [];                           // one DOM element per video
+const wrapperRefs = [];                            // one DOM element per video
 
 const comments = ref([]);
 const newCommentText = ref('');
@@ -29,7 +22,7 @@ const newCommentText = ref('');
 // Controls global mute state
 const isMuted = ref(true);
 
-// NEW: Function to toggle audio for all videos
+// Function to toggle audio for all videos
 const toggleMute = () => {
   isMuted.value = !isMuted.value;
 };
@@ -46,11 +39,12 @@ const togglePlay = (event) => {
 
 const getToken = () => localStorage.getItem('token') || localStorage.getItem('access') || localStorage.getItem('access_token');
 const API = '/api';
+
 // --- Comments state ---
-const commentsListRef = ref(null);     // scrollable list element
-const commentInputRef = ref(null);     // input element (to focus on reply)
-const replyingTo = ref(null);          // { parentId, username } or null
-const expandedReplies = reactive({});  // { [commentId]: true } when replies are open
+const commentsListRef = ref(null);      // scrollable list element
+const commentInputRef = ref(null);      // input element (to focus on reply)
+const replyingTo = ref(null);           // { parentId, username } or null
+const expandedReplies = reactive({});   // { [commentId]: true } when replies are open
 const isSending = ref(false);
 
 const scrollCommentsToBottom = async () => {
@@ -147,6 +141,65 @@ const postComment = async () => {
     isSending.value = false;
   }
 };
+
+// --- Reactions on comments ---
+// Same list as Reaction.REACTION_CHOICES in the backend (type -> emoji)
+const REACTIONS = [
+  { type: 'like', emoji: '❤️' },
+  { type: 'laugh', emoji: '😂' },
+  { type: 'wow', emoji: '😮' },
+  { type: 'sad', emoji: '😢' },
+  { type: 'angry', emoji: '😡' },
+  { type: 'thumbs_up', emoji: '👍' },
+  { type: 'thumbs_down', emoji: '👎' },
+];
+
+// id of the comment whose emoji bar is open (null = none)
+const openPicker = ref(null);
+let pickerTimeout = null;
+
+const showPicker = (id) => {
+  if (pickerTimeout) {
+    clearTimeout(pickerTimeout);
+    pickerTimeout = null;
+  }
+  openPicker.value = id;
+};
+
+const hidePicker = () => {
+  pickerTimeout = setTimeout(() => {
+    openPicker.value = null;
+  }, 200);
+};
+
+// Emoji for a type; no reaction (null) -> empty heart
+const emojiOf = (type) => (REACTIONS.find(r => r.type === type) || {}).emoji || '🤍';
+
+// POST react toggle: same type removes it, a different type replaces it.
+// Works for top-level comments AND replies (both have the same fields).
+const reactToComment = async (comment, type) => {
+  if (pickerTimeout) {
+    clearTimeout(pickerTimeout);
+    pickerTimeout = null;
+  }
+  openPicker.value = null; // close the emoji bar after choosing
+  try {
+    const res = await fetch(`${API}/social/comments/${comment.id}/react/`, {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reaction_type: type })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      // The server answer is the truth: overwrite what the screen shows
+      comment.user_reaction = data.user_reaction;
+      comment.reactions_count = data.reactions_count;
+    }
+  } catch (error) {
+    console.error('Errore durante la reaction:', error);
+  }
+};
+// reaction
 const formatCount = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k` : `${n || 0}`);
 
 const authHeaders = () => ({ 'Authorization': `Bearer ${getToken()}` });
@@ -173,8 +226,6 @@ const toggleLike = async () => {
     console.error('Like failed:', error);
   }
 };
-
-
 
 // POST subscribe/unsubscribe to the owner of the video on screen
 const toggleSubscribe = async () => {
@@ -231,17 +282,21 @@ const fetchFeed = async () => {
 watch(activeEventId, (id) => {
   comments.value = [];
   cancelReply();
+  openPicker.value = null;
   Object.keys(expandedReplies).forEach((k) => delete expandedReplies[k]);
   if (id) fetchComments(id);
 });
 
 onMounted(fetchFeed);
-onBeforeUnmount(() => observer && observer.disconnect());
+onBeforeUnmount(() => {
+  if (observer) observer.disconnect();
+  if (pickerTimeout) clearTimeout(pickerTimeout);
+});
 </script>
 
 <template>
   <video autoplay muted loop playsinline id="bgVideo">
-      <source src="../assets/ready2roll_wave_background.mp4" type="video/mp4">
+    <source src="../assets/ready2roll_wave_background.mp4" type="video/mp4">
   </video>
 
   <div class="app-container">
@@ -286,19 +341,18 @@ onBeforeUnmount(() => observer && observer.disconnect());
             </li>
           </ul>
         </nav>
-          <div class="subscribed-list">
-            <h3>Subscribed accounts</h3>
-            <ul>
-              <li v-for="account in subscribedAccounts" :key="account.id">
-                <!-- ZIDNA HNA ROUTER-LINK -->
-                <router-link :to="{ name: 'UserProfile', params: { id: account.id } }" class="user-link">
-                  <img :src="account.img" alt="avatar" class="avatar">
-                  <span>{{ account.name }}</span>
-                </router-link>
-              </li>
-            </ul>
-            <p class="show-more">show more  </p>
-          </div>
+        <div class="subscribed-list">
+          <h3>Subscribed accounts</h3>
+          <ul>
+            <li v-for="account in subscribedAccounts" :key="account.id">
+              <router-link :to="{ name: 'UserProfile', params: { id: account.id } }" class="user-link">
+                <img :src="account.img" alt="avatar" class="avatar">
+                <span>{{ account.name }}</span>
+              </router-link>
+            </li>
+          </ul>
+          <p class="show-more">show more</p>
+        </div>
       </aside>
 
       <main class="feed-container">
@@ -338,65 +392,125 @@ onBeforeUnmount(() => observer && observer.disconnect());
 
       <aside class="right-sidebar">
         <template v-if="activeEvent">
-        <div class="owner-info glass-panel">
-          <div class="owner-header">
-            <router-link :to="ownerLink" class="owner-link">
-              <img :src="activeEvent.owner.avatar" alt="owner" class="avatar">
-              <div class="owner-text">
-                <p class="owner-name">{{ activeEvent.owner.display_name }}</p>
-                <p class="owner-handle">@{{ activeEvent.owner.username }} · {{ timeAgo(activeEvent.created_at) }}</p>
-              </div>
-            </router-link>
-            <button
-              v-if="!activeEvent.owner.is_self"
-              class="subscribe-btn"
-              :class="{ subscribed: activeEvent.owner.is_following }"
-              @click="toggleSubscribe">
-              {{ activeEvent.owner.is_following ? 'Subscribed' : 'Subscribe' }}
-            </button>
+          <div class="owner-info glass-panel">
+            <div class="owner-header">
+              <router-link :to="ownerLink" class="owner-link">
+                <img :src="activeEvent.owner.avatar" alt="owner" class="avatar">
+                <div class="owner-text">
+                  <p class="owner-name">{{ activeEvent.owner.display_name }}</p>
+                  <p class="owner-handle">@{{ activeEvent.owner.username }} · {{ timeAgo(activeEvent.created_at) }}</p>
+                </div>
+              </router-link>
+              <button
+                v-if="!activeEvent.owner.is_self"
+                class="subscribe-btn"
+                :class="{ subscribed: activeEvent.owner.is_following }"
+                @click="toggleSubscribe">
+                {{ activeEvent.owner.is_following ? 'Subscribed' : 'Subscribe' }}
+              </button>
+            </div>
+            <p class="description">{{ activeEvent.description }}</p>
           </div>
-          <p class="description">{{ activeEvent.description }}</p>
-        </div>
-        <div class="action-buttons glass-panel">
-          <button :class="{ liked: activeEvent.is_liked }" @click="toggleLike">
-            {{ activeEvent.is_liked ? '❤️' : '🤍' }} {{ formatCount(activeEvent.likes_count) }}
-          </button>
-          <button>💬 {{ formatCount(activeEvent.comments_count) }}</button>
-          <button>•••</button>
-        </div>
-        <div class="comments-section glass-panel">
-          <h3>Comments</h3>
 
-          <!-- Scrollable list: newest comment is at the bottom, right above the input -->
-          <div class="comments-list" ref="commentsListRef">
-            <p v-if="comments.length === 0" class="no-comments">No comments yet. Be the first!</p>
+          <div class="action-buttons glass-panel">
+            <button :class="{ liked: activeEvent.is_liked }" @click="toggleLike">
+              {{ activeEvent.is_liked ? '❤️' : '🤍' }} {{ formatCount(activeEvent.likes_count) }}
+            </button>
+            <button>💬 {{ formatCount(activeEvent.comments_count) }}</button>
+            <button>•••</button>
+          </div>
 
-            <div class="comment-thread" v-for="comment in comments" :key="comment.id">
-              <div class="comment">
-                <img :src="comment.user_avatar" alt="avatar" class="avatar comment-avatar">
-                <div class="comment-body">
-                  <p class="comment-line"><strong>{{ comment.user_username }}</strong> {{ comment.content }}</p>
-                  <div class="comment-meta">
-                    <span>{{ timeAgo(comment.created_at) }}</span>
-                    <button class="reply-btn" @click="startReply(comment, comment)">Reply</button>
-                  </div>
+          <div class="comments-section glass-panel">
+            <h3>Comments</h3>
 
-                  <button
-                    v-if="comment.reply_count > 0"
-                    class="view-replies-btn"
-                    @click="toggleReplies(comment.id)">
-                    <span class="replies-line"></span>
-                    {{ expandedReplies[comment.id] ? 'Hide replies' : `View ${comment.reply_count} ${comment.reply_count === 1 ? 'reply' : 'replies'}` }}
-                  </button>
+            <!-- Scrollable list: newest comment is at the bottom, right above the input -->
+            <div class="comments-list" ref="commentsListRef">
+              <p v-if="comments.length === 0" class="no-comments">No comments yet. Be the first!</p>
 
-                  <div v-if="expandedReplies[comment.id]" class="replies">
-                    <div class="comment reply" v-for="reply in comment.replies" :key="reply.id">
-                      <img :src="reply.user_avatar" alt="avatar" class="avatar reply-avatar">
-                      <div class="comment-body">
-                        <p class="comment-line"><strong>{{ reply.user_username }}</strong> {{ reply.content }}</p>
-                        <div class="comment-meta">
-                          <span>{{ timeAgo(reply.created_at) }}</span>
-                          <button class="reply-btn" @click="startReply(reply, comment)">Reply</button>
+              <div class="comment-thread" v-for="comment in comments" :key="comment.id">
+                <div class="comment">
+                  <img :src="comment.user_avatar" alt="avatar" class="avatar comment-avatar">
+                  <div class="comment-body">
+                    <p class="comment-line"><strong>{{ comment.user_username }}</strong> {{ comment.content }}</p>
+                    <div class="comment-meta">
+                      <span>{{ timeAgo(comment.created_at) }}</span>
+                      <button class="reply-btn" @click="startReply(comment, comment)">Reply</button>
+                      <!-- reaction -->
+                      <div class="reaction-wrap" @mouseenter="showPicker(comment.id)" @mouseleave="hidePicker">
+                        <button
+                          type="button"
+                          class="reaction-btn"
+                          :class="{ active: comment.user_reaction }"
+                          @click="reactToComment(comment, comment.user_reaction || 'like')"
+                        >
+                          {{ emojiOf(comment.user_reaction) }}
+                        </button>
+                        <span class="reaction-summary" v-for="(n, type) in comment.reactions_count" :key="type">
+                          {{ emojiOf(type) }}{{ n }}
+                        </span>
+                        <div
+                          class="reaction-picker"
+                          v-if="openPicker === comment.id"
+                          @mouseenter="showPicker(comment.id)"
+                          @mouseleave="hidePicker"
+                        >
+                          <button
+                            type="button"
+                            v-for="r in REACTIONS"
+                            :key="r.type"
+                            @click.stop="reactToComment(comment, r.type)"
+                          >
+                            {{ r.emoji }}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+<!-- reaction -->
+                    <button
+                      v-if="comment.reply_count > 0"
+                      class="view-replies-btn"
+                      @click="toggleReplies(comment.id)">
+                      <span class="replies-line"></span>
+                      {{ expandedReplies[comment.id] ? 'Hide replies' : `View ${comment.reply_count} ${comment.reply_count === 1 ? 'reply' : 'replies'}` }}
+                    </button>
+
+                    <div v-if="expandedReplies[comment.id]" class="replies">
+                      <div class="comment reply" v-for="reply in comment.replies" :key="reply.id">
+                        <img :src="reply.user_avatar" alt="avatar" class="avatar reply-avatar">
+                        <div class="comment-body">
+                          <p class="comment-line"><strong>{{ reply.user_username }}</strong> {{ reply.content }}</p>
+                          <div class="comment-meta">
+                            <span>{{ timeAgo(reply.created_at) }}</span>
+                            <button class="reply-btn" @click="startReply(reply, comment)">Reply</button>
+                            <div class="reaction-wrap" @mouseenter="showPicker(reply.id)" @mouseleave="hidePicker">
+                              <button
+                                type="button"
+                                class="reaction-btn"
+                                :class="{ active: reply.user_reaction }"
+                                @click="reactToComment(reply, reply.user_reaction || 'like')"
+                              >
+                                {{ emojiOf(reply.user_reaction) }}
+                              </button>
+                              <span class="reaction-summary" v-for="(n, type) in reply.reactions_count" :key="type">
+                                {{ emojiOf(type) }}{{ n }}
+                              </span>
+                              <div
+                                class="reaction-picker"
+                                v-if="openPicker === reply.id"
+                                @mouseenter="showPicker(reply.id)"
+                                @mouseleave="hidePicker"
+                              >
+                                <button
+                                  type="button"
+                                  v-for="r in REACTIONS"
+                                  :key="r.type"
+                                  @click.stop="reactToComment(reply, r.type)"
+                                >
+                                  {{ r.emoji }}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -404,27 +518,26 @@ onBeforeUnmount(() => observer && observer.disconnect());
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Input pinned at the bottom -->
-          <div class="comment-composer">
-            <div v-if="replyingTo" class="replying-bar">
-              <span>Replying to <strong>@{{ replyingTo.username }}</strong></span>
-              <button class="cancel-reply" @click="cancelReply" aria-label="Cancel reply">✕</button>
-            </div>
-            <div class="add-comment-area">
-              <input
-                ref="commentInputRef"
-                type="text"
-                v-model="newCommentText"
-                :placeholder="replyingTo ? 'Write a reply...' : 'Add a comment...'"
-                @keyup.enter="postComment"
-                class="comment-input"
-              />
-              <button @click="postComment" class="send-comment-btn" :disabled="isSending || !newCommentText.trim()">Post</button>
+            <!-- Input pinned at the bottom -->
+            <div class="comment-composer">
+              <div v-if="replyingTo" class="replying-bar">
+                <span>Replying to <strong>@{{ replyingTo.username }}</strong></span>
+                <button class="cancel-reply" @click="cancelReply" aria-label="Cancel reply">✕</button>
+              </div>
+              <div class="add-comment-area">
+                <input
+                  ref="commentInputRef"
+                  type="text"
+                  v-model="newCommentText"
+                  :placeholder="replyingTo ? 'Write a reply...' : 'Add a comment...'"
+                  @keyup.enter="postComment"
+                  class="comment-input"
+                />
+                <button @click="postComment" class="send-comment-btn" :disabled="isSending || !newCommentText.trim()">Post</button>
+              </div>
             </div>
           </div>
-        </div>
         </template>
       </aside>
     </div>
@@ -432,7 +545,6 @@ onBeforeUnmount(() => observer && observer.disconnect());
 </template>
 
 <style scoped>
-/* Il tuo stile CSS rimane esattamente lo stesso */
 .feed-video { width: 100%; height: 100%; object-fit: cover; border-radius: 15px; position: absolute; top: 0; left: 0; z-index: 0; }
 .video-overlay, .video-controls { position: relative; z-index: 1; }
 .video-overlay { position: absolute; bottom: 30px; left: 20px; color: white; text-shadow: 1px 1px 4px rgba(0,0,0,0.8); }
@@ -478,7 +590,6 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   color: #FFFFFF;
   width: 100%;
 }
-
 .user-link:hover {
   color: #00f2fe;
 }
@@ -492,13 +603,49 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 .reply-avatar { width: 24px; height: 24px; flex-shrink: 0; object-fit: cover; }
 .comment-body { min-width: 0; flex: 1; }
 .comment-line { margin: 0; line-height: 1.35; word-break: break-word; }
-.comment-meta { display: flex; gap: 12px; align-items: center; margin-top: 3px; font-size: 12px; color: rgba(255,255,255,0.6); }
+.comment-meta { position: relative; display: flex; gap: 12px; align-items: center; margin-top: 3px; font-size: 12px; color: rgba(255,255,255,0.6); }
 .reply-btn, .view-replies-btn, .cancel-reply { background: none; border: none; color: rgba(255,255,255,0.6); cursor: pointer; font-size: 12px; font-weight: bold; padding: 0; }
 .reply-btn:hover, .view-replies-btn:hover { color: #00f2fe; }
 .view-replies-btn { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 .replies-line { display: inline-block; width: 24px; height: 1px; background: rgba(255,255,255,0.4); }
 .replies { margin-top: 10px; }
 .replies .comment { margin-bottom: 10px; font-size: 13px; }
+.reaction-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.reaction-btn { background: none; border: none; cursor: pointer; font-size: 14px; padding: 0; opacity: 0.7; }
+.reaction-btn:hover, .reaction-btn.active { opacity: 1; }
+.reaction-summary { font-size: 12px; color: rgba(255,255,255,0.8); }
+/* Aggiungi padding-bottom: 35px a .comments-list già esistente */
+.comments-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  padding-bottom: 35px; /* Spazio extra per non tagliare il menu sull'ultimo commento */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.3) transparent;
+}
+
+.reaction-picker {
+  position: absolute;
+  left: -40px;
+  top: calc(100% + 4px); /* Si apre verso il basso */
+  z-index: 20;
+  display: flex;
+  gap: 4px;
+  min-width: max-content;
+  background: rgba(25, 25, 25, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  padding: 4px 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.reaction-picker button { background: none; border: none; cursor: pointer; font-size: 16px; padding: 0 2px; transition: transform 0.1s; }
+.reaction-picker button:hover { transform: scale(1.3); }
 .comment-composer { flex-shrink: 0; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.15); }
 .replying-bar { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: rgba(255,255,255,0.75); background: rgba(255,255,255,0.08); border-radius: 8px; padding: 6px 10px; margin-bottom: 8px; }
 .cancel-reply { font-size: 14px; }
