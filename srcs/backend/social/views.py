@@ -1,13 +1,13 @@
 from django.contrib.auth import get_user_model
+from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
 from events.models import Event
 
-from .models import Subscription, Comment, EventLike
+from .models import Subscription, Comment, EventLike, Reaction
 from .serializers import CommentSerializer
 
 User = get_user_model()
@@ -61,15 +61,19 @@ def event_comments_view(request, event_id):
 
     if request.method == 'GET':
         # Restituisce i commenti dal più recente al più vecchio
-        comments = Comment.objects.filter(event=event).select_related('user').prefetch_related('replies__user').order_by('-created_at')
-        serializer = CommentSerializer(comments, many=True)
+        comments = (
+            Comment.objects.filter(event=event, parent_comment__isnull=True)
+            .select_related('user')
+            .prefetch_related('reactions', 'replies__user', 'replies__reactions')
+            .order_by('-created_at')
+        )
+        serializer = CommentSerializer(comments, many=True, context={'request':request})
         return Response(serializer.data)
 
     elif request.method == 'POST':
         content = (request.data.get('content') or '').strip()
         if not content:
             return Response({'error': 'Il contenuto del commento è obbligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
-
 
     parent = None
     parent_id = request.data.get('parent_comment')
@@ -87,4 +91,48 @@ def event_comments_view(request, event_id):
         type_content='text',
         parent_comment=parent,
     )
-    return Response(CommentSerializer(comment).data, status=status.HTTP_201_CREATED)
+    return Response(
+        CommentSerializer(comment, context={'request':request}).data, status=status.HTTP_201_CREATED,
+        )
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def toggle_comment_reaction_view(request, comment_id):
+    """
+    POST /api/social/comments/<comment_id>/react/
+    Body: { "reaction_type": "like" | "laugh" | "wow" | "sad" | "angry" | "thumbs_up" | "thumbs_down" }
+    """
+    comment = get_object_or_404(Comment, pk=comment_id)
+    reaction_type = request.data.get('reaction_type', 'like')
+
+    valid_choices = dict(Reaction.REACTION_CHOICES).keys()
+    if reaction_type not in valid_choices:
+        return Response(
+            {'error': f'Reaction not valid. Choises: {list(valid_choices)}'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    reaction, created = Reaction.objects.get_or_create(
+        user=request.user,
+        comment=comment,
+        defaults={'reaction_type': reaction_type}
+    )
+
+    if created:
+        user_reaction=reaction_type
+    elif reaction.reaction_type == reaction_type:
+        reaction.delete()
+        user_reaction = None
+    else:
+        reaction.reaction_type = reaction_type
+        reaction.save(update_fields=['reaction_type'])
+        user_reaction = reaction_type
+
+    counts = comment.reactions.values('reaction_type').annotate(count=Count('id'))
+    reactions_count = {item['reaction_type']: item['count'] for item in counts}
+
+    return Response({
+        'comment_id': comment.id,
+        'user_reaction': user_reaction,
+        'reactions_count': reactions_count,
+    })
