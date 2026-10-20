@@ -4,6 +4,8 @@ export default {
   emits: ['navigate-view', 'event-published'],
   data() {
     return {
+      isEditMode: false,
+      editingEventId: null,
       activeStep: 1,
       eventTitle: '',
       descriptionText: '',
@@ -13,7 +15,7 @@ export default {
       ticketPrice: '',
       endTime: '',
       tags: '',
-      eventStatus: 'Draft',
+      eventStatus: 'draft',
       uploadedMediaSrc: null,
       actualFile: null,
       mediaType: null,
@@ -26,9 +28,39 @@ export default {
       const parts = this.eventDate.split('T')[0].split('-');
       if (parts.length === 3) {
         const [year, month, day] = parts;
-        return `${day}/${month}/${year}`;
+        return `${day}/${month}/${day}`;
       }
       return this.eventDate;
+    }
+  },
+  mounted() {
+    // Nchoufo wach dkhla l'page 3la wd Edit
+    if (this.$route.query.edit === 'true') {
+      const savedEvent = localStorage.getItem('editingEvent');
+      if (savedEvent) {
+        try {
+          const ev = JSON.parse(savedEvent);
+          this.isEditMode = true;
+          this.editingEventId = ev.id;
+          this.eventTitle = ev.title || '';
+          this.descriptionText = ev.description || '';
+          this.eventLocation = ev.location || 'YAB Club, Florence';
+          // Format dyal datetime-local khasso ykon YYYY-MM-DDTHH:mm
+          this.eventDate = ev.event_date ? String(ev.event_date).slice(0, 16) : '';
+          this.endTime = ev.end_time ? String(ev.end_time).slice(0, 16) : '';
+          this.maxCapacity = ev.max_capacity || '';
+          this.ticketPrice = ev.ticket_price || '';
+          this.tags = Array.isArray(ev.tags) ? ev.tags.join(', ') : (ev.tags || '');
+          this.eventStatus = ev.status ? ev.status.toLowerCase() : 'active';
+          this.uploadedMediaSrc = ev.media_src || null;
+          this.mediaType = ev.media_type || 'image';
+        } catch (e) {
+          console.error('Error parsing editingEvent:', e);
+        }
+      }
+    } else {
+      // Ila dkhl 3adi bach ysayb event jdid, nms7o ay data qdima
+      localStorage.removeItem('editingEvent');
     }
   },
   methods: {
@@ -61,9 +93,9 @@ export default {
         return;
       }
 
-      const token = localStorage.getItem('token') || localStorage.getItem('access');
-
+      const token = localStorage.getItem('token') || localStorage.getItem('access') || localStorage.getItem('access_token');
       const formData = new FormData();
+
       formData.append('title', this.eventTitle);
       formData.append('description', this.descriptionText);
       formData.append('location', this.eventLocation);
@@ -73,21 +105,29 @@ export default {
       if (this.maxCapacity) formData.append('max_capacity', this.maxCapacity);
       if (this.ticketPrice) formData.append('ticket_price', this.ticketPrice);
       if (this.endTime) formData.append('end_time', this.endTime);
+
       if (this.tags) {
-        const tagsArray = this.tags.split(',').map(tag => tag.trim());
+        const tagsArray = this.tags.split(',').map(tag => tag.trim()).filter(Boolean);
         tagsArray.forEach(tag => {
           formData.append('tags', tag);
         });
       }
 
+      // Ila bddel l'video wla tswira, nsifto l'fichier jdid
       if (this.actualFile) {
         formData.append('media_file', this.actualFile);
         formData.append('media_type', this.mediaType);
+      } else if (this.mediaType) {
+        formData.append('media_type', this.mediaType);
       }
 
+      // Ila kna f Edit Mode, nsifto PUT l /api/events/<id>/, sinon POST l /api/events/
+      const url = this.isEditMode ? `/api/events/${this.editingEventId}/` : '/api/events/';
+      const method = this.isEditMode ? 'PUT' : 'POST';
+
       try {
-        const response = await fetch('/api/events/', {
-          method: 'POST',
+        const response = await fetch(url, {
+          method: method,
           headers: {
             'Authorization': `Bearer ${token}`
           },
@@ -95,9 +135,10 @@ export default {
         });
 
         if (response.ok) {
-          const createdEvent = await response.json();
-          alert("Event created successfully!");
-          this.$emit('event-published', createdEvent);
+          const savedEvent = await response.json();
+          localStorage.removeItem('editingEvent');
+          alert(this.isEditMode ? "Event updated successfully!" : "Event created successfully!");
+          this.$emit('event-published', savedEvent);
           this.goToVisualPage();
         }
         else if (response.status === 401) {
@@ -107,12 +148,12 @@ export default {
         else if (response.status === 400) {
           const errorData = await response.json();
           console.error("Validation error: ", errorData);
-          alert("A validation error was found while creating the event; please check your input");
+          alert("A validation error was found; please check your input");
         }
         else {
           const errorData = await response.json();
           console.error("Backend error:", errorData);
-          alert("There was an error creating the event");
+          alert("There was an error saving the event");
         }
       } catch (error) {
         console.error("Network error", error);
@@ -120,8 +161,9 @@ export default {
       }
     },
     goToVisualPage() {
+      localStorage.removeItem('editingEvent');
       if (this.$router) {
-        this.$router.push('/ViewEvent');
+        this.$router.push('/profile');
       }
       this.$emit('navigate-view');
     }
@@ -141,7 +183,7 @@ export default {
     style="display: none;"
     @change="handleFileUpload"
   />
-  
+
   <header class="navbar glass-panel">
     <div class="nav-left">
       <div class="logo" @click="$router.push('/home')">
@@ -173,7 +215,7 @@ export default {
 
   <main class="main-content">
     <div class="page-title-row">
-      <h1 class="page-title">CREATE AN EVENT</h1>
+      <h1 class="page-title">{{ isEditMode ? 'EDIT EVENT' : 'CREATE AN EVENT' }}</h1>
       <button class="action-btn nav-visual-btn" @click="goToVisualPage">
         📂 MY EVENTS
       </button>
@@ -181,7 +223,7 @@ export default {
 
     <section class="glass-card">
       <div class="preview-box">
-        
+
         <!-- STEP 1: CONTENT MEDIA -->
         <div class="step-column" :class="{ 'step-active': activeStep === 1 }" @click="goToStep(1)">
           <div class="step-header-label">1. CONTENT MEDIA</div>
@@ -196,10 +238,10 @@ export default {
               </button>
 
               <!-- Remove Media Button (Only shows when file is uploaded) -->
-              <button 
-                v-if="uploadedMediaSrc" 
-                type="button" 
-                class="media-remove-btn" 
+              <button
+                v-if="uploadedMediaSrc"
+                type="button"
+                class="media-remove-btn"
                 @click.stop="clearMedia"
                 title="Remove media"
               >
@@ -256,7 +298,7 @@ export default {
         <div class="step-column right-section" :class="{ 'step-active': activeStep === 3 }" @click="goToStep(3)">
           <div class="step-header-label">3. EVENT DETAILS</div>
           <div class="event-details-bar-vertical">
-            
+
             <div class="detail-input-group">
               <label for="event-title">TITLE *</label>
               <input
@@ -366,7 +408,7 @@ export default {
 
       <div class="publish-action-bar">
         <button class="publish-btn" @click="handlePublish">
-          PUBLISH EVENT
+          {{ isEditMode ? 'SAVE CHANGES' : 'PUBLISH EVENT' }}
         </button>
       </div>
     </section>

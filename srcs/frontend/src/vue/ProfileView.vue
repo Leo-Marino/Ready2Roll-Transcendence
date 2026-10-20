@@ -97,6 +97,7 @@ const fetchMyEvents = async () => {
 };
 
 const goToCreateEvent = () => {
+  localStorage.removeItem('editingEvent');
   router.push('/CreateEvent');
 };
 
@@ -109,8 +110,10 @@ const closePreview = () => {
 };
 
 const openEdit = (event) => {
-  editForm.value = { ...event };
-  isEditing.value = true;
+  // here we store the event we want for editing localStorage
+  localStorage.setItem('editingEvent', JSON.stringify(event));
+  // we will go to CreateEvent without a new path in the router
+  router.push({ path: '/CreateEvent', query: { edit: 'true' } });
 };
 
 const closeEdit = () => {
@@ -194,7 +197,7 @@ onMounted(async () => {
     userProfile.value.following = data.following_count || 2;
     userProfile.value.followers = data.followers_count || 3;
     userProfile.value.isBusiness = (data.type_of_user === 'business');
-    
+
     if (userProfile.value.isBusiness) {
       activeTab.value = 'events';
       fetchMyEvents();
@@ -364,22 +367,25 @@ const saveProfile = async () => {
           <div class="tab" :class="{ active: activeTab === 'likes' }" @click="activeTab = 'likes'"><span>🖤 Likes</span></div>
         </div>
 
-        <div v-if="userProfile.isBusiness && activeTab === 'events'">
+<div v-if="userProfile.isBusiness && activeTab === 'events'">
           <div v-if="myEvents.length === 0" class="glass-panel" style="text-align: center; padding: 30px; color: #aaa;">
             You haven't created any events yet.
           </div>
+
           <section class="events-grid">
             <div
               v-for="event in myEvents"
               :key="event.id"
-              class="event-card glass-card"
+              class="event-reel-card glass-panel"
+              @click="openPreview(event)"
             >
-              <div class="card-media-header">
+              <!-- Background Media Content (Clickable to open stats) -->
+              <div class="reel-media-bg">
                 <img
                   v-if="event.media_type === 'image'"
                   :src="event.media_src"
                   alt="Event media"
-                  class="card-thumb"
+                  class="reel-thumb"
                 />
                 <video
                   v-else
@@ -387,31 +393,39 @@ const saveProfile = async () => {
                   autoplay
                   muted
                   loop
-                  class="card-thumb"
+                  playsinline
+                  class="reel-thumb"
                 ></video>
-                <span class="status-badge" :class="event.status ? event.status.toLowerCase() : ''">
-                  {{ event.status }}
-                </span>
               </div>
 
-              <div class="card-body">
+              <!-- Status Badge -->
+              <span class="status-badge" :class="event.status ? event.status.toLowerCase() : ''">
+                {{ event.status }}
+              </span>
+
+              <!-- Content Overlay on top of Media -->
+              <div class="reel-overlay-content">
                 <h3 class="event-title">{{ event.title }}</h3>
                 <div class="event-info-row">
                   <span>📍 {{ event.location }}</span>
-                  <span>📅 {{ event.event_date }}</span>
+                  <span>📅 {{ event.event_date ? event.event_date.slice(0, 10) : '' }}</span>
                 </div>
                 <p class="event-description-truncated">
                   {{ event.description || 'No description was inserted' }}
                 </p>
-              </div>
 
-              <div class="card-actions">
-                <button class="action-btn preview-btn" @click="openPreview(event)">
-                  Preview
-                </button>
-                <button class="action-btn edit-btn-card" @click="openEdit(event)">
-                  Edit
-                </button>
+                <!-- Quick mini stats on card -->
+                <div class="mini-stats-row">
+                  <span>❤️ {{ event.likes_count || 0 }}</span>
+                  <span>💬 {{ event.comments_count || 0 }}</span>
+                </div>
+
+                <!-- Only Edit Button (.stop prevents opening the stats modal when clicking Edit) -->
+                <div class="card-actions">
+                  <button class="action-btn edit-btn-card" @click.stop="openEdit(event)">
+                    ✏️ Edit
+                  </button>
+                </div>
               </div>
             </div>
           </section>
@@ -545,6 +559,87 @@ const saveProfile = async () => {
       <div class="modal-footer" style="justify-content: center; gap: 10px;">
         <button class="cancel-btn" @click="closeLogoutModal">Cancel</button>
         <button class="logout-confirm-btn" @click="confirmLogout">Logout</button>
+      </div>
+    </div>
+  </div>
+  <!-- EVENT STATS & VIDEO MODAL -->
+  <div v-if="activePreviewEvent" class="modal-overlay stats-overlay" @click.self="closePreview">
+    <div class="stats-modal-card glass-panel">
+      <button class="close-modal-btn stats-close-btn" @click="closePreview">✕</button>
+
+      <!-- Left: Tall 9/16 Video/Image -->
+      <div class="stats-media-box">
+        <img
+          v-if="activePreviewEvent.media_type === 'image'"
+          :src="activePreviewEvent.media_src"
+          alt="Event Media"
+          class="stats-media"
+        />
+        <video
+          v-else
+          :src="activePreviewEvent.media_src"
+          controls
+          autoplay
+          loop
+          playsinline
+          class="stats-media"
+        ></video>
+      </div>
+
+      <!-- Right: Event Statistics & Details -->
+      <div class="stats-info-box">
+        <div class="stats-header">
+          <span class="status-badge-inline" :class="activePreviewEvent.status ? activePreviewEvent.status.toLowerCase() : ''">
+            {{ activePreviewEvent.status }}
+          </span>
+          <h2>{{ activePreviewEvent.title }}</h2>
+          <p class="stats-desc">{{ activePreviewEvent.description || 'No description provided.' }}</p>
+        </div>
+
+        <!-- Big Stats Counters (Likes & Comments) -->
+        <div class="stats-metrics-grid">
+          <div class="metric-card">
+            <span class="metric-icon">❤️</span>
+            <div class="metric-data">
+              <strong>{{ activePreviewEvent.likes_count || 0 }}</strong>
+              <small>Total Likes</small>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <span class="metric-icon">💬</span>
+            <div class="metric-data">
+              <strong>{{ activePreviewEvent.comments_count || 0 }}</strong>
+              <small>Comments</small>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <span class="metric-icon">🎟️</span>
+            <div class="metric-data">
+              <strong>{{ activePreviewEvent.ticket_price ? `€${activePreviewEvent.ticket_price}` : 'Free' }}</strong>
+              <small>Ticket Price</small>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <span class="metric-icon">👥</span>
+            <div class="metric-data">
+              <strong>{{ activePreviewEvent.max_capacity || '∞' }}</strong>
+              <small>Max Capacity</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Extra Info -->
+        <div class="stats-meta-list">
+          <div><strong>📍 Location:</strong> {{ activePreviewEvent.location || 'TBD' }}</div>
+          <div><strong>📅 Date:</strong> {{ activePreviewEvent.event_date ? activePreviewEvent.event_date.replace('T', ' ').slice(0, 16) : 'TBD' }}</div>
+        </div>
+
+        <button class="create-event-btn" style="width: 100%; margin-top: auto;" @click="openEdit(activePreviewEvent)">
+          ✏️ Edit this Event
+        </button>
       </div>
     </div>
   </div>
@@ -743,4 +838,196 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 .avatar-small { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
 .user-link { display: flex; align-items: center; gap: 10px; text-decoration: none; color: white; width: 100%; transition: color 0.3s ease; }
 .user-link:hover { color: #00f2fe; }
+/* Tall 9:16 Reel Cards */
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 18px;
+  width: 100%;
+}
+
+.event-reel-card {
+  aspect-ratio: 9 / 16;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  position: relative;
+  overflow: hidden;
+  padding: 15px;
+  box-sizing: border-box;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.event-reel-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  border-color: rgba(0, 242, 254, 0.6);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+}
+
+.reel-media-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.reel-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.reel-overlay-content {
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.45) 60%, transparent 100%);
+  margin: -15px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  justify-content: flex-end;
+  height: 100%;
+}
+
+.mini-stats-row {
+  display: flex;
+  gap: 14px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #00f2fe;
+  margin-top: 2px;
+}
+
+/* Stats Modal */
+.stats-overlay {
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+}
+
+.stats-modal-card {
+  position: relative;
+  display: flex;
+  gap: 24px;
+  background: rgba(20, 20, 30, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 20px;
+  max-width: 820px;
+  width: 92%;
+  max-height: 88vh;
+  color: white;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+}
+
+.stats-close-btn {
+  position: absolute;
+  top: 15px;
+  right: 18px;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.1);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stats-media-box {
+  height: min(78vh, 560px);
+  aspect-ratio: 9 / 16;
+  background: #000;
+  border-radius: 14px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.stats-media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.stats-info-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.stats-header h2 {
+  margin: 8px 0;
+  font-family: "Bruno Ace", sans-serif;
+  font-size: 1.4rem;
+}
+
+.stats-desc {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.4;
+}
+
+.status-badge-inline {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  border: 1px solid #00f2fe;
+  color: #00f2fe;
+  background: rgba(0, 242, 254, 0.15);
+}
+
+.stats-metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.metric-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.metric-icon {
+  font-size: 1.6rem;
+}
+
+.metric-data {
+  display: flex;
+  flex-direction: column;
+}
+
+.metric-data strong {
+  font-size: 1.2rem;
+  color: #00f2fe;
+}
+
+.metric-data small {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.stats-meta-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.88rem;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 12px 15px;
+  border-radius: 10px;
+}
 </style>

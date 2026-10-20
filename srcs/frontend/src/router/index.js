@@ -54,10 +54,9 @@ const routes = [
     name: 'UserProfile',
     component: OtherUserProfileView
   },
-  {
+{
     path: '/ViewEvent',
-    name: 'ViewEvent',
-    component: ViewEvent
+    redirect: '/profile'
   }
 ]
 
