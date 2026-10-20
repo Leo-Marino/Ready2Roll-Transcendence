@@ -1,27 +1,26 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import EventMediaGrid from './EventMediaGrid.vue';
 
 const router = useRouter();
 const API = '/api';
 
-//for the following and followers.
 const showFollowModal = ref(false);
 const followModalType = ref('');
 const followList = ref([]);
+const showLogoutModal = ref(false);
 
 const openFollowModal = async (type) => {
   followModalType.value = type;
   showFollowModal.value = true;
   followList.value = [];
 
-  if (type == 'following') {
+  if (type === 'following') {
     followList.value = [
       { id: 1, username: 'Xhul', avatar: 'https://i.pravatar.cc/150?u=1' },
       { id: 2, username: 'Anna', avatar: 'https://i.pravatar.cc/150?u=2' }
     ];
-  } else if (type == 'followers') {
+  } else if (type === 'followers') {
     followList.value = [
       { id: 3, username: 'thilina', avatar: 'https://i.pravatar.cc/150?u=3' },
       { id: 4, username: 'Milko', avatar: 'https://i.pravatar.cc/150?u=4' }
@@ -32,41 +31,130 @@ const openFollowModal = async (type) => {
 const closeFollowModal = () => {
   showFollowModal.value = false;
 };
-//to read the name token
+
 const getToken = () =>
   localStorage.getItem('token') ||
   localStorage.getItem('access') ||
   localStorage.getItem('access_token');
 
-// Mock data for the left sidebar
+const openLogoutModal = () => {
+  showLogoutModal.value = true;
+};
+
+const closeLogoutModal = () => {
+  showLogoutModal.value = false;
+};
+
+const confirmLogout = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('access');
+  localStorage.removeItem('access_token');
+  router.push('/login');
+};
+
 const subscribedAccounts = ref([
   { id: 1, name: 'Xhul', img: 'https://i.pravatar.cc/150?u=1' },
   { id: 2, name: 'Anna', img: 'https://i.pravatar.cc/150?u=2' },
   { id: 3, name: 'thilina', img: 'https://i.pravatar.cc/150?u=3' },
 ]);
 
-
-// The active user's profile data
 const userProfile = ref({
   name: 'Loading...',
   following: 0,
   followers: 0,
   description: 'Loading...',
-  avatar: 'https://i.pravatar.cc/150?u=6', // Default fallback
+  avatar: 'https://i.pravatar.cc/150?u=6',
   isBusiness: false
 });
 
 const myEvents = ref([]);
 const activeTab = ref('likes');
 
+const activePreviewEvent = ref(null);
+const isEditing = ref(false);
+const editForm = ref({
+  id: null,
+  title: '',
+  location: '',
+  event_date: '',
+  status: 'Active',
+  description: '',
+  media_type: 'image',
+  media_src: ''
+});
+
 const fetchMyEvents = async () => {
   try {
     const response = await fetch(`${API}/owner/events/`, {
       headers: { 'Authorization': `Bearer ${getToken()}` }
     });
-    if (response.ok) myEvents.value = await response.json();
+    if (response.ok) {
+      myEvents.value = await response.json();
+    }
   } catch (error) {
     console.error('Could not load my events', error);
+  }
+};
+
+const goToCreateEvent = () => {
+  router.push('/CreateEvent');
+};
+
+const openPreview = (event) => {
+  activePreviewEvent.value = event;
+};
+
+const closePreview = () => {
+  activePreviewEvent.value = null;
+};
+
+const openEdit = (event) => {
+  editForm.value = { ...event };
+  isEditing.value = true;
+};
+
+const closeEdit = () => {
+  isEditing.value = false;
+};
+
+const saveEdit = async () => {
+  const token = getToken();
+  const payload = {
+    title: editForm.value.title,
+    location: editForm.value.location,
+    event_date: editForm.value.event_date,
+    status: editForm.value.status,
+    description: editForm.value.description,
+    media_type: editForm.value.media_type,
+    media_src: editForm.value.media_src
+  };
+
+  try {
+    const response = await fetch(`${API}/events/${editForm.value.id}/`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (response.ok) {
+      const updatedEvent = await response.json();
+      const index = myEvents.value.findIndex(e => e.id === editForm.value.id);
+      if (index !== -1) {
+        myEvents.value.splice(index, 1, updatedEvent);
+      }
+      alert("Event updated successfully!");
+      closeEdit();
+    } else {
+      const errData = await response.json();
+      console.error("Error updating event:", errData);
+      alert("Error saving changes.");
+    }
+  } catch (error) {
+    console.error("Network error during save:", error);
+    alert("Unable to connect to the backend server.");
   }
 };
 
@@ -75,22 +163,18 @@ const likedVideos = ref([
   { id: 2, title: 'Video 2', thumbnail: '' },
 ]);
 
-// --- FETCH DATA ON LOAD ---
 onMounted(async () => {
   const token = getToken();
   if (!token) {
-    router.push('/login'); // not logged in
+    router.push('/login');
     return;
   }
   try {
     const response = await fetch(`${API}/profile/`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      headers: { 'Authorization': `Bearer ${token}` }
     });
 
     if (response.status === 401) {
-      // token expired or invalid
       localStorage.removeItem('token');
       localStorage.removeItem('access');
       localStorage.removeItem('access_token');
@@ -98,20 +182,19 @@ onMounted(async () => {
       return;
     }
     if (!response.ok) {
-      console.error('could not load profile, status', response.status)
-      return ;
+      console.error('Could not load profile, status', response.status);
+      return;
     }
     const data = await response.json();
     userProfile.value.name = data.username || '';
     userProfile.value.description = data.bio || '';
-    ////////////////////////////////////////////////////////////////
     if (data.avatar_url) {
-      userProfile.value.avatar = data.avatar_url;   // URL gia' completo dal backend
+      userProfile.value.avatar = data.avatar_url;
     }
-    ///////////////////////////////////////////////////////////////
-    userProfile.value.following = userProfile.value.following_count || 2;
-    userProfile.value.followers = userProfile.value.followers_count || 3;
+    userProfile.value.following = data.following_count || 2;
+    userProfile.value.followers = data.followers_count || 3;
     userProfile.value.isBusiness = (data.type_of_user === 'business');
+    
     if (userProfile.value.isBusiness) {
       activeTab.value = 'events';
       fetchMyEvents();
@@ -121,22 +204,21 @@ onMounted(async () => {
   }
 });
 
-// --- EDIT PROFILE MODAL LOGIC ---
 const showEditModal = ref(false);
 const fileInput = ref(null);
 const tempAvatar = ref('');
-const selectedFile = ref(null); // Holds the actual image file to send to Django
+const selectedFile = ref(null);
 
-const editForm = ref({
+const profileEditForm = ref({
   username: '',
   bio: ''
 });
 
 const openEditModal = () => {
-  editForm.value.username = userProfile.value.name;
-  editForm.value.bio = userProfile.value.description;
+  profileEditForm.value.username = userProfile.value.name;
+  profileEditForm.value.bio = userProfile.value.description;
   tempAvatar.value = userProfile.value.avatar;
-  selectedFile.value = null; // Reset file selection
+  selectedFile.value = null;
   showEditModal.value = true;
 };
 
@@ -151,19 +233,16 @@ const triggerFileInput = () => {
 const handleImageUpload = (event) => {
   const file = event.target.files[0];
   if (file) {
-    selectedFile.value = file; // Save the file object for the backend
-    tempAvatar.value = URL.createObjectURL(file); // Show instant preview
+    selectedFile.value = file;
+    tempAvatar.value = URL.createObjectURL(file);
   }
 };
 
-/////////////////////////////////////////////
 const saveProfile = async () => {
-  // 1. Create the physical shipping box
   const formData = new FormData();
-  formData.append('username', editForm.value.username);
-  formData.append('bio', editForm.value.bio);
+  formData.append('username', profileEditForm.value.username);
+  formData.append('bio', profileEditForm.value.bio);
 
-  // 2. Pack the actual image file if the user selected one
   if (selectedFile.value) {
     formData.append('avatar_url', selectedFile.value);
   }
@@ -171,23 +250,19 @@ const saveProfile = async () => {
   try {
     const response = await fetch(`${API}/profile/update/`, {
       method: 'PATCH',
-      headers: {
-        // NO 'Content-Type' here! The browser handles it automatically for FormData.
-        'Authorization': `Bearer ${getToken()}`
-      },
-      body: formData // Send the box
+      headers: { 'Authorization': `Bearer ${getToken()}` },
+      body: formData
     });
 
     const data = await response.json();
 
     if (response.ok) {
-      userProfile.value.name = data.username ?? editForm.value.username;
-      userProfile.value.description = data.bio ?? editForm.value.bio;
+      userProfile.value.name = data.username ?? profileEditForm.value.username;
+      userProfile.value.description = data.bio ?? profileEditForm.value.bio;
 
-      // Update the UI with the new MinIO URL returned by Django
-    if (data.avatar_url) {
-      userProfile.value.avatar = data.avatar_url;   // URL gia' completo dal backend
-    }
+      if (data.avatar_url) {
+        userProfile.value.avatar = data.avatar_url;
+      }
 
       showEditModal.value = false;
     } else {
@@ -200,7 +275,6 @@ const saveProfile = async () => {
     alert('Unable to connect to the server.');
   }
 };
-
 </script>
 
 <template>
@@ -210,21 +284,22 @@ const saveProfile = async () => {
 
   <div class="app-container">
 
-    <!-- Navbar -->
     <header class="navbar glass-panel">
       <div class="logo" @click="$router.push('/home')">
         <img src="../assets/logo_temp.png" alt="Ready2Roll Logo" class="nav-logo-img">
         <span class="logo-text">Ready2Roll</span>
       </div>
       <div class="search-bar">
-        <input type="text" placeholder="search">
+        <input type="text" placeholder="Search...">
       </div>
       <div class="nav-icons">
-        <router-link to="/chat" class="nav-icon-link">
+        <router-link to="/direct" class="nav-icon-link" title="Direct Messages">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg>
         </router-link>
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" /></svg>
-        <router-link to="/profile" class="nav-icon-link">
+        <router-link to="/chat" class="nav-icon-link" title="Chat">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" /></svg>
+        </router-link>
+        <router-link to="/profile" class="nav-icon-link" title="Profile">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
         </router-link>
       </div>
@@ -232,32 +307,29 @@ const saveProfile = async () => {
 
     <div class="main-content">
 
-      <!-- Left Sidebar -->
       <aside class="left-sidebar glass-panel">
         <nav class="main-menu">
           <h3>Menu</h3>
           <ul>
             <li @click="$router.push('/home')">🏠 For you</li>
-            <li>👤 subscription</li>
-            <li>🧭 discover</li>
+            <li>👤 Subscription</li>
+            <li>🧭 Discover</li>
           </ul>
         </nav>
         <div class="subscribed-list">
-          <h3>subscribed accounts</h3>
+          <h3>Subscribed accounts</h3>
           <ul>
             <li v-for="account in subscribedAccounts" :key="account.id">
-              <!-- Zidna router-link hna -->
               <router-link :to="{ name: 'UserProfile', params: { id: account.id } }" class="user-link">
                 <img :src="account.img" alt="avatar" class="avatar">
                 <span>{{ account.name }}</span>
               </router-link>
             </li>
           </ul>
-          <p class="show-more">show more ⌄</p>
+          <p class="show-more">Show more ⌄</p>
         </div>
       </aside>
 
-      <!-- Center: Profile Area -->
       <main class="profile-container">
 
         <div class="profile-header glass-panel">
@@ -267,7 +339,6 @@ const saveProfile = async () => {
               <h2>{{ userProfile.name }} 🔒</h2>
             </div>
             <div class="stats-row">
-              <!-- Redinaha span katclicka -->
               <span class="clickable-stat" @click="openFollowModal('following')">
                 <strong>{{ userProfile.following }}</strong> following
               </span>
@@ -280,27 +351,73 @@ const saveProfile = async () => {
             </div>
           </div>
           <div class="action-buttons">
-            <button v-if="userProfile.isBusiness" class="create-event-btn" @click="$router.push('/CreateEvent')">
-              create Event 📅
+            <button v-if="userProfile.isBusiness" class="create-event-btn" @click="goToCreateEvent">
+              Create Event 📅
             </button>
-          <!-- Click qui apre il modal -->
-            <button class="edit-btn" @click="openEditModal">edit profile</button>
+            <button class="edit-btn" @click="openEditModal">Edit profile</button>
+            <button class="logout-btn" @click="openLogoutModal">Logout</button>
           </div>
         </div>
 
         <div class="profile-tabs glass-panel">
-          <div v-if="userProfile.isBusiness" class="tab" :class="{ active: activeTab === 'events' }" @click="activeTab = 'events'"><span>🎬 My videos</span></div>
+          <div v-if="userProfile.isBusiness" class="tab" :class="{ active: activeTab === 'events' }" @click="activeTab = 'events'"><span>🎬 My Events</span></div>
           <div class="tab" :class="{ active: activeTab === 'likes' }" @click="activeTab = 'likes'"><span>🖤 Likes</span></div>
         </div>
 
-        <EventMediaGrid
-          v-if="userProfile.isBusiness && activeTab === 'events'"
-          :events="myEvents"
-          :show-status="true"
-          empty-text="You haven't created any events yet."
-        />
+        <div v-if="userProfile.isBusiness && activeTab === 'events'">
+          <div v-if="myEvents.length === 0" class="glass-panel" style="text-align: center; padding: 30px; color: #aaa;">
+            You haven't created any events yet.
+          </div>
+          <section class="events-grid">
+            <div
+              v-for="event in myEvents"
+              :key="event.id"
+              class="event-card glass-card"
+            >
+              <div class="card-media-header">
+                <img
+                  v-if="event.media_type === 'image'"
+                  :src="event.media_src"
+                  alt="Event media"
+                  class="card-thumb"
+                />
+                <video
+                  v-else
+                  :src="event.media_src"
+                  autoplay
+                  muted
+                  loop
+                  class="card-thumb"
+                ></video>
+                <span class="status-badge" :class="event.status ? event.status.toLowerCase() : ''">
+                  {{ event.status }}
+                </span>
+              </div>
 
-        <div v-else class="video-grid">
+              <div class="card-body">
+                <h3 class="event-title">{{ event.title }}</h3>
+                <div class="event-info-row">
+                  <span>📍 {{ event.location }}</span>
+                  <span>📅 {{ event.event_date }}</span>
+                </div>
+                <p class="event-description-truncated">
+                  {{ event.description || 'No description was inserted' }}
+                </p>
+              </div>
+
+              <div class="card-actions">
+                <button class="action-btn preview-btn" @click="openPreview(event)">
+                  Preview
+                </button>
+                <button class="action-btn edit-btn-card" @click="openEdit(event)">
+                  Edit
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div v-else-if="activeTab === 'likes'" class="video-grid">
           <div class="video-card glass-panel" v-for="video in likedVideos" :key="video.id">
             <p class="placeholder-text">video</p>
             <span class="heart-icon">🖤</span>
@@ -311,26 +428,19 @@ const saveProfile = async () => {
     </div>
   </div>
 
-  <!-- EDIT PROFILE MODAL -->
   <div v-if="showEditModal" class="modal-overlay" @click.self="closeEditModal">
     <div class="modal-content">
-      <!-- Header -->
       <div class="modal-header">
         <h3>Edit profile</h3>
         <button class="close-modal-btn" @click="closeEditModal">✕</button>
       </div>
 
-
-      <!-- Modal Body -->
       <div class="modal-body">
-
-        <!-- Profile Photo (Clickable for upload) -->
         <div class="modal-section row-section">
           <label>Profile photo</label>
           <div class="photo-edit-area" @click="triggerFileInput">
             <img :src="tempAvatar" alt="avatar" class="edit-avatar">
             <span class="edit-pencil">✏️</span>
-            <!-- Hidden file input -->
             <input
               type="file"
               accept="image/*"
@@ -341,32 +451,71 @@ const saveProfile = async () => {
           </div>
         </div>
 
-        <!-- Username -->
         <div class="modal-section row-section">
           <label>Username</label>
           <div class="input-area">
-            <input type="text" v-model="editForm.username" placeholder="Username">
-            <p class="helper-text">Usernames can only contain letters, numbers, underscores, and periods. Changing your username will also change your profile link.</p>
+            <input type="text" v-model="profileEditForm.username" placeholder="Username">
+            <p class="helper-text">Usernames can only contain letters, numbers, underscores, and periods.</p>
           </div>
         </div>
 
-        <!-- Bio -->
         <div class="modal-section row-section">
           <label>Bio</label>
           <div class="input-area">
-            <textarea v-model="editForm.bio" placeholder="Bio" rows="4"></textarea>
+            <textarea v-model="profileEditForm.bio" placeholder="Bio" rows="4"></textarea>
           </div>
         </div>
-
       </div>
 
-      <!-- Footer -->
       <div class="modal-footer">
-        <button class="cancel-btn" @click="closeEditModal">cancel</button>
-        <button class="save-btn" @click="saveProfile">save</button>
+        <button class="cancel-btn" @click="closeEditModal">Cancel</button>
+        <button class="save-btn" @click="saveProfile">Save</button>
       </div>
     </div>
   </div>
+
+  <div v-if="isEditing" class="modal-overlay" @click.self="closeEdit">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Edit Event</h3>
+        <button class="close-modal-btn" @click="closeEdit">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-section row-section">
+          <label>Title</label>
+          <div class="input-area"><input type="text" v-model="editForm.title"></div>
+        </div>
+        <div class="modal-section row-section">
+          <label>Location</label>
+          <div class="input-area"><input type="text" v-model="editForm.location"></div>
+        </div>
+        <div class="modal-section row-section">
+          <label>Date</label>
+          <div class="input-area"><input type="date" v-model="editForm.event_date"></div>
+        </div>
+        <div class="modal-section row-section">
+          <label>Status</label>
+          <div class="input-area">
+            <select v-model="editForm.status" class="custom-select">
+              <option value="Active">Active</option>
+              <option value="Draft">Draft</option>
+              <option value="Scheduled">Scheduled</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-section row-section">
+          <label>Description</label>
+          <div class="input-area"><textarea v-model="editForm.description" rows="3"></textarea></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="cancel-btn" @click="closeEdit">Cancel</button>
+        <button class="save-btn" @click="saveEdit">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
   <div v-if="showFollowModal" class="modal-overlay" @click.self="closeFollowModal">
     <div class="mini-modal-content">
       <div class="modal-header">
@@ -384,14 +533,28 @@ const saveProfile = async () => {
       </div>
     </div>
   </div>
+  <div v-if="showLogoutModal" class="modal-overlay" @click.self="closeLogoutModal">
+    <div class="mini-modal-content">
+      <div class="modal-header">
+        <h3 style="font-family: Huninn;">Confirm Logout</h3>
+        <button class="close-modal-btn" @click="closeLogoutModal">✕</button>
+      </div>
+      <div class="modal-body" style="text-align: center; padding: 25px 20px;">
+        <p style="margin: 0; font-size: 1rem; color: rgba(255, 255, 255, 0.9);">Are you sure you want to logout?</p>
+      </div>
+      <div class="modal-footer" style="justify-content: center; gap: 10px;">
+        <button class="cancel-btn" @click="closeLogoutModal">Cancel</button>
+        <button class="logout-confirm-btn" @click="confirmLogout">Logout</button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
-/* Core layout styles */
 #bgVideo { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; z-index: -1; object-fit: cover; }
 .app-container { display: flex; flex-direction: column; height: 100vh; color: #FFFFFF; font-family: sans-serif; padding: 10px 20px; box-sizing: border-box; }
 .glass-panel { background: rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 15px; box-sizing: border-box; }
-.navbar { display: flex; justify-content: space-between; align-items: center; height: 60px; margin-bottom: 15px; flex-shrink: 0; }
+.navbar { display: flex; justify-content: space-between; align-items: center; height: 60px; margin-bottom: 15px; flex-shrink: 0; border: 1px solid rgba(255, 255, 255, 0.15); }
 .logo { display: flex; align-items: center; gap: 10px; cursor: pointer; }
 .nav-logo-img { height: 35px; width: auto; object-fit: contain; }
 .logo-text { font-family: "Bruno Ace", sans-serif; font-weight: bold; font-size: 1.2rem; }
@@ -426,6 +589,18 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 }
 
 .edit-btn {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.edit-btn:hover { background: rgba(255, 255, 255, 0.3); }
+
+.logout-btn {
   background: #d63031;
   color: white;
   border: none;
@@ -435,7 +610,18 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   cursor: pointer;
   transition: background 0.3s;
 }
-.edit-btn:hover { background: #ff7675; }
+.logout-btn:hover { background: #ff7675; }
+
+.logout-confirm-btn {
+  background: #d63031;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  border: none;
+}
+.logout-confirm-btn:hover { background: #ff7675; }
 
 .create-event-btn {
   background: #00f2fe;
@@ -449,7 +635,7 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 }
 .create-event-btn:hover { background: #05d4ca; }
 
-.profile-tabs { display: flex; justify-content: center; padding: 10px; border-radius: 10px; }
+.profile-tabs { display: flex; justify-content: center; padding: 10px; border-radius: 10px; gap: 10px; }
 .tab { padding: 10px 40px; font-weight: bold; cursor: pointer; border-bottom: 2px solid transparent; color: rgba(255,255,255,0.6); }
 .tab.active { border-bottom-color: #00f2fe; color: white; }
 
@@ -459,162 +645,102 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 .placeholder-text { font-family: "Bruno Ace", sans-serif; font-size: 1.5rem; opacity: 0.5; }
 .heart-icon { position: absolute; bottom: 15px; right: 15px; font-size: 1.5rem; }
 
-/* =========================================
-   MODAL STYLES
-   ========================================= */
-.modal-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex; justify-content: center; align-items: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: #1e1e1e;
-  width: 500px;
-  max-width: 90%;
-  border-radius: 12px;
-  border: 1px solid #333;
-  color: white;
-  display: flex; flex-direction: column;
-}
-
-.modal-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid #333;
-}
-.modal-header h3 { margin: 0; font-family: "Bruno Ace", sans-serif; }
-.close-modal-btn {
-  background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer;
-}
-
-.modal-body {
-  padding: 20px;
-  display: flex; flex-direction: column; gap: 20px;
-}
-
-.modal-section {
-  display: flex;
-  align-items: flex-start;
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
-  border-bottom: 1px solid #333;
-  padding-bottom: 20px;
-}
-.modal-section:last-child { border-bottom: none; padding-bottom: 0; }
-
-.modal-section label {
-  width: 120px;
-  font-weight: bold;
-  flex-shrink: 0;
-}
-
-.input-area {
-  flex-grow: 1;
-  display: flex; flex-direction: column; gap: 5px;
-}
-
-.input-area input, .input-area textarea {
   width: 100%;
-  background: #2a2a2a;
-  border: 1px solid #444;
-  color: white;
-  padding: 10px;
-  border-radius: 6px;
-  font-family: inherit;
-}
-.helper-text {
-  font-size: 0.75rem; color: #aaa; margin: 0;
 }
 
-.photo-edit-area {
+.event-card {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 18px;
+  box-sizing: border-box;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.event-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(0, 242, 254, 0.6);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+.card-media-header {
   position: relative;
-  display: inline-block;
-  cursor: pointer;
-}
-.edit-avatar {
-  width: 80px; height: 80px; border-radius: 50%; object-fit: cover;
-}
-.edit-pencil {
-  position: absolute; bottom: 0; right: 0;
-  background: #333; padding: 4px; border-radius: 50%; font-size: 0.8rem;
-}
-.hidden-file-input {
-  display: none;
+  width: 100%;
+  height: 160px;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 15px;
 }
 
-.modal-footer {
-  padding: 15px 20px;
-  border-top: 1px solid #333;
-  display: flex; justify-content: flex-end; gap: 10px;
+.card-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
-.modal-footer button {
-  padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none;
+
+.status-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  backdrop-filter: blur(6px);
+  text-transform: uppercase;
 }
+
+.status-badge.active { background: rgba(0, 242, 254, 0.3); border: 1px solid #00f2fe; color: #00f2fe; }
+.status-badge.draft { background: rgba(255, 193, 7, 0.3); border: 1px solid #ffc107; color: #ffc107; }
+.status-badge.scheduled { background: rgba(156, 39, 176, 0.3); border: 1px solid #e040fb; color: #e040fb; }
+.status-badge.cancelled { background: rgba(255, 71, 87, 0.3); border: 1px solid #ff4757; color: #ff4757; }
+
+.card-body { margin-bottom: 18px; }
+.event-title { font-size: 1.1rem; margin: 0 0 10px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.event-info-row { display: flex; flex-direction: column; gap: 4px; font-size: 0.78rem; color: rgba(255, 255, 255, 0.8); margin-bottom: 12px; }
+.event-description-truncated { font-size: 0.8rem; color: rgba(255, 255, 255, 0.65); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 0; }
+
+.card-actions { display: flex; gap: 10px; }
+.action-btn { flex: 1; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.1); color: #ffffff; font-size: 0.75rem; cursor: pointer; transition: all 0.3s ease; }
+.preview-btn:hover { background: rgba(0, 242, 254, 0.7); border-color: #00f2fe; color: #000000; }
+.edit-btn-card:hover { background: rgba(255, 255, 255, 0.25); border-color: rgba(255, 255, 255, 0.4); }
+
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+.modal-content { background: #1e1e1e; width: 500px; max-width: 90%; border-radius: 12px; border: 1px solid #333; color: white; display: flex; flex-direction: column; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid #333; }
+.modal-header h3 { margin: 0; font-family: "Bruno Ace", sans-serif; }
+.close-modal-btn { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; }
+.modal-body { padding: 20px; display: flex; flex-direction: column; gap: 20px; max-height: 60vh; overflow-y: auto; }
+.modal-section { display: flex; align-items: flex-start; gap: 20px; border-bottom: 1px solid #333; padding-bottom: 20px; }
+.modal-section:last-child { border-bottom: none; padding-bottom: 0; }
+.modal-section label { width: 120px; font-weight: bold; flex-shrink: 0; }
+.input-area { flex-grow: 1; display: flex; flex-direction: column; gap: 5px; }
+.input-area input, .input-area textarea, .custom-select { width: 100%; background: #2a2a2a; border: 1px solid #444; color: white; padding: 10px; border-radius: 6px; font-family: inherit; }
+.helper-text { font-size: 0.75rem; color: #aaa; margin: 0; }
+.photo-edit-area { position: relative; display: inline-block; cursor: pointer; }
+.edit-avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; }
+.edit-pencil { position: absolute; bottom: 0; right: 0; background: #333; padding: 4px; border-radius: 50%; font-size: 0.8rem; }
+.hidden-file-input { display: none; }
+.modal-footer { padding: 15px 20px; border-top: 1px solid #333; display: flex; justify-content: flex-end; gap: 10px; }
+.modal-footer button { padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; }
 .cancel-btn { background: #333; color: white; }
 .cancel-btn:hover { background: #444; }
 .save-btn { background: white; color: black; }
 .save-btn:hover { background: #ccc; }
-.clickable-stat {
-  cursor: pointer;
-  transition: color 0.2s;
-}
-.clickable-stat:hover {
-  color: #00f2fe; /* Zid lon mli ktdwez 3lih l'souris */
-}
+.clickable-stat { cursor: pointer; transition: color 0.2s; }
+.clickable-stat:hover { color: #00f2fe; }
 
-/* Design dyal l'mini window */
-.mini-modal-content {
-  background: #1e1e1e;
-  width: 350px; /* Sghira 3la modal d l'edit */
-  max-width: 90%;
-  border-radius: 12px;
-  border: 1px solid #333;
-  color: white;
-  display: flex;
-  flex-direction: column;
-  max-height: 400px; /* Bach mayfoutch tol dialha o ywli fih scroll */
-}
-
-.list-body {
-  overflow-y: auto; /* Zid scroll ila kano nass bzzaf */
-  padding: 10px;
-}
-
-.follow-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.follow-item {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 10px;
-  border-radius: 8px;
-  transition: background 0.2s;
-}
-.follow-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.avatar-small {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.user-link {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  color: white;
-  width: 100%;
-  transition: color 0.3s ease;
-}
+.mini-modal-content { background: #1e1e1e; width: 350px; max-width: 90%; border-radius: 12px; border: 1px solid #333; color: white; display: flex; flex-direction: column; max-height: 400px; }
+.list-body { overflow-y: auto; padding: 10px; }
+.follow-list { list-style: none; padding: 0; margin: 0; }
+.follow-item { display: flex; align-items: center; gap: 15px; padding: 10px; border-radius: 8px; transition: background 0.2s; }
+.follow-item:hover { background: rgba(255, 255, 255, 0.05); }
+.avatar-small { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+.user-link { display: flex; align-items: center; gap: 10px; text-decoration: none; color: white; width: 100%; transition: color 0.3s ease; }
 .user-link:hover { color: #00f2fe; }
 </style>
