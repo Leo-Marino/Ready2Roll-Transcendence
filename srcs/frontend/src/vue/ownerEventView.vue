@@ -1,7 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import EventMediaGrid from './EventMediaGrid.vue';
 
 const router = useRouter();
 const API = '/api';
@@ -373,7 +372,7 @@ const saveProfile = async () => {
 
         <!-- Profile Tabs -->
         <div class="profile-tabs glass-panel">
-          <div v-if="userProfile.isBusiness" class="tab" :class="{ active: activeTab === 'events' }" @click="activeTab = 'events'"><span>🎬 My Events</span></div>
+          <div v-if="userProfile.isBusiness" class="tab" :class="{ active: activeTab === 'events' }" @click="activeTab = 'events'"><span>🎬 My events</span></div>
           <div class="tab" :class="{ active: activeTab === 'likes' }" @click="activeTab = 'likes'"><span>🖤 Likes</span></div>
         </div>
 
@@ -440,6 +439,44 @@ const saveProfile = async () => {
         </div>
 
       </main>
+    </div>
+  </div>
+
+  <!-- EVENT PREVIEW REEL MODAL -->
+  <div v-if="activePreviewEvent" class="modal-overlay preview-overlay" @click.self="closePreview">
+    <div class="preview-reel-container">
+      <button class="close-modal-btn preview-close" @click="closePreview">✕</button>
+      <div class="preview-reel-card">
+        <div class="preview-media-wrapper">
+          <video
+            v-if="activePreviewEvent.media_type === 'video'"
+            :src="activePreviewEvent.media_src"
+            autoplay
+            muted
+            loop
+            playsinline
+            class="preview-media-content"
+          ></video>
+          <img
+            v-else
+            :src="activePreviewEvent.media_src"
+            alt="Event Preview"
+            class="preview-media-content"
+          />
+        </div>
+        <div class="preview-overlay-content">
+          <div class="preview-user-info">
+            <img :src="userProfile.avatar" alt="avatar" class="preview-avatar" />
+            <span class="preview-username">{{ userProfile.name }}</span>
+          </div>
+          <h2 class="preview-title">{{ activePreviewEvent.title }}</h2>
+          <p class="preview-desc">{{ activePreviewEvent.description || 'No description provided.' }}</p>
+          <div class="preview-meta">
+            <span>📍 {{ activePreviewEvent.location }}</span>
+            <span>📅 {{ activePreviewEvent.event_date }}</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -721,4 +758,150 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 .avatar-small { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
 .user-link { display: flex; align-items: center; gap: 10px; text-decoration: none; color: white; width: 100%; transition: color 0.3s ease; }
 .user-link:hover { color: #00f2fe; }
+
+/* Preview Reel Modal Styles */
+.preview-overlay {
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+}
+
+.preview-reel-container {
+  position: relative;
+  width: 380px;
+  height: 680px;
+  max-width: 95vw;
+  max-height: 90vh;
+  background: #111;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+  display: flex;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+}
+
+.preview-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 20;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.preview-reel-card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.preview-media-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.preview-media-content {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.preview-overlay-content {
+  position: relative;
+  z-index: 2;
+  padding: 20px;
+  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  width: calc(100% - 70px);
+  box-sizing: border-box;
+}
+
+.preview-user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.preview-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #00f2fe;
+}
+
+.preview-username {
+  font-weight: bold;
+  font-size: 0.95rem;
+  color: #FFFFFF;
+}
+
+.preview-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-family: "Bruno Ace", sans-serif;
+  color: #FFFFFF;
+}
+
+.preview-desc {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.preview-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.78rem;
+  color: #00f2fe;
+  margin-top: 4px;
+}
+
+.preview-sidebar-actions {
+  position: absolute;
+  right: 15px;
+  bottom: 30px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+}
+
+.preview-action-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.75rem;
+  gap: 4px;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 8px;
+  border-radius: 50px;
+  backdrop-filter: blur(5px);
+  width: 45px;
+  height: 45px;
+  justify-content: center;
+}
 </style>

@@ -8,6 +8,7 @@ const API = '/api';
 const showFollowModal = ref(false);
 const followModalType = ref('');
 const followList = ref([]);
+const showLogoutModal = ref(false);
 
 const openFollowModal = async (type) => {
   followModalType.value = type;
@@ -36,7 +37,15 @@ const getToken = () =>
   localStorage.getItem('access') ||
   localStorage.getItem('access_token');
 
-const handleLogout = () => {
+const openLogoutModal = () => {
+  showLogoutModal.value = true;
+};
+
+const closeLogoutModal = () => {
+  showLogoutModal.value = false;
+};
+
+const confirmLogout = () => {
   localStorage.removeItem('token');
   localStorage.removeItem('access');
   localStorage.removeItem('access_token');
@@ -346,7 +355,7 @@ const saveProfile = async () => {
               Create Event 📅
             </button>
             <button class="edit-btn" @click="openEditModal">Edit profile</button>
-            <button class="logout-btn" @click="handleLogout">Logout</button>
+            <button class="logout-btn" @click="openLogoutModal">Logout</button>
           </div>
         </div>
 
@@ -524,6 +533,21 @@ const saveProfile = async () => {
       </div>
     </div>
   </div>
+  <div v-if="showLogoutModal" class="modal-overlay" @click.self="closeLogoutModal">
+    <div class="mini-modal-content">
+      <div class="modal-header">
+        <h3 style="font-family: Huninn;">Confirm Logout</h3>
+        <button class="close-modal-btn" @click="closeLogoutModal">✕</button>
+      </div>
+      <div class="modal-body" style="text-align: center; padding: 25px 20px;">
+        <p style="margin: 0; font-size: 1rem; color: rgba(255, 255, 255, 0.9);">Are you sure you want to logout?</p>
+      </div>
+      <div class="modal-footer" style="justify-content: center; gap: 10px;">
+        <button class="cancel-btn" @click="closeLogoutModal">Cancel</button>
+        <button class="logout-confirm-btn" @click="confirmLogout">Logout</button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
@@ -587,6 +611,17 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   transition: background 0.3s;
 }
 .logout-btn:hover { background: #ff7675; }
+
+.logout-confirm-btn {
+  background: #d63031;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  border: none;
+}
+.logout-confirm-btn:hover { background: #ff7675; }
 
 .create-event-btn {
   background: #00f2fe;

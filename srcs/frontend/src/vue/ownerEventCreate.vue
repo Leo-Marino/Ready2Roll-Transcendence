@@ -12,7 +12,7 @@ export default {
       maxCapacity: '',
       ticketPrice: '',
       endTime: '',
-      eventTags: '',
+      tags: '',
       eventStatus: 'Draft',
       uploadedMediaSrc: null,
       actualFile: null,
@@ -48,7 +48,7 @@ export default {
     },
     async handlePublish() {
       if (!this.eventTitle || !this.descriptionText || !this.eventDate || !this.eventStatus) {
-        alert("All mandatory fields must be filled!");
+        alert("All mandatory fields must be filled !");
         return;
       }
 
@@ -64,7 +64,7 @@ export default {
       if (this.maxCapacity) formData.append('max_capacity', this.maxCapacity);
       if (this.ticketPrice) formData.append('ticket_price', this.ticketPrice);
       if (this.endTime) formData.append('end_time', this.endTime);
-      if (this.eventTags) formData.append('tags', this.eventTags);
+      if (this.tags) formData.append('tags', this.tags);
 
       if (this.actualFile) {
         formData.append('media_file', this.actualFile);
@@ -85,7 +85,17 @@ export default {
           alert("Event created successfully!");
           this.$emit('event-published', createdEvent);
           this.goToVisualPage();
-        } else {
+        }
+        else if (response.status === 401) {
+          alert("Unauthorized user; please log in again");
+          this.$router.push('/login');
+        }
+        else if (response.status === 400) {
+          const errorData = await response.json();
+          console.error("Validation error: ", errorData);
+          alert("A validation error was found while creating the event; please check your input");
+        }
+        else {
           const errorData = await response.json();
           console.error("Backend error:", errorData);
           alert("There was an error creating the event");
@@ -305,9 +315,9 @@ export default {
             <div class="detail-input-group">
               <label for="event-status">STATUS *</label>
               <select id="event-status" v-model="eventStatus" class="custom-input custom-select" required>
-                <option value="Active">Active</option>
-                <option value="Draft">Draft</option>
-                <option value="Cancelled">Cancelled</option>
+                <option value="active">Active</option>
+                <option value="draft">Draft</option>
+                <option value="cancelled">Cancelled</option>
               </select>
             </div>
 
