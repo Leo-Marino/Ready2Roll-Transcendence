@@ -376,7 +376,7 @@ const saveProfile = async () => {
           <div class="tab" :class="{ active: activeTab === 'likes' }" @click="activeTab = 'likes'"><span>🖤 Likes</span></div>
         </div>
 
-        <!-- Events Tab Content (Full Owner Card Grid with Preview & Edit Support) -->
+        <!-- Events Tab Content (Reels Format matching Likes Section) -->
         <div v-if="userProfile.isBusiness && activeTab === 'events'">
           <div v-if="myEvents.length === 0" class="glass-panel" style="text-align: center; padding: 30px; color: #aaa;">
             You haven't created any events yet.
@@ -385,14 +385,15 @@ const saveProfile = async () => {
             <div
               v-for="event in myEvents"
               :key="event.id"
-              class="event-card glass-card"
+              class="event-reel-card glass-panel"
             >
-              <div class="card-media-header">
+              <!-- Background Media Content (Clickable to open preview) -->
+              <div class="reel-media-bg" @click="openPreview(event)">
                 <img
                   v-if="event.media_type === 'image'"
                   :src="event.media_src"
                   alt="Event media"
-                  class="card-thumb"
+                  class="reel-thumb"
                 />
                 <video
                   v-else
@@ -400,14 +401,18 @@ const saveProfile = async () => {
                   autoplay
                   muted
                   loop
-                  class="card-thumb"
+                  playsinline
+                  class="reel-thumb"
                 ></video>
-                <span class="status-badge" :class="event.status ? event.status.toLowerCase() : ''">
-                  {{ event.status }}
-                </span>
               </div>
 
-              <div class="card-body">
+              <!-- Status Badge -->
+              <span class="status-badge" :class="event.status ? event.status.toLowerCase() : ''">
+                {{ event.status }}
+              </span>
+
+              <!-- Content Overlay on top of Media -->
+              <div class="reel-overlay-content">
                 <h3 class="event-title">{{ event.title }}</h3>
                 <div class="event-info-row">
                   <span>📍 {{ event.location }}</span>
@@ -416,15 +421,12 @@ const saveProfile = async () => {
                 <p class="event-description-truncated">
                   {{ event.description || 'No description was inserted' }}
                 </p>
-              </div>
 
-              <div class="card-actions">
-                <button class="action-btn preview-btn" @click="openPreview(event)">
-                  Preview
-                </button>
-                <button class="action-btn edit-btn-card" @click="openEdit(event)">
-                  Edit
-                </button>
+                <div class="card-actions">
+                  <button class="action-btn edit-btn-card" @click="openEdit(event)">
+                    Edit
+                  </button>
+                </div>
               </div>
             </div>
           </section>
@@ -442,38 +444,44 @@ const saveProfile = async () => {
     </div>
   </div>
 
-  <!-- EVENT PREVIEW REEL MODAL -->
+  <!-- EVENT PREVIEW REEL MODAL (Scrollable feed of all posted events) -->
   <div v-if="activePreviewEvent" class="modal-overlay preview-overlay" @click.self="closePreview">
     <div class="preview-reel-container">
       <button class="close-modal-btn preview-close" @click="closePreview">✕</button>
-      <div class="preview-reel-card">
-        <div class="preview-media-wrapper">
-          <video
-            v-if="activePreviewEvent.media_type === 'video'"
-            :src="activePreviewEvent.media_src"
-            autoplay
-            muted
-            loop
-            playsinline
-            class="preview-media-content"
-          ></video>
-          <img
-            v-else
-            :src="activePreviewEvent.media_src"
-            alt="Event Preview"
-            class="preview-media-content"
-          />
-        </div>
-        <div class="preview-overlay-content">
-          <div class="preview-user-info">
-            <img :src="userProfile.avatar" alt="avatar" class="preview-avatar" />
-            <span class="preview-username">{{ userProfile.name }}</span>
+      <div class="preview-scroll-wrapper">
+        <div 
+          v-for="event in myEvents" 
+          :key="event.id" 
+          class="preview-reel-card"
+        >
+          <div class="preview-media-wrapper">
+            <video
+              v-if="event.media_type === 'video'"
+              :src="event.media_src"
+              autoplay
+              muted
+              loop
+              playsinline
+              class="preview-media-content"
+            ></video>
+            <img
+              v-else
+              :src="event.media_src"
+              alt="Event Preview"
+              class="preview-media-content"
+            />
           </div>
-          <h2 class="preview-title">{{ activePreviewEvent.title }}</h2>
-          <p class="preview-desc">{{ activePreviewEvent.description || 'No description provided.' }}</p>
-          <div class="preview-meta">
-            <span>📍 {{ activePreviewEvent.location }}</span>
-            <span>📅 {{ activePreviewEvent.event_date }}</span>
+          <div class="preview-overlay-content">
+            <div class="preview-user-info">
+              <img :src="userProfile.avatar" alt="avatar" class="preview-avatar" />
+              <span class="preview-username">{{ userProfile.name }}</span>
+            </div>
+            <h2 class="preview-title">{{ event.title }}</h2>
+            <p class="preview-desc">{{ event.description || 'No description provided.' }}</p>
+            <div class="preview-meta">
+              <span>📍 {{ event.location }}</span>
+              <span>📅 {{ event.event_date }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -655,45 +663,36 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 .tab { padding: 10px 40px; font-weight: bold; cursor: pointer; border-bottom: 2px solid transparent; color: rgba(255,255,255,0.6); }
 .tab.active { border-bottom-color: #00f2fe; color: white; }
 
-.video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+.video-grid, .events-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
 .video-card { aspect-ratio: 9 / 16; display: flex; justify-content: center; align-items: center; position: relative; cursor: pointer; transition: transform 0.2s; }
 .video-card:hover { transform: scale(1.02); }
 .placeholder-text { font-family: "Bruno Ace", sans-serif; font-size: 1.5rem; opacity: 0.5; }
 .heart-icon { position: absolute; bottom: 15px; right: 15px; font-size: 1.5rem; }
 
-.events-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-  width: 100%;
-}
-
-.event-card {
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  padding: 18px;
-  box-sizing: border-box;
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-}
-
-.event-card:hover {
-  transform: translateY(-5px);
-  border-color: rgba(0, 242, 254, 0.6);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-}
-
-.card-media-header {
+.event-reel-card {
+  aspect-ratio: 9 / 16;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   position: relative;
-  width: 100%;
-  height: 160px;
-  border-radius: 14px;
   overflow: hidden;
-  margin-bottom: 15px;
+  padding: 15px;
+  box-sizing: border-box;
+  transition: transform 0.2s;
+}
+.event-reel-card:hover { transform: scale(1.02); }
+
+.reel-media-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  cursor: pointer;
 }
 
-.card-thumb {
+.reel-thumb {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -701,28 +700,46 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 
 .status-badge {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 15px;
+  right: 15px;
+  z-index: 3;
   padding: 4px 10px;
   border-radius: 10px;
   font-size: 0.7rem;
   font-weight: bold;
   backdrop-filter: blur(6px);
   text-transform: uppercase;
+  pointer-events: none;
 }
 
 .status-badge.active { background: rgba(0, 242, 254, 0.3); border: 1px solid #00f2fe; color: #00f2fe; }
 .status-badge.draft { background: rgba(255, 193, 7, 0.3); border: 1px solid #ffc107; color: #ffc107; }
 .status-badge.scheduled { background: rgba(156, 39, 176, 0.3); border: 1px solid #e040fb; color: #e040fb; }
 
-.card-body { margin-bottom: 18px; }
-.event-title { font-size: 1.1rem; margin: 0 0 10px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.event-info-row { display: flex; flex-direction: column; gap: 4px; font-size: 0.78rem; color: rgba(255, 255, 255, 0.8); margin-bottom: 12px; }
-.event-description-truncated { font-size: 0.8rem; color: rgba(255, 255, 255, 0.65); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 0; }
+.reel-overlay-content {
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
+  margin: -15px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  justify-content: flex-end;
+  height: 100%;
+  pointer-events: none;
+}
 
-.card-actions { display: flex; gap: 10px; }
-.action-btn { flex: 1; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.1); color: #ffffff; font-size: 0.75rem; cursor: pointer; transition: all 0.3s ease; }
-.preview-btn:hover { background: rgba(0, 242, 254, 0.7); border-color: #00f2fe; color: #000000; }
+.reel-overlay-content .card-actions {
+  pointer-events: auto;
+}
+
+.event-title { font-size: 1.1rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #FFFFFF; }
+.event-info-row { display: flex; flex-direction: column; gap: 2px; font-size: 0.75rem; color: rgba(255, 255, 255, 0.85); }
+.event-description-truncated { font-size: 0.75rem; color: rgba(255, 255, 255, 0.7); line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 0; }
+
+.card-actions { display: flex; gap: 8px; margin-top: 5px; }
+.action-btn { flex: 1; padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.1); color: #ffffff; font-size: 0.7rem; cursor: pointer; transition: all 0.3s ease; }
 .edit-btn-card:hover { background: rgba(255, 255, 255, 0.25); border-color: rgba(255, 255, 255, 0.4); }
 
 .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
@@ -759,7 +776,7 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 .user-link { display: flex; align-items: center; gap: 10px; text-decoration: none; color: white; width: 100%; transition: color 0.3s ease; }
 .user-link:hover { color: #00f2fe; }
 
-/* Preview Reel Modal Styles */
+/* Preview Reel Modal Styles with Vertical Scroll */
 .preview-overlay {
   background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(10px);
@@ -777,6 +794,17 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   overflow: hidden;
   display: flex;
   box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+}
+
+.preview-scroll-wrapper {
+  width: 100%;
+  height: 100%;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+}
+.preview-scroll-wrapper::-webkit-scrollbar {
+  display: none;
 }
 
 .preview-close {
@@ -798,6 +826,7 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   position: relative;
   width: 100%;
   height: 100%;
+  scroll-snap-align: start;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -827,7 +856,7 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   flex-direction: column;
   gap: 8px;
   text-align: left;
-  width: calc(100% - 70px);
+  width: 100%;
   box-sizing: border-box;
 }
 
@@ -876,32 +905,5 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   font-size: 0.78rem;
   color: #00f2fe;
   margin-top: 4px;
-}
-
-.preview-sidebar-actions {
-  position: absolute;
-  right: 15px;
-  bottom: 30px;
-  z-index: 3;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  align-items: center;
-}
-
-.preview-action-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-size: 0.75rem;
-  gap: 4px;
-  cursor: pointer;
-  background: rgba(0, 0, 0, 0.4);
-  padding: 8px;
-  border-radius: 50px;
-  backdrop-filter: blur(5px);
-  width: 45px;
-  height: 45px;
-  justify-content: center;
 }
 </style>
