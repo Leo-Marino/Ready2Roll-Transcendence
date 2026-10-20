@@ -5,29 +5,24 @@ export default {
   data() {
     return {
       activeStep: 1,
-      hoverStep: null,
       eventTitle: '',
       descriptionText: '',
-      eventLocation: 'YAB, Firenze',
+      eventLocation: 'YAB Club, Florence',
       eventDate: '',
       maxCapacity: '',
       ticketPrice: '',
-      startTime: '',
       endTime: '',
-      eventTags: '',
-      status: 'draft',
+      tags: '',
+      eventStatus: 'Draft',
       uploadedMediaSrc: null,
-      actualFiles: null,
+      actualFile: null,
       mediaType: null,
-      isMapOpen: false
+      showMapBox: false
     }
   },
   computed: {
-    currentStep() {
-      return this.hoverStep !== null ? this.hoverStep : this.activeStep;
-    },
     formattedDate() {
-      if (!this.eventDate) return 'Data da definire';
+      if (!this.eventDate) return 'Date TBD';
       const parts = this.eventDate.split('T')[0].split('-');
       if (parts.length === 3) {
         const [year, month, day] = parts;
@@ -37,69 +32,53 @@ export default {
     }
   },
   methods: {
-    selectStep(stepNumber) {
+    goToStep(stepNumber) {
       this.activeStep = stepNumber;
-    },
-    handleMediaClick() {
-      this.selectStep(1);
-      this.triggerFileInput();
     },
     triggerFileInput() {
       this.$refs.fileInput.click();
     },
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    toggleMapBox() {
+      this.showMapBox = !this.showMapBox;
+    },
     handleFileUpload(event) {
       const file = event.target.files[0];
       if (file) {
-        if (this.uploadedMediaSrc) {
-          URL.revokeObjectURL(this.uploadedMediaSrc);
-        }
         this.uploadedMediaSrc = URL.createObjectURL(file);
         this.actualFile = file;
         this.mediaType = file.type.startsWith('video') ? 'video' : 'image';
-        if (this.mediaType === 'video') {
-          this.$nextTick(() => {
-            if (this.$refs.videoPlayer) {
-              this.$refs.videoPlayer.load();
-              let playPromise = this.$refs.videoPlayer.play();
-              if (playPromise !== undefined) {
-                playPromise.catch(error => console.log("Autoplay blocked:", error));
-              }
-            }
-          });
-        }
       }
       event.target.value = '';
     },
-    toggleMap() {
-      this.isMapOpen = !this.isMapOpen;
-      if (this.isMapOpen) {
-        this.selectStep(2);
-      } else {
-        this.selectStep(1);
-      }
+    clearMedia() {
+      this.uploadedMediaSrc = null;
+      this.actualFile = null;
+      this.mediaType = null;
     },
     async handlePublish() {
-      if (!this.eventTitle || !this.descriptionText || !this.eventDate || !this.status) {
-        alert("All mandatory fields must be filled!");
+      if (!this.eventTitle || !this.descriptionText || !this.eventDate || !this.eventStatus) {
+        alert("All mandatory fields must be filled !");
         return;
       }
 
       const token = localStorage.getItem('token') || localStorage.getItem('access');
-	  const APIUrl = '/api';
 
       const formData = new FormData();
       formData.append('title', this.eventTitle);
       formData.append('description', this.descriptionText);
       formData.append('location', this.eventLocation);
       formData.append('event_date', this.eventDate);
-      formData.append('status', this.status);
+      formData.append('status', this.eventStatus);
 
       if (this.maxCapacity) formData.append('max_capacity', this.maxCapacity);
       if (this.ticketPrice) formData.append('ticket_price', this.ticketPrice);
-      if (this.startTime) formData.append('start_time', this.startTime);
       if (this.endTime) formData.append('end_time', this.endTime);
-      if (this.eventTags) formData.append('tags', this.eventTags);
+      if (this.tags) {
+        const tagsArray = this.tags.split(',').map(tag => tag.trim());
+        tagsArray.forEach(tag => {
+          formData.append('tags', tag);
+        });
+      }
 
       if (this.actualFile) {
         formData.append('media_file', this.actualFile);
@@ -107,7 +86,7 @@ export default {
       }
 
       try {
-        const response = await fetch(`${APIUrl}/events/`, {
+        const response = await fetch('/api/events/', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -117,10 +96,20 @@ export default {
 
         if (response.ok) {
           const createdEvent = await response.json();
-          alert("Event created successfully !!");
+          alert("Event created successfully!");
           this.$emit('event-published', createdEvent);
           this.goToVisualPage();
-        } else {
+        }
+        else if (response.status === 401) {
+          alert("Unauthorized user; please log in again");
+          this.$router.push('/login');
+        }
+        else if (response.status === 400) {
+          const errorData = await response.json();
+          console.error("Validation error: ", errorData);
+          alert("A validation error was found while creating the event; please check your input");
+        }
+        else {
           const errorData = await response.json();
           console.error("Backend error:", errorData);
           alert("There was an error creating the event");
@@ -152,9 +141,10 @@ export default {
     style="display: none;"
     @change="handleFileUpload"
   />
+  
   <header class="navbar glass-panel">
     <div class="nav-left">
-      <div class="logo">
+      <div class="logo" @click="$router.push('/home')">
         <img src="../assets/logo_temp.png" alt="Ready2Roll Logo" class="nav-logo-img" />
         <span class="logo-text">Ready2Roll</span>
       </div>
@@ -162,17 +152,17 @@ export default {
 
     <div class="nav-right">
       <div class="nav-icons">
-        <router-link to="/direct" class="nav-icon-link" title="Messaggi diretti">
+        <router-link to="/direct" class="nav-icon-link" title="Direct Messages">
           <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
           </svg>
         </router-link>
         <router-link to="/chat" class="nav-icon-link" title="Chat">
           <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a.75.75 0 01-.81-.54 2.89 2.89 0 01.213-1.637 8.25 8.25 0 01-1.813-5.293C3 7.444 7.03 3.75 12 3.75s9 3.694 9 8.25z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a.75.75 0 01-.81-.54 2.89 2.89 0 01.213-1.637 8.25 8.25 0 01-1.813-5.293C3 7.444 7.03 3.75 12 3.75s9 3.694 9 8.25z" />
           </svg>
         </router-link>
-        <router-link to="/profile" class="nav-icon-link" title="Profilo">
+        <router-link to="/profile" class="nav-icon-link" title="Profile">
           <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
           </svg>
@@ -191,96 +181,89 @@ export default {
 
     <section class="glass-card">
       <div class="preview-box">
-
-        <!-- LEFT AREA: Extra-Large Content / Media Box -->
-        <div class="left-section">
+        
+        <!-- STEP 1: CONTENT MEDIA -->
+        <div class="step-column" :class="{ 'step-active': activeStep === 1 }" @click="goToStep(1)">
+          <div class="step-header-label">1. CONTENT MEDIA</div>
           <div class="media-outer-wrapper">
             <div
               class="media-preview clickable"
               :class="{ 'has-content': uploadedMediaSrc }"
-              @mouseenter="hoverStep = 1"
-              @mouseleave="hoverStep = null"
-              @click="handleMediaClick"
             >
-              <!-- Map Pin Icon -->
-              <div
-                class="map-badge clickable"
-                :class="{ active: isMapOpen }"
-                @click.stop="toggleMap"
-              >
-                <svg class="maps-icon" viewBox="0 0 24 24" width="20" height="20">
-                  <path fill="#EA4335" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
-                  <circle fill="#FFFFFF" cx="12" cy="9" r="2.5"/>
-                </svg>
-              </div>
+              <!-- Map Toggle Button -->
+              <button type="button" class="media-map-toggle-btn" @click.stop="toggleMapBox">
+                {{ showMapBox ? '🗺️ Hide map' : '🗺️ View map' }}
+              </button>
 
-              <!-- Media Upload / Preview Display -->
-              <template v-if="!uploadedMediaSrc">
-                <span>Click here to insert content</span>
-              </template>
-            <!-- PEZZO DI MERDA-->
-              <template v-else>
-                <video
-                  v-if="mediaType === 'video'"
-                  ref="videoPlayer"
-                  :key="uploadedMediaSrc + '-video'"
-                  :src="uploadedMediaSrc"
-                  autoplay
-                  loop
-                  muted
-                  playsinline
-                  class="uploaded-preview"
-                ></video>
-                <img
-                  v-else
-                  :key="uploadedMediaSrc + '-img'"
-                  :src="uploadedMediaSrc"
-                  alt="Anteprima"
-                  class="uploaded-preview"
-                />
-              </template>
+              <!-- Remove Media Button (Only shows when file is uploaded) -->
+              <button 
+                v-if="uploadedMediaSrc" 
+                type="button" 
+                class="media-remove-btn" 
+                @click.stop="clearMedia"
+                title="Remove media"
+              >
+                ✕
+              </button>
+
+              <div @click="triggerFileInput" class="media-inner-click-area">
+                <template v-if="!uploadedMediaSrc">
+                  <span>Click here to insert photo/video</span>
+                </template>
+                <template v-else>
+                  <video
+                    v-if="mediaType === 'video'"
+                    :src="uploadedMediaSrc"
+                    autoplay
+                    loop
+                    muted
+                    class="uploaded-preview"
+                  ></video>
+                  <img
+                    v-else
+                    :src="uploadedMediaSrc"
+                    alt="Preview"
+                    class="uploaded-preview"
+                  />
+                </template>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- MIDDLE / SMOOTH FADING INLINE MAP CONTAINER -->
-        <transition name="fade-slide">
-          <div v-if="isMapOpen" class="map-container-inline">
-            <div class="map-inner-wrapper">
-              <div class="map-search-bar">
-                <input
-                  type="text"
-                  placeholder="Find desired address or location"
-                  class="custom-input map-input"
-                  v-model="eventLocation"
-                />
-                <button class="action-btn-small close-map-btn" @click="toggleMap">X</button>
+        <!-- STEP 2: MAP LOCATION (Animated transition wrapper) -->
+        <transition name="map-slide">
+          <div class="step-column" v-if="showMapBox" :class="{ 'step-active': activeStep === 2 }" @click="goToStep(2)">
+            <div class="step-header-label">2. MAP LOCATION</div>
+            <div class="map-container-inline">
+              <div class="map-inner-wrapper">
+                <iframe
+                  width="100%"
+                  height="100%"
+                  frameborder="0"
+                  scrolling="no"
+                  marginheight="0"
+                  marginwidth="0"
+                  :src="`https://maps.google.com/maps?q=${encodeURIComponent(eventLocation)}&t=&z=15&ie=UTF8&iwloc=&output=embed`"
+                  class="map-iframe"
+                ></iframe>
               </div>
-              <iframe
-                width="100%"
-                height="100%"
-                frameborder="0"
-                scrolling="no"
-                marginheight="0"
-                marginwidth="0"
-                :src="`https://maps.google.com/maps?q=${encodeURIComponent(eventLocation)}&t=&z=15&ie=UTF8&iwloc=&output=embed`"
-                class="map-iframe"
-              ></iframe>
             </div>
           </div>
         </transition>
 
-        <!-- RIGHT AREA: Expanded Model Input Fields -->
-        <div class="right-section">
+        <!-- STEP 3: EVENT DETAILS (RIGHT) -->
+        <div class="step-column right-section" :class="{ 'step-active': activeStep === 3 }" @click="goToStep(3)">
+          <div class="step-header-label">3. EVENT DETAILS</div>
           <div class="event-details-bar-vertical">
-
+            
             <div class="detail-input-group">
               <label for="event-title">TITLE *</label>
               <input
                 id="event-title"
                 type="text"
                 v-model="eventTitle"
-                placeholder="Es. YAB Night Club Party"
+                placeholder="E.g. Night Club Party"
                 class="custom-input"
                 required
               />
@@ -299,7 +282,18 @@ export default {
             </div>
 
             <div class="detail-input-group">
-              <label for="event-date">EVENT DATE & TIME *</label>
+              <label for="event-location">LOCATION *</label>
+              <input
+                id="event-location"
+                type="text"
+                placeholder="Find desired address or location"
+                class="custom-input map-input"
+                v-model="eventLocation"
+              />
+            </div>
+
+            <div class="detail-input-group">
+              <label for="event-date">EVENT START & TIME *</label>
               <input
                 id="event-date"
                 type="datetime-local"
@@ -311,16 +305,7 @@ export default {
 
             <div class="form-row">
               <div class="detail-input-group">
-                <label for="start-time">START TIME</label>
-                <input
-                  id="start-time"
-                  type="datetime-local"
-                  v-model="startTime"
-                  class="custom-input date-picker"
-                />
-              </div>
-              <div class="detail-input-group">
-                <label for="end-time">END TIME</label>
+                <label for="end-time">EVENT END & TIME</label>
                 <input
                   id="end-time"
                   type="datetime-local"
@@ -337,7 +322,7 @@ export default {
                   id="max-capacity"
                   type="number"
                   v-model="maxCapacity"
-                  placeholder="Es. 500"
+                  placeholder="E.g. 500"
                   class="custom-input"
                 />
               </div>
@@ -348,18 +333,29 @@ export default {
                   type="number"
                   step="0.01"
                   v-model="ticketPrice"
-                  placeholder="Es. 15.00"
+                  placeholder="E.g. 15.00"
                   class="custom-input"
                 />
               </div>
             </div>
 
             <div class="detail-input-group">
+              <label for="tags">TAGS</label>
+              <input
+                id="tags"
+                type="text"
+                v-model="tags"
+                placeholder="E.g. party, club, dj"
+                class="custom-input"
+              />
+            </div>
+
+            <div class="detail-input-group">
               <label for="event-status">STATUS *</label>
-              <select id="event-status" v-model="status" class="custom-input custom-select" required>
-                <option value="draft">Draft</option>
+              <select id="event-status" v-model="eventStatus" class="custom-input custom-select" required>
                 <option value="active">Active</option>
-                <option value="scheduled">Scheduled</option>
+                <option value="draft">Draft</option>
+                <option value="cancelled">Cancelled</option>
               </select>
             </div>
 
@@ -481,14 +477,17 @@ textarea::placeholder {
   align-items: center;
   justify-content: space-between;
   padding: 12px 30px;
-  width: 100%;
+  width: calc(100% - 40px);
+  max-width: 1550px;
+  margin: 15px auto 0 auto;
   box-sizing: border-box;
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
   position: sticky;
-  top: 0;
+  top: 15px;
   z-index: 1000;
 }
 
@@ -568,25 +567,68 @@ textarea::placeholder {
   position: relative;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   gap: 25px;
   flex-wrap: wrap;
 }
 
-.left-section {
+/* STEP COLUMNS & STATES */
+.step-column {
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column;
+  gap: 15px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.step-active {
+  opacity: 1;
+}
+
+/* When active, content boxes print solid light blue outline border */
+.step-active .map-container-inline,
+.step-active .media-outer-wrapper,
+.step-active .event-details-bar-vertical {
+  border: 2px solid #00f2fe;
+  box-shadow: 0 0 20px rgba(0, 242, 254, 0.25);
+}
+
+.step-header-label {
+  font-size: 0.8rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: left;
+  padding-left: 5px;
 }
 
 .right-section {
   width: 420px;
   flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
 }
 
+/* Smooth Map Slide/Fade Transition Styles */
+.map-slide-enter-active,
+.map-slide-leave-active {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 380px;
+  opacity: 1;
+  overflow: hidden;
+}
+
+.map-slide-enter-from,
+.map-slide-leave-to {
+  opacity: 0;
+  max-width: 0;
+  transform: scaleX(0);
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Transparent Glass Content Boxes Restored */
 .event-details-bar-vertical {
   display: flex;
   flex-direction: column;
@@ -597,6 +639,8 @@ textarea::placeholder {
   border: 1px solid rgba(255, 255, 255, 0.12);
   max-height: 680px;
   overflow-y: auto;
+  cursor: default;
+  transition: border 0.3s ease, box-shadow 0.3s ease;
 }
 
 .form-row {
@@ -661,9 +705,11 @@ textarea::placeholder {
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 480px;
-  height: 680px;
+  width: 380px;
+  height: 535px;
   flex-shrink: 0;
+  cursor: default;
+  transition: border 0.3s ease, box-shadow 0.3s ease;
 }
 
 .media-preview {
@@ -690,28 +736,61 @@ textarea::placeholder {
   border-color: rgba(0, 242, 254, 0.8);
 }
 
-.map-badge {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 6px 10px;
-  border-radius: 10px;
+.media-inner-click-area {
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+}
+
+.media-map-toggle-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
   z-index: 10;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid #00f2fe;
+  color: #00f2fe;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
   transition: all 0.3s ease;
 }
 
-.map-badge.clickable {
-  cursor: pointer;
+.media-map-toggle-btn:hover {
+  background: #00f2fe;
+  color: #000;
 }
 
-.map-badge.clickable:hover, .map-badge.active {
-  background: rgba(0, 242, 254, 0.6);
-  border-color: #ffffff;
+.media-remove-btn {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  background: rgba(214, 48, 49, 0.8);
+  border: 1px solid #ff7675;
+  color: #ffffff;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease;
+}
+
+.media-remove-btn:hover {
+  background: #d63031;
+  transform: scale(1.1);
 }
 
 .uploaded-preview {
@@ -727,8 +806,8 @@ textarea::placeholder {
 }
 
 .map-container-inline {
-  width: 480px;
-  height: 680px;
+  width: 380px;
+  height: 535px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 24px;
@@ -738,7 +817,8 @@ textarea::placeholder {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  transform-origin: left center;
+  cursor: default;
+  transition: border 0.3s ease, box-shadow 0.3s ease;
 }
 
 .map-inner-wrapper {
@@ -754,57 +834,12 @@ textarea::placeholder {
   box-sizing: border-box;
 }
 
-.map-search-bar {
-  display: flex;
-  gap: 10px;
-  padding: 12px;
-  background: rgba(0,0,0,0.4);
-  backdrop-filter: blur(5px);
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-
-.map-input {
-  flex-grow: 1;
-}
-
 .map-iframe {
   flex-grow: 1;
   width: 100%;
   height: 100%;
-  border-radius: 0 0 14px 14px;
+  border-radius: 14px;
   filter: invert(90%) hue-rotate(180deg) contrast(80%);
-}
-
-.fade-slide-enter-active,
-.fade-slide-leave-active {
-  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.fade-slide-enter-from,
-.fade-slide-leave-to {
-  opacity: 0;
-  transform: scale(0.95) translateX(-30px);
-  width: 0px;
-  padding-left: 0px;
-  padding-right: 0px;
-  margin-left: 0px;
-  margin-right: 0px;
-  overflow: hidden;
-}
-
-.action-btn-small {
-  background: rgba(255, 71, 87, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  color: #ffffff;
-  padding: 6px 12px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 0.75rem;
-  transition: all 0.3s ease;
-}
-
-.action-btn-small:hover {
-  background: #ff4757;
 }
 
 .publish-action-bar {
@@ -833,16 +868,18 @@ textarea::placeholder {
   transform: translateY(-2px);
 }
 
-@media (max-width: 1050px) {
+@media (max-width: 1200px) {
   .preview-box {
     flex-direction: column;
+    align-items: center;
   }
   .right-section {
     width: 100%;
   }
-  .media-outer-wrapper,
-  .map-container-inline {
+  .map-container-inline,
+  .media-outer-wrapper {
     width: 100%;
+    max-width: 480px;
   }
 }
 </style>
