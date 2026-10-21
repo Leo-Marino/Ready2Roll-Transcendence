@@ -6,4 +6,5 @@ urlpatterns = [
 	path('events/<int:event_id>/like/', toggle_like_view, name='toggle_like'),
 	path('events/<int:event_id>/comments/', event_comments_view, name='event_comments'),
 	path('comments/<int:comment_id>/react/', toggle_comment_reaction_view, name='toggle_comment_reaction'),
+	#path('events/<int:event_id>/like/', toggle_like_view, name='toggle_like'),
 ]

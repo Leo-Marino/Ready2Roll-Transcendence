@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 const API = '/api';
 
+// --- MODAL STATES ---
 const showFollowModal = ref(false);
 const followModalType = ref('');
 const followList = ref([]);
@@ -15,6 +16,7 @@ const openFollowModal = async (type) => {
   showFollowModal.value = true;
   followList.value = [];
 
+  // Mock data for followers/following
   if (type === 'following') {
     followList.value = [
       { id: 1, username: 'Xhul', avatar: 'https://i.pravatar.cc/150?u=1' },
@@ -32,6 +34,7 @@ const closeFollowModal = () => {
   showFollowModal.value = false;
 };
 
+// --- AUTH HELPER ---
 const getToken = () =>
   localStorage.getItem('token') ||
   localStorage.getItem('access') ||
@@ -52,12 +55,14 @@ const confirmLogout = () => {
   router.push('/login');
 };
 
+// --- SIDEBAR DATA ---
 const subscribedAccounts = ref([
   { id: 1, name: 'Xhul', img: 'https://i.pravatar.cc/150?u=1' },
   { id: 2, name: 'Anna', img: 'https://i.pravatar.cc/150?u=2' },
   { id: 3, name: 'thilina', img: 'https://i.pravatar.cc/150?u=3' },
 ]);
 
+// --- PROFILE DATA ---
 const userProfile = ref({
   name: 'Loading...',
   following: 0,
@@ -69,20 +74,9 @@ const userProfile = ref({
 
 const myEvents = ref([]);
 const activeTab = ref('likes');
-
 const activePreviewEvent = ref(null);
-const isEditing = ref(false);
-const editForm = ref({
-  id: null,
-  title: '',
-  location: '',
-  event_date: '',
-  status: 'Active',
-  description: '',
-  media_type: 'image',
-  media_src: ''
-});
 
+// --- FETCH EVENTS (For Business Users) ---
 const fetchMyEvents = async () => {
   try {
     const response = await fetch(`${API}/owner/events/`, {
@@ -96,7 +90,9 @@ const fetchMyEvents = async () => {
   }
 };
 
+// --- EVENT ACTIONS ---
 const goToCreateEvent = () => {
+  // Clear any existing editing data so we start fresh
   localStorage.removeItem('editingEvent');
   router.push('/CreateEvent');
 };
@@ -110,55 +106,9 @@ const closePreview = () => {
 };
 
 const openEdit = (event) => {
-  // here we store the event we want for editing localStorage
+  // Save the event to localStorage and route to CreateEvent in edit mode
   localStorage.setItem('editingEvent', JSON.stringify(event));
-  // we will go to CreateEvent without a new path in the router
   router.push({ path: '/CreateEvent', query: { edit: 'true' } });
-};
-
-const closeEdit = () => {
-  isEditing.value = false;
-};
-
-const saveEdit = async () => {
-  const token = getToken();
-  const payload = {
-    title: editForm.value.title,
-    location: editForm.value.location,
-    event_date: editForm.value.event_date,
-    status: editForm.value.status,
-    description: editForm.value.description,
-    media_type: editForm.value.media_type,
-    media_src: editForm.value.media_src
-  };
-
-  try {
-    const response = await fetch(`${API}/events/${editForm.value.id}/`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (response.ok) {
-      const updatedEvent = await response.json();
-      const index = myEvents.value.findIndex(e => e.id === editForm.value.id);
-      if (index !== -1) {
-        myEvents.value.splice(index, 1, updatedEvent);
-      }
-      alert("Event updated successfully!");
-      closeEdit();
-    } else {
-      const errData = await response.json();
-      console.error("Error updating event:", errData);
-      alert("Error saving changes.");
-    }
-  } catch (error) {
-    console.error("Network error during save:", error);
-    alert("Unable to connect to the backend server.");
-  }
 };
 
 const likedVideos = ref([
@@ -166,12 +116,14 @@ const likedVideos = ref([
   { id: 2, title: 'Video 2', thumbnail: '' },
 ]);
 
+// --- INITIAL LOAD ---
 onMounted(async () => {
   const token = getToken();
   if (!token) {
     router.push('/login');
     return;
   }
+
   try {
     const response = await fetch(`${API}/profile/`, {
       headers: { 'Authorization': `Bearer ${token}` }
@@ -184,20 +136,23 @@ onMounted(async () => {
       router.push('/login');
       return;
     }
+
     if (!response.ok) {
       console.error('Could not load profile, status', response.status);
       return;
     }
+
     const data = await response.json();
     userProfile.value.name = data.username || '';
     userProfile.value.description = data.bio || '';
     if (data.avatar_url) {
       userProfile.value.avatar = data.avatar_url;
     }
-    userProfile.value.following = data.following_count || 2;
-    userProfile.value.followers = data.followers_count || 3;
+    userProfile.value.following = data.following_count || 0;
+    userProfile.value.followers = data.followers_count || 0;
     userProfile.value.isBusiness = (data.type_of_user === 'business');
 
+    // Switch to events tab by default for business accounts
     if (userProfile.value.isBusiness) {
       activeTab.value = 'events';
       fetchMyEvents();
@@ -207,6 +162,7 @@ onMounted(async () => {
   }
 });
 
+// --- EDIT PROFILE MODAL LOGIC ---
 const showEditModal = ref(false);
 const fileInput = ref(null);
 const tempAvatar = ref('');
@@ -266,7 +222,6 @@ const saveProfile = async () => {
       if (data.avatar_url) {
         userProfile.value.avatar = data.avatar_url;
       }
-
       showEditModal.value = false;
     } else {
       console.error('Backend rejected the save:', data);
@@ -286,7 +241,7 @@ const saveProfile = async () => {
   </video>
 
   <div class="app-container">
-
+    <!-- Navbar -->
     <header class="navbar glass-panel">
       <div class="logo" @click="$router.push('/home')">
         <img src="../assets/logo_temp.png" alt="Ready2Roll Logo" class="nav-logo-img">
@@ -309,13 +264,13 @@ const saveProfile = async () => {
     </header>
 
     <div class="main-content">
-
+      <!-- Left Sidebar -->
       <aside class="left-sidebar glass-panel">
         <nav class="main-menu">
           <h3>Menu</h3>
           <ul>
             <li @click="$router.push('/home')">🏠 For you</li>
-            <li>👤 Subscription</li>
+            <li @click="$router.push('/subscriptions')">👤 Subscription</li>
             <li>🧭 Discover</li>
           </ul>
         </nav>
@@ -333,13 +288,14 @@ const saveProfile = async () => {
         </div>
       </aside>
 
+      <!-- Center: Profile Area -->
       <main class="profile-container">
-
+        <!-- Header Profile Info -->
         <div class="profile-header glass-panel">
           <img :src="userProfile.avatar" alt="Avatar" class="profile-avatar">
           <div class="profile-info">
             <div class="name-row">
-              <h2>{{ userProfile.name }} 🔒</h2>
+              <h2>{{ userProfile.name }} <span v-if="userProfile.isBusiness">💼</span></h2>
             </div>
             <div class="stats-row">
               <span class="clickable-stat" @click="openFollowModal('following')">
@@ -353,6 +309,7 @@ const saveProfile = async () => {
               <p>{{ userProfile.description }}</p>
             </div>
           </div>
+
           <div class="action-buttons">
             <button v-if="userProfile.isBusiness" class="create-event-btn" @click="goToCreateEvent">
               Create Event 📅
@@ -362,12 +319,14 @@ const saveProfile = async () => {
           </div>
         </div>
 
+        <!-- Profile Tabs -->
         <div class="profile-tabs glass-panel">
-          <div v-if="userProfile.isBusiness" class="tab" :class="{ active: activeTab === 'events' }" @click="activeTab = 'events'"><span>🎬 My Events</span></div>
+          <div v-if="userProfile.isBusiness" class="tab" :class="{ active: activeTab === 'events' }" @click="activeTab = 'events'"><span>📅 My Events</span></div>
           <div class="tab" :class="{ active: activeTab === 'likes' }" @click="activeTab = 'likes'"><span>🖤 Likes</span></div>
         </div>
 
-<div v-if="userProfile.isBusiness && activeTab === 'events'">
+        <!-- EVENTS TAB CONTENT (Business Only) -->
+        <div v-if="userProfile.isBusiness && activeTab === 'events'">
           <div v-if="myEvents.length === 0" class="glass-panel" style="text-align: center; padding: 30px; color: #aaa;">
             You haven't created any events yet.
           </div>
@@ -420,7 +379,7 @@ const saveProfile = async () => {
                   <span>💬 {{ event.comments_count || 0 }}</span>
                 </div>
 
-                <!-- Only Edit Button (.stop prevents opening the stats modal when clicking Edit) -->
+                <!-- Edit Button (.stop prevents opening the stats modal when clicking Edit) -->
                 <div class="card-actions">
                   <button class="action-btn edit-btn-card" @click.stop="openEdit(event)">
                     ✏️ Edit
@@ -431,6 +390,7 @@ const saveProfile = async () => {
           </section>
         </div>
 
+        <!-- LIKES TAB CONTENT -->
         <div v-else-if="activeTab === 'likes'" class="video-grid">
           <div class="video-card glass-panel" v-for="video in likedVideos" :key="video.id">
             <p class="placeholder-text">video</p>
@@ -442,132 +402,12 @@ const saveProfile = async () => {
     </div>
   </div>
 
-  <div v-if="showEditModal" class="modal-overlay" @click.self="closeEditModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>Edit profile</h3>
-        <button class="close-modal-btn" @click="closeEditModal">✕</button>
-      </div>
-
-      <div class="modal-body">
-        <div class="modal-section row-section">
-          <label>Profile photo</label>
-          <div class="photo-edit-area" @click="triggerFileInput">
-            <img :src="tempAvatar" alt="avatar" class="edit-avatar">
-            <span class="edit-pencil">✏️</span>
-            <input
-              type="file"
-              accept="image/*"
-              ref="fileInput"
-              class="hidden-file-input"
-              @change="handleImageUpload"
-            >
-          </div>
-        </div>
-
-        <div class="modal-section row-section">
-          <label>Username</label>
-          <div class="input-area">
-            <input type="text" v-model="profileEditForm.username" placeholder="Username">
-            <p class="helper-text">Usernames can only contain letters, numbers, underscores, and periods.</p>
-          </div>
-        </div>
-
-        <div class="modal-section row-section">
-          <label>Bio</label>
-          <div class="input-area">
-            <textarea v-model="profileEditForm.bio" placeholder="Bio" rows="4"></textarea>
-          </div>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button class="cancel-btn" @click="closeEditModal">Cancel</button>
-        <button class="save-btn" @click="saveProfile">Save</button>
-      </div>
-    </div>
-  </div>
-
-  <div v-if="isEditing" class="modal-overlay" @click.self="closeEdit">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>Edit Event</h3>
-        <button class="close-modal-btn" @click="closeEdit">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="modal-section row-section">
-          <label>Title</label>
-          <div class="input-area"><input type="text" v-model="editForm.title"></div>
-        </div>
-        <div class="modal-section row-section">
-          <label>Location</label>
-          <div class="input-area"><input type="text" v-model="editForm.location"></div>
-        </div>
-        <div class="modal-section row-section">
-          <label>Date</label>
-          <div class="input-area"><input type="date" v-model="editForm.event_date"></div>
-        </div>
-        <div class="modal-section row-section">
-          <label>Status</label>
-          <div class="input-area">
-            <select v-model="editForm.status" class="custom-select">
-              <option value="Active">Active</option>
-              <option value="Draft">Draft</option>
-              <option value="Scheduled">Scheduled</option>
-              <option value="Cancelled">Cancelled</option>
-            </select>
-          </div>
-        </div>
-        <div class="modal-section row-section">
-          <label>Description</label>
-          <div class="input-area"><textarea v-model="editForm.description" rows="3"></textarea></div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="cancel-btn" @click="closeEdit">Cancel</button>
-        <button class="save-btn" @click="saveEdit">Save Changes</button>
-      </div>
-    </div>
-  </div>
-
-  <div v-if="showFollowModal" class="modal-overlay" @click.self="closeFollowModal">
-    <div class="mini-modal-content">
-      <div class="modal-header">
-        <h3 style="text-transform: capitalize;">{{ followModalType }}</h3>
-        <button class="close-modal-btn" @click="closeFollowModal">✕</button>
-      </div>
-      <div class="modal-body list-body">
-        <ul class="follow-list">
-          <li v-for="user in followList" :key="user.id" class="follow-item">
-            <img :src="user.avatar" alt="avatar" class="avatar-small">
-            <span>{{ user.username }}</span>
-          </li>
-        </ul>
-        <p v-if="followList.length === 0" style="text-align: center; color: #aaa;">No users found.</p>
-      </div>
-    </div>
-  </div>
-  <div v-if="showLogoutModal" class="modal-overlay" @click.self="closeLogoutModal">
-    <div class="mini-modal-content">
-      <div class="modal-header">
-        <h3 style="font-family: Huninn;">Confirm Logout</h3>
-        <button class="close-modal-btn" @click="closeLogoutModal">✕</button>
-      </div>
-      <div class="modal-body" style="text-align: center; padding: 25px 20px;">
-        <p style="margin: 0; font-size: 1rem; color: rgba(255, 255, 255, 0.9);">Are you sure you want to logout?</p>
-      </div>
-      <div class="modal-footer" style="justify-content: center; gap: 10px;">
-        <button class="cancel-btn" @click="closeLogoutModal">Cancel</button>
-        <button class="logout-confirm-btn" @click="confirmLogout">Logout</button>
-      </div>
-    </div>
-  </div>
   <!-- EVENT STATS & VIDEO MODAL -->
   <div v-if="activePreviewEvent" class="modal-overlay stats-overlay" @click.self="closePreview">
     <div class="stats-modal-card glass-panel">
       <button class="close-modal-btn stats-close-btn" @click="closePreview">✕</button>
 
-      <!-- Left: Tall 9/16 Video/Image -->
+      <!-- Left: Tall 9/16 Video/Image (Clean without sidebar) -->
       <div class="stats-media-box">
         <img
           v-if="activePreviewEvent.media_type === 'image'"
@@ -596,8 +436,10 @@ const saveProfile = async () => {
           <p class="stats-desc">{{ activePreviewEvent.description || 'No description provided.' }}</p>
         </div>
 
-        <!-- Big Stats Counters (Likes & Comments) -->
+        <!-- Big Stats Counters -->
         <div class="stats-metrics-grid">
+
+<!-- LIKES (Static Display) -->
           <div class="metric-card">
             <span class="metric-icon">❤️</span>
             <div class="metric-data">
@@ -606,6 +448,7 @@ const saveProfile = async () => {
             </div>
           </div>
 
+          <!-- COMMENTS -->
           <div class="metric-card">
             <span class="metric-icon">💬</span>
             <div class="metric-data">
@@ -614,6 +457,7 @@ const saveProfile = async () => {
             </div>
           </div>
 
+          <!-- TICKET PRICE -->
           <div class="metric-card">
             <span class="metric-icon">🎟️</span>
             <div class="metric-data">
@@ -622,6 +466,7 @@ const saveProfile = async () => {
             </div>
           </div>
 
+          <!-- CAPACITY -->
           <div class="metric-card">
             <span class="metric-icon">👥</span>
             <div class="metric-data">
@@ -637,9 +482,89 @@ const saveProfile = async () => {
           <div><strong>📅 Date:</strong> {{ activePreviewEvent.event_date ? activePreviewEvent.event_date.replace('T', ' ').slice(0, 16) : 'TBD' }}</div>
         </div>
 
+        <!-- Edit Button takes user to CreateEvent page -->
         <button class="create-event-btn" style="width: 100%; margin-top: auto;" @click="openEdit(activePreviewEvent)">
           ✏️ Edit this Event
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT PROFILE MODAL -->
+  <div v-if="showEditModal" class="modal-overlay" @click.self="closeEditModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Edit profile</h3>
+        <button class="close-modal-btn" @click="closeEditModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-section row-section">
+          <label>Profile photo</label>
+          <div class="photo-edit-area" @click="triggerFileInput">
+            <img :src="tempAvatar" alt="avatar" class="edit-avatar">
+            <span class="edit-pencil">✏️</span>
+            <input
+              type="file"
+              accept="image/*"
+              ref="fileInput"
+              class="hidden-file-input"
+              @change="handleImageUpload"
+            >
+          </div>
+        </div>
+        <div class="modal-section row-section">
+          <label>Username</label>
+          <div class="input-area">
+            <input type="text" v-model="profileEditForm.username" placeholder="Username">
+            <p class="helper-text">Usernames can only contain letters, numbers, underscores, and periods.</p>
+          </div>
+        </div>
+        <div class="modal-section row-section">
+          <label>Bio</label>
+          <div class="input-area">
+            <textarea v-model="profileEditForm.bio" placeholder="Bio" rows="4"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="cancel-btn" @click="closeEditModal">Cancel</button>
+        <button class="save-btn" @click="saveProfile">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOLLOWERS / FOLLOWING MODAL -->
+  <div v-if="showFollowModal" class="modal-overlay" @click.self="closeFollowModal">
+    <div class="mini-modal-content">
+      <div class="modal-header">
+        <h3 style="text-transform: capitalize;">{{ followModalType }}</h3>
+        <button class="close-modal-btn" @click="closeFollowModal">✕</button>
+      </div>
+      <div class="modal-body list-body">
+        <ul class="follow-list">
+          <li v-for="user in followList" :key="user.id" class="follow-item">
+            <img :src="user.avatar" alt="avatar" class="avatar-small">
+            <span>{{ user.username }}</span>
+          </li>
+        </ul>
+        <p v-if="followList.length === 0" style="text-align: center; color: #aaa;">No users found.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOGOUT CONFIRMATION MODAL -->
+  <div v-if="showLogoutModal" class="modal-overlay" @click.self="closeLogoutModal">
+    <div class="mini-modal-content">
+      <div class="modal-header">
+        <h3 style="font-family: Huninn;">Confirm Logout</h3>
+        <button class="close-modal-btn" @click="closeLogoutModal">✕</button>
+      </div>
+      <div class="modal-body" style="text-align: center; padding: 25px 20px;">
+        <p style="margin: 0; font-size: 1rem; color: rgba(255, 255, 255, 0.9);">Are you sure you want to logout?</p>
+      </div>
+      <div class="modal-footer" style="justify-content: center; gap: 10px;">
+        <button class="cancel-btn" @click="closeLogoutModal">Cancel</button>
+        <button class="logout-confirm-btn" @click="confirmLogout">Logout</button>
       </div>
     </div>
   </div>
@@ -658,14 +583,12 @@ const saveProfile = async () => {
 .nav-icon { width: 26px; height: 26px; color: #FFFFFF; cursor: pointer; transition: all 0.3s ease; }
 .nav-icon:hover { color: #00f2fe; transform: scale(1.15); }
 .nav-icon-link { display: flex; align-items: center; }
-
 .main-content { display: flex; flex-direction: row; gap: 20px; height: calc(100vh - 95px); width: 100%; }
 .left-sidebar { width: 250px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
 ul { list-style: none; padding: 0; }
 li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor: pointer; }
 .avatar { width: 40px; height: 40px; border-radius: 50%; }
 .show-more { color: #cccccc; cursor: pointer; font-size: 0.9rem; }
-
 .profile-container { flex-grow: 1; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; scrollbar-width: none; }
 .profile-container::-webkit-scrollbar { display: none; }
 .profile-header { display: flex; align-items: flex-start; gap: 30px; position: relative; }
@@ -674,7 +597,6 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 .name-row h2 { margin: 0; display: flex; align-items: center; gap: 5px; }
 .stats-row { display: flex; gap: 20px; font-size: 1rem; }
 .description-box { background: rgba(255, 255, 255, 0.05); padding: 10px 15px; border-radius: 10px; min-height: 50px; width: 60%; border: 1px solid rgba(255, 255, 255, 0.2); }
-
 .action-buttons {
   position: absolute;
   bottom: 20px;
@@ -682,7 +604,6 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   display: flex;
   gap: 10px;
 }
-
 .edit-btn {
   background: rgba(255, 255, 255, 0.15);
   color: white;
@@ -694,7 +615,6 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   transition: all 0.3s;
 }
 .edit-btn:hover { background: rgba(255, 255, 255, 0.3); }
-
 .logout-btn {
   background: #d63031;
   color: white;
@@ -706,7 +626,6 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   transition: background 0.3s;
 }
 .logout-btn:hover { background: #ff7675; }
-
 .logout-confirm-btn {
   background: #d63031;
   color: white;
@@ -717,7 +636,6 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   border: none;
 }
 .logout-confirm-btn:hover { background: #ff7675; }
-
 .create-event-btn {
   background: #00f2fe;
   color: #000;
@@ -729,115 +647,15 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   transition: background 0.3s;
 }
 .create-event-btn:hover { background: #05d4ca; }
-
 .profile-tabs { display: flex; justify-content: center; padding: 10px; border-radius: 10px; gap: 10px; }
 .tab { padding: 10px 40px; font-weight: bold; cursor: pointer; border-bottom: 2px solid transparent; color: rgba(255,255,255,0.6); }
 .tab.active { border-bottom-color: #00f2fe; color: white; }
-
 .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
 .video-card { aspect-ratio: 9 / 16; display: flex; justify-content: center; align-items: center; position: relative; cursor: pointer; transition: transform 0.2s; }
 .video-card:hover { transform: scale(1.02); }
 .placeholder-text { font-family: "Bruno Ace", sans-serif; font-size: 1.5rem; opacity: 0.5; }
 .heart-icon { position: absolute; bottom: 15px; right: 15px; font-size: 1.5rem; }
 
-.events-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-  width: 100%;
-}
-
-.event-card {
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  padding: 18px;
-  box-sizing: border-box;
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-}
-
-.event-card:hover {
-  transform: translateY(-5px);
-  border-color: rgba(0, 242, 254, 0.6);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-}
-
-.card-media-header {
-  position: relative;
-  width: 100%;
-  height: 160px;
-  border-radius: 14px;
-  overflow: hidden;
-  margin-bottom: 15px;
-}
-
-.card-thumb {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.status-badge {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  padding: 4px 10px;
-  border-radius: 10px;
-  font-size: 0.7rem;
-  font-weight: bold;
-  backdrop-filter: blur(6px);
-  text-transform: uppercase;
-}
-
-.status-badge.active { background: rgba(0, 242, 254, 0.3); border: 1px solid #00f2fe; color: #00f2fe; }
-.status-badge.draft { background: rgba(255, 193, 7, 0.3); border: 1px solid #ffc107; color: #ffc107; }
-.status-badge.scheduled { background: rgba(156, 39, 176, 0.3); border: 1px solid #e040fb; color: #e040fb; }
-.status-badge.cancelled { background: rgba(255, 71, 87, 0.3); border: 1px solid #ff4757; color: #ff4757; }
-
-.card-body { margin-bottom: 18px; }
-.event-title { font-size: 1.1rem; margin: 0 0 10px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.event-info-row { display: flex; flex-direction: column; gap: 4px; font-size: 0.78rem; color: rgba(255, 255, 255, 0.8); margin-bottom: 12px; }
-.event-description-truncated { font-size: 0.8rem; color: rgba(255, 255, 255, 0.65); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 0; }
-
-.card-actions { display: flex; gap: 10px; }
-.action-btn { flex: 1; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.1); color: #ffffff; font-size: 0.75rem; cursor: pointer; transition: all 0.3s ease; }
-.preview-btn:hover { background: rgba(0, 242, 254, 0.7); border-color: #00f2fe; color: #000000; }
-.edit-btn-card:hover { background: rgba(255, 255, 255, 0.25); border-color: rgba(255, 255, 255, 0.4); }
-
-.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-.modal-content { background: #1e1e1e; width: 500px; max-width: 90%; border-radius: 12px; border: 1px solid #333; color: white; display: flex; flex-direction: column; }
-.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid #333; }
-.modal-header h3 { margin: 0; font-family: "Bruno Ace", sans-serif; }
-.close-modal-btn { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; }
-.modal-body { padding: 20px; display: flex; flex-direction: column; gap: 20px; max-height: 60vh; overflow-y: auto; }
-.modal-section { display: flex; align-items: flex-start; gap: 20px; border-bottom: 1px solid #333; padding-bottom: 20px; }
-.modal-section:last-child { border-bottom: none; padding-bottom: 0; }
-.modal-section label { width: 120px; font-weight: bold; flex-shrink: 0; }
-.input-area { flex-grow: 1; display: flex; flex-direction: column; gap: 5px; }
-.input-area input, .input-area textarea, .custom-select { width: 100%; background: #2a2a2a; border: 1px solid #444; color: white; padding: 10px; border-radius: 6px; font-family: inherit; }
-.helper-text { font-size: 0.75rem; color: #aaa; margin: 0; }
-.photo-edit-area { position: relative; display: inline-block; cursor: pointer; }
-.edit-avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; }
-.edit-pencil { position: absolute; bottom: 0; right: 0; background: #333; padding: 4px; border-radius: 50%; font-size: 0.8rem; }
-.hidden-file-input { display: none; }
-.modal-footer { padding: 15px 20px; border-top: 1px solid #333; display: flex; justify-content: flex-end; gap: 10px; }
-.modal-footer button { padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; }
-.cancel-btn { background: #333; color: white; }
-.cancel-btn:hover { background: #444; }
-.save-btn { background: white; color: black; }
-.save-btn:hover { background: #ccc; }
-.clickable-stat { cursor: pointer; transition: color 0.2s; }
-.clickable-stat:hover { color: #00f2fe; }
-
-.mini-modal-content { background: #1e1e1e; width: 350px; max-width: 90%; border-radius: 12px; border: 1px solid #333; color: white; display: flex; flex-direction: column; max-height: 400px; }
-.list-body { overflow-y: auto; padding: 10px; }
-.follow-list { list-style: none; padding: 0; margin: 0; }
-.follow-item { display: flex; align-items: center; gap: 15px; padding: 10px; border-radius: 8px; transition: background 0.2s; }
-.follow-item:hover { background: rgba(255, 255, 255, 0.05); }
-.avatar-small { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
-.user-link { display: flex; align-items: center; gap: 10px; text-decoration: none; color: white; width: 100%; transition: color 0.3s ease; }
-.user-link:hover { color: #00f2fe; }
 /* Tall 9:16 Reel Cards */
 .events-grid {
   display: grid;
@@ -880,6 +698,24 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   object-fit: cover;
 }
 
+.status-badge {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 3;
+  padding: 4px 10px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  backdrop-filter: blur(6px);
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.status-badge.active { background: rgba(0, 242, 254, 0.3); border: 1px solid #00f2fe; color: #00f2fe; }
+.status-badge.draft { background: rgba(255, 193, 7, 0.3); border: 1px solid #ffc107; color: #ffc107; }
+.status-badge.scheduled { background: rgba(156, 39, 176, 0.3); border: 1px solid #e040fb; color: #e040fb; }
+.status-badge.cancelled { background: rgba(255, 71, 87, 0.3); border: 1px solid #ff4757; color: #ff4757; }
+
 .reel-overlay-content {
   position: relative;
   z-index: 2;
@@ -893,6 +729,14 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   height: 100%;
 }
 
+.reel-overlay-content .card-actions {
+  pointer-events: auto;
+}
+
+.event-title { font-size: 1.1rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #FFFFFF; }
+.event-info-row { display: flex; flex-direction: column; gap: 2px; font-size: 0.75rem; color: rgba(255, 255, 255, 0.85); }
+.event-description-truncated { font-size: 0.75rem; color: rgba(255, 255, 255, 0.7); line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 0; }
+
 .mini-stats-row {
   display: flex;
   gap: 14px;
@@ -901,6 +745,44 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   color: #00f2fe;
   margin-top: 2px;
 }
+
+.card-actions { display: flex; gap: 8px; margin-top: 5px; }
+.action-btn { flex: 1; padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.1); color: #ffffff; font-size: 0.7rem; cursor: pointer; transition: all 0.3s ease; }
+.edit-btn-card:hover { background: rgba(255, 255, 255, 0.25); border-color: rgba(255, 255, 255, 0.4); }
+
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+.modal-content { background: #1e1e1e; width: 500px; max-width: 90%; border-radius: 12px; border: 1px solid #333; color: white; display: flex; flex-direction: column; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid #333; }
+.modal-header h3 { margin: 0; font-family: "Bruno Ace", sans-serif; }
+.close-modal-btn { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; }
+.modal-body { padding: 20px; display: flex; flex-direction: column; gap: 20px; max-height: 60vh; overflow-y: auto; }
+.modal-section { display: flex; align-items: flex-start; gap: 20px; border-bottom: 1px solid #333; padding-bottom: 20px; }
+.modal-section:last-child { border-bottom: none; padding-bottom: 0; }
+.modal-section label { width: 120px; font-weight: bold; flex-shrink: 0; }
+.input-area { flex-grow: 1; display: flex; flex-direction: column; gap: 5px; }
+.input-area input, .input-area textarea, .custom-select { width: 100%; background: #2a2a2a; border: 1px solid #444; color: white; padding: 10px; border-radius: 6px; font-family: inherit; }
+.helper-text { font-size: 0.75rem; color: #aaa; margin: 0; }
+.photo-edit-area { position: relative; display: inline-block; cursor: pointer; }
+.edit-avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; }
+.edit-pencil { position: absolute; bottom: 0; right: 0; background: #333; padding: 4px; border-radius: 50%; font-size: 0.8rem; }
+.hidden-file-input { display: none; }
+.modal-footer { padding: 15px 20px; border-top: 1px solid #333; display: flex; justify-content: flex-end; gap: 10px; }
+.modal-footer button { padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; }
+.cancel-btn { background: #333; color: white; }
+.cancel-btn:hover { background: #444; }
+.save-btn { background: white; color: black; }
+.save-btn:hover { background: #ccc; }
+.clickable-stat { cursor: pointer; transition: color 0.2s; }
+.clickable-stat:hover { color: #00f2fe; }
+
+.mini-modal-content { background: #1e1e1e; width: 350px; max-width: 90%; border-radius: 12px; border: 1px solid #333; color: white; display: flex; flex-direction: column; max-height: 400px; }
+.list-body { overflow-y: auto; padding: 10px; }
+.follow-list { list-style: none; padding: 0; margin: 0; }
+.follow-item { display: flex; align-items: center; gap: 15px; padding: 10px; border-radius: 8px; transition: background 0.2s; }
+.follow-item:hover { background: rgba(255, 255, 255, 0.05); }
+.avatar-small { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+.user-link { display: flex; align-items: center; gap: 10px; text-decoration: none; color: white; width: 100%; transition: color 0.3s ease; }
+.user-link:hover { color: #00f2fe; }
 
 /* Stats Modal */
 .stats-overlay {
