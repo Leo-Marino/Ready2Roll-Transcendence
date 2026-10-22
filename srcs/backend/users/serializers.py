@@ -97,6 +97,15 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
             'instagram_handle',
             'phone_number',
             'legal_name',
-            'date_of_birth',
-            'bs_website'
+            'date_ois_followingf_birth',
+            'bs_website',
+        ]
+
+class FollowUserSerializer(serializers.ModelSerializer):
+    is_following = serializers.SerializerMethodField()
+    is_self = serializers.SerializerMethodField()
+    class Meta:
+        model = User
+        fields = [
+            'id', 'username', 'avatar_url', 'is_following', 'is_self',
         ]

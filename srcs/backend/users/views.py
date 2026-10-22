@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
+from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -9,6 +10,7 @@ from .serializers import (
     UserProfileUpdateSerializer,
     UserProfileSerializer,
     PublicUserProfileSerializer,
+    FollowUserSerializer,
 )
 from rest_framework_simplejwt.tokens import RefreshToken
 from events.models import Event
@@ -85,3 +87,24 @@ def user_events_view(request, user_id):
         events = events.filter(status__iexact='active')
     serializer = EventSerializer(events, many=True, context={'request': request})
     return Response(serializer.data)
+
+class UserFollowersView(APIView):
+
+    def get(self, request, user_id):
+        target_user = get_object_or_404(User, pk=user_id)
+        subscriptions = target_user.followers.select_related('follower').all()
+        follower_list = [sub.follower for sub in subscriptions]
+        serializer = FollowUserSerializer(follower_list, many = True, context={'request':request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class UserFollowingView(APIView):
+
+    def get(self, request, user_id):
+        target_user = get_object_or_404(User, pk=user_id)
+        subscriptions = target_user.following.select_related('following').all()
+        following_list = [sub.following for sub in subscriptions]
+        serializer = FollowUserSerializer(following_list, many = True, context={'request':request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
