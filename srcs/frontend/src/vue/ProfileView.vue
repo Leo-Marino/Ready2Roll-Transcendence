@@ -13,41 +13,44 @@ const showFollowModal = ref(false);
 const followModalType = ref('');
 const followList = ref([]);
 const showLogoutModal = ref(false);
-
+const isFollowListLoading = ref(false);
 const openFollowModal = async (type) => {
   followModalType.value = type;
   showFollowModal.value = true;
   followList.value = [];
 
-  if (!currentUserId.value) {
-    console.warn("ID utente non ancora caricato.");
-    return;
-  }
+  if (!userProfile.value.id) return; // Khass l'id ikoun wajd
+
+  isFollowListLoading.value = true;
+  const token = getToken();
+
+  // N3zlo l'endpoint 3la 7sab l'click (followers wla following)
+  // T2kked mn sahbek mn l'path s7i7 dyal l'URL
+  const endpoint = type === 'following'
+    ? `${API}/social/users/${userProfile.value.id}/following/`
+    : `${API}/social/users/${userProfile.value.id}/followers/`;
 
   try {
-    const endpoint = type === 'followers'
-      ? `${API}/users/${currentUserId.value}/followers/`
-      : `${API}/users/${currentUserId.value}/following/`;
-
     const response = await fetch(endpoint, {
-      headers: { 'Authorization': `Bearer ${getToken()}` }
+      headers: { 'Authorization': `Bearer ${token}` }
     });
 
     if (response.ok) {
       const data = await response.json();
-      // Mappa i dati ricevuti dal FollowUserSerializer
+      // Kan-adaptiw data li rj3at m3a chno kaytsenna l'HTML dyalna
+      // Matalan ila l'backend kayrje3 {id, username, avatar_url}, ghadi nsiftouhom f followList
       followList.value = data.map(user => ({
         id: user.id,
         username: user.username,
-        avatar: user.avatar_url,
-        is_following: user.is_following,
-        is_self: user.is_self
+        avatar: user.avatar_url ? (user.avatar_url.startsWith('http') ? user.avatar_url : `http://localhost:9000/media/${user.avatar_url}`) : 'https://i.pravatar.cc/150?u=6'
       }));
     } else {
-      console.error('Impossibile caricare la lista dei follow, status:', response.status);
+      console.error("Failed to fetch follow list");
     }
   } catch (error) {
-    console.error('Errore di rete durante il caricamento della lista', error);
+    console.error("Error fetching follow list:", error);
+  } finally {
+    isFollowListLoading.value = false;
   }
 };
 
@@ -85,6 +88,7 @@ const subscribedAccounts = ref([
 
 // --- PROFILE DATA ---
 const userProfile = ref({
+  id: null,
   name: 'Loading...',
   following: 0,
   followers: 0,
@@ -162,7 +166,7 @@ onMounted(async () => {
     }
 
     const data = await response.json();
-    currentUserId.value = data?.id || null; // Salvataggio dell'ID utente per le liste follow
+    userProfile.value.id = data.id;
     userProfile.value.name = data.username || '';
     userProfile.value.description = data.bio || '';
     if (data.avatar_url) {
@@ -494,19 +498,22 @@ const saveProfile = async () => {
     </div>
   </div>
 
-  <!-- EDIT PROFILE MODAL -->
+<!-- EDIT PROFILE MODAL (Re-styled) -->
   <div v-if="showEditModal" class="modal-overlay" @click.self="closeEditModal">
-    <div class="modal-content">
+    <div class="modal-content profile-edit-modal glass-panel">
       <div class="modal-header">
-        <h3>Edit profile</h3>
-        <button class="close-modal-btn" @click="closeEditModal">✕</button>
+        <h3 style="font-family: 'Bruno Ace', sans-serif;">EDIT PROFILE</h3>
+        <button class="close-modal-btn stats-close-btn" @click="closeEditModal">✕</button>
       </div>
-      <div class="modal-body">
-        <div class="modal-section row-section">
-          <label>Profile photo</label>
+
+      <div class="modal-body profile-edit-body">
+
+        <div class="edit-photo-section">
           <div class="photo-edit-area" @click="triggerFileInput">
-            <img :src="tempAvatar" alt="avatar" class="edit-avatar">
-            <span class="edit-pencil">✏️</span>
+            <img :src="tempAvatar" alt="avatar" class="edit-avatar-large">
+            <div class="edit-overlay-icon">
+              <span>✏️</span>
+            </div>
             <input
               type="file"
               accept="image/*"
@@ -515,24 +522,27 @@ const saveProfile = async () => {
               @change="handleImageUpload"
             >
           </div>
+          <p style="color: #00f2fe; font-size: 0.85rem; margin-top: 10px;">Change Profile Photo</p>
         </div>
-        <div class="modal-section row-section">
-          <label>Username</label>
-          <div class="input-area">
-            <input type="text" v-model="profileEditForm.username" placeholder="Username">
+
+        <div class="edit-form-grid">
+          <div class="input-group">
+            <label>Username</label>
+            <input type="text" v-model="profileEditForm.username" placeholder="Username" class="custom-input">
             <p class="helper-text">Usernames can only contain letters, numbers, underscores, and periods.</p>
           </div>
-        </div>
-        <div class="modal-section row-section">
-          <label>Bio</label>
-          <div class="input-area">
-            <textarea v-model="profileEditForm.bio" placeholder="Bio" rows="4"></textarea>
+
+          <div class="input-group">
+            <label>Bio</label>
+            <textarea v-model="profileEditForm.bio" placeholder="Write a short bio..." rows="4" class="custom-input textarea-input"></textarea>
           </div>
         </div>
+
       </div>
-      <div class="modal-footer">
+
+      <div class="modal-footer profile-edit-footer">
         <button class="cancel-btn" @click="closeEditModal">Cancel</button>
-        <button class="save-btn" @click="saveProfile">Save</button>
+        <button class="save-btn action-btn-cyan" @click="saveProfile">Save Changes</button>
       </div>
     </div>
   </div>
@@ -545,13 +555,17 @@ const saveProfile = async () => {
         <button class="close-modal-btn" @click="closeFollowModal">✕</button>
       </div>
       <div class="modal-body list-body">
-        <ul class="follow-list">
+        <ul class="follow-list" v-if="!isFollowListLoading">
           <li v-for="user in followList" :key="user.id" class="follow-item">
-            <img :src="user.avatar" alt="avatar" class="avatar-small">
-            <span>{{ user.username }}</span>
+            <!-- Tqder tzid hna router-link bach mli tclicki 3la chi 7ed f liste idik l profile dyalo -->
+            <router-link :to="{ name: 'UserProfile', params: { id: user.id } }" style="display: flex; align-items: center; gap: 15px; text-decoration: none; color: white;">
+              <img :src="user.avatar" alt="avatar" class="avatar-small">
+              <span>{{ user.username }}</span>
+            </router-link>
           </li>
         </ul>
-        <p v-if="followList.length === 0" style="text-align: center; color: #aaa;">No users found.</p>
+        <p v-if="isFollowListLoading" style="text-align: center; color: #aaa;">Loading...</p>
+        <p v-if="!isFollowListLoading && followList.length === 0" style="text-align: center; color: #aaa;">No users found.</p>
       </div>
     </div>
   </div>
@@ -916,4 +930,129 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   padding: 12px 15px;
   border-radius: 10px;
 }
+
+/* --- NEW EDIT PROFILE MODAL STYLES --- */
+.profile-edit-modal {
+  background: rgba(20, 20, 30, 0.95) !important;
+  border: 1px solid rgba(0, 242, 254, 0.3) !important;
+  max-width: 600px !important;
+  border-radius: 20px !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  padding: 0;
+}
+
+.profile-edit-modal .modal-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 20px 30px;
+}
+
+.profile-edit-body {
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.edit-photo-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-avatar-large {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #00f2fe;
+}
+
+.photo-edit-area {
+  position: relative;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+
+.photo-edit-area:hover {
+  transform: scale(1.05);
+}
+
+.edit-overlay-icon {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid #00f2fe;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+}
+
+.edit-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.input-group label {
+  font-weight: bold;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.custom-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 15px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.4);
+  color: #FFFFFF;
+  font-size: 0.9rem;
+  transition: border-color 0.3s ease;
+}
+
+.custom-input:focus {
+  outline: none;
+  border-color: #00f2fe;
+}
+
+.textarea-input {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.profile-edit-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 20px 30px;
+}
+
+.action-btn-cyan {
+  background: #00f2fe !important;
+  color: #000 !important;
+  border-radius: 10px;
+  padding: 10px 25px;
+  font-weight: bold;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.action-btn-cyan:hover {
+  background: #05d4ca !important;
+  box-shadow: 0 0 15px rgba(0, 242, 254, 0.4);
+}
+
 </style>

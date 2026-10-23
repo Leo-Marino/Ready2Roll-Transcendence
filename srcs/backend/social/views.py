@@ -6,7 +6,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from events.models import Event
-
+#from users.serializers import PublicUserProfileSerializer ##ilyas he did it u can take it off
 from .models import Subscription, Comment, EventLike, Reaction
 from .serializers import CommentSerializer
 
@@ -136,3 +136,25 @@ def toggle_comment_reaction_view(request, comment_id):
         'user_reaction': user_reaction,
         'reactions_count': reactions_count,
     })
+
+# @api_view(['GET'])
+# @permission_classes([IsAuthenticated])
+# def get_followers_view(request, user_id):
+#     """ Returns the list of users following the given user_id """
+#     target_user = get_object_or_404(User, pk=user_id)
+#     followers_subs = target_user.followers.select_related('follower').all()
+#     followers_users = [sub.follower for sub in followers_subs]
+
+#     serializer = PublicUserProfileSerializer(followers_users, many=True, context={'request': request})
+#     return Response(serializer.data)
+
+# @api_view(['GET'])
+# @permission_classes([IsAuthenticated])
+# def get_following_view(request, user_id):
+#     """ Returns the list of users that the given user_id is following """
+#     target_user = get_object_or_404(User, pk=user_id)
+#     following_subs = target_user.following.select_related('followed').all()
+#     followed_users = [sub.followed for sub in following_subs]
+
+#     serializer = PublicUserProfileSerializer(followed_users, many=True, context={'request': request})
+#     return Response(serializer.data)

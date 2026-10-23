@@ -366,9 +366,25 @@ onBeforeUnmount(() => {
       </aside>
 
       <main class="feed-container">
-        <p v-if="!feedLoading && videos.length === 0" class="glass-panel empty-feed">
-          No videos yet. Owners will publish their events here.
-        </p>
+        <!-- Empty state: animated R logo in the middle of the page -->
+        <div v-if="!feedLoading && videos.length === 0" class="empty-state">
+          <div class="r-stage">
+            <span class="r-glow"></span>
+            <span class="r-ring r-ring-1"></span>
+            <span class="r-ring r-ring-2"></span>
+            <span class="r-orbit" style="--d: 7s; --s: 1;"><i></i></span>
+            <span class="r-orbit" style="--d: 11s; --s: -1; inset: 18px;"><i></i></span>
+            <span class="r-orbit" style="--d: 9s; --s: 1; inset: 36px; animation-delay: -3s;"><i></i></span>
+            <div class="r-pop">
+              <div class="r-float">
+                <img src="../assets/logo_temp.png" alt="Ready2Roll" class="r-img">
+                <span class="r-shine"></span>
+              </div>
+            </div>
+          </div>
+          <h2 class="empty-title">Ready2Roll</h2>
+          <p class="empty-sub">No events yet. Owners will publish their events here.</p>
+        </div>
 
         <div
           class="video-wrapper glass-panel"
@@ -674,4 +690,63 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 .subscribe-btn.subscribed { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); }
 .action-buttons button.liked { background: rgba(255, 71, 87, 0.35); }
 .empty-feed { text-align: center; color: rgba(255,255,255,0.75); margin: auto; }
+
+/* ---------- Empty state: animated R ---------- */
+.empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; }
+.r-stage { position: relative; width: 280px; height: 280px; display: flex; align-items: center; justify-content: center; }
+.r-pop, .r-float { position: relative; width: 170px; height: 170px; }
+.r-pop { animation: r-intro 1.6s cubic-bezier(.2, 1.3, .35, 1) both; }
+.r-float { animation: r-float 5s ease-in-out 1.6s infinite; transform-style: preserve-3d; }
+.r-img { width: 100%; height: 100%; object-fit: contain; display: block; filter: drop-shadow(0 12px 28px rgba(255, 51, 187, 0.55)); }
+.r-shine {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.9) 50%, transparent 62%);
+  background-size: 300% 100%;
+  background-repeat: no-repeat;
+  -webkit-mask: url('../assets/logo_temp.png') center / contain no-repeat;
+  mask: url('../assets/logo_temp.png') center / contain no-repeat;
+  mix-blend-mode: soft-light;
+  animation: r-shine 3.6s ease-in-out 2s infinite;
+}
+.r-glow {
+  position: absolute; width: 230px; height: 230px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 51, 187, 0.55) 0%, rgba(147, 51, 255, 0.35) 45%, transparent 70%);
+  filter: blur(18px);
+  animation: r-glow 3.2s ease-in-out infinite;
+}
+.r-ring { position: absolute; border-radius: 50%; border: 2px solid transparent; }
+.r-ring-1 { inset: 20px; border-top-color: rgba(0, 242, 254, 0.9); border-right-color: rgba(0, 242, 254, 0.25); animation: r-spin 4s linear infinite, r-fade-in 1s ease 0.8s both; }
+.r-ring-2 { inset: 0; border-bottom-color: rgba(255, 51, 187, 0.9); border-left-color: rgba(255, 51, 187, 0.2); animation: r-spin 6.5s linear infinite reverse, r-fade-in 1s ease 1s both; }
+.r-orbit { position: absolute; inset: 0; animation: r-spin var(--d, 8s) linear infinite; animation-direction: normal; }
+.r-orbit i { position: absolute; top: 0; left: 50%; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: #fff; box-shadow: 0 0 10px 3px rgba(0, 242, 254, 0.9), 0 0 22px 6px rgba(255, 51, 187, 0.6); animation: r-twinkle 1.8s ease-in-out infinite; }
+.empty-title {
+  margin: 0; font-family: "Bruno Ace", sans-serif; font-size: 1.6rem; letter-spacing: 2px;
+  background: linear-gradient(90deg, #ff33bb, #9333ff, #00f2fe, #ff33bb); background-size: 300% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: r-text-slide 5s linear infinite, r-rise 0.9s ease 1.2s both;
+}
+.empty-sub { margin: 0; color: rgba(255, 255, 255, 0.75); font-size: 14px; animation: r-rise 0.9s ease 1.5s both; }
+
+@keyframes r-intro {
+  0%   { transform: scale(0) rotate(-540deg); opacity: 0; filter: blur(10px); }
+  60%  { opacity: 1; filter: blur(0); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes r-float {
+  0%, 100% { transform: translateY(0) rotateY(0deg) rotateZ(-2deg); }
+  25%      { transform: translateY(-14px) rotateY(18deg) rotateZ(0deg); }
+  50%      { transform: translateY(0) rotateY(0deg) rotateZ(2deg); }
+  75%      { transform: translateY(-10px) rotateY(-18deg) rotateZ(0deg); }
+}
+@keyframes r-shine { 0% { background-position: 130% 0; } 55%, 100% { background-position: -30% 0; } }
+@keyframes r-glow { 0%, 100% { transform: scale(0.9); opacity: 0.7; } 50% { transform: scale(1.15); opacity: 1; } }
+@keyframes r-spin { to { transform: rotate(360deg); } }
+@keyframes r-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes r-twinkle { 0%, 100% { opacity: 0.35; transform: scale(0.7); } 50% { opacity: 1; transform: scale(1.2); } }
+@keyframes r-text-slide { to { background-position: 300% 0; } }
+@keyframes r-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .r-pop, .r-float, .r-shine, .r-glow, .r-ring, .r-orbit, .r-orbit i, .empty-title, .empty-sub { animation: none !important; }
+}
 </style>
