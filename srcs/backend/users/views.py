@@ -89,6 +89,7 @@ def user_events_view(request, user_id):
     return Response(serializer.data)
 
 class UserFollowersView(APIView):
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, user_id):
         target_user = get_object_or_404(User, pk=user_id)
@@ -98,11 +99,12 @@ class UserFollowersView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 class UserFollowingView(APIView):
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, user_id):
         target_user = get_object_or_404(User, pk=user_id)
-        subscriptions = target_user.following.select_related('following').all()
-        following_list = [sub.following for sub in subscriptions]
+        subscriptions = target_user.following.select_related('followed').all()
+        following_list = [sub.followed for sub in subscriptions]
         serializer = FollowUserSerializer(following_list, many = True, context={'request':request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 

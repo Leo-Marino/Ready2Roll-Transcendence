@@ -14,7 +14,9 @@ const followModalType = ref('');
 const followList = ref([]);
 const showLogoutModal = ref(false);
 const isFollowListLoading = ref(false);
+
 const openFollowModal = async (type) => {
+  console.log('profile id:', userProfile.value.id);
   followModalType.value = type;
   showFollowModal.value = true;
   followList.value = [];
@@ -27,14 +29,14 @@ const openFollowModal = async (type) => {
   // N3zlo l'endpoint 3la 7sab l'click (followers wla following)
   // T2kked mn sahbek mn l'path s7i7 dyal l'URL
   const endpoint = type === 'following'
-    ? `${API}/social/users/${userProfile.value.id}/following/`
-    : `${API}/social/users/${userProfile.value.id}/followers/`;
+    ? `${API}/users/${userProfile.value.id}/following/`
+    : `${API}/users/${userProfile.value.id}/followers/`;
 
   try {
     const response = await fetch(endpoint, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
-
+    console.log('URL:', response.url, 'status:', response.status, 'type:', response.headers.get('content-type'));
     if (response.ok) {
       const data = await response.json();
       // Kan-adaptiw data li rj3at m3a chno kaytsenna l'HTML dyalna
