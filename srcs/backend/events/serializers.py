@@ -15,6 +15,9 @@ class EventSerializer(serializers.ModelSerializer):
     media_file = serializers.FileField(write_only=True, required=False)
     media_src = serializers.SerializerMethodField()
     media_type = serializers.SerializerMethodField()
+    # statistics shown in the owner's profile
+    likes_count = serializers.SerializerMethodField()
+    comments_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Event
@@ -22,9 +25,17 @@ class EventSerializer(serializers.ModelSerializer):
             "id", "title", "organizer", "description",
             "location", "event_date", "max_capacity",
             "ticket_price", "end_time", "tags", "created_at",
-            "status", "media_file", "media_type", "media_src"
+            "status", "media_file", "media_type", "media_src",
+            "likes_count", "comments_count",
         ]
         read_only_fields = ['organizer']
+
+    def get_likes_count(self, obj):
+        return obj.likes.count()
+
+    def get_comments_count(self, obj):
+        # comments + replies, same number the home feed shows
+        return obj.comments.count()
 
     def get_media_src(self, obj):
         media = Media.objects.filter(event=obj).first()

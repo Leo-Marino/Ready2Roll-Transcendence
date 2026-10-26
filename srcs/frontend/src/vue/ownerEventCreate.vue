@@ -4,7 +4,9 @@ export default {
   emits: ['navigate-view', 'event-published'],
   data() {
     return {
-      // activeStep: 1,
+      isEditMode: false,
+      editingEventId: null,
+      activeStep: 1,
       eventTitle: '',
       descriptionText: '',
       eventLocation: 'YAB Club, Florence',
@@ -12,11 +14,12 @@ export default {
       maxCapacity: '',
       ticketPrice: '',
       endTime: '',
-      eventTags: '',
-      eventStatus: 'Draft',
+      tags: '',
+      eventStatus: 'draft',
       uploadedMediaSrc: null,
       actualFile: null,
-      mediaType: null
+      mediaType: null,
+      showMapBox: false
     }
   },
   computed: {
@@ -25,9 +28,39 @@ export default {
       const parts = this.eventDate.split('T')[0].split('-');
       if (parts.length === 3) {
         const [year, month, day] = parts;
-        return `${day}/${month}/${year}`;
+        return `${day}/${month}/${day}`;
       }
       return this.eventDate;
+    }
+  },
+  mounted() {
+    // Nchoufo wach dkhla l'page 3la wd Edit
+    if (this.$route.query.edit === 'true') {
+      const savedEvent = localStorage.getItem('editingEvent');
+      if (savedEvent) {
+        try {
+          const ev = JSON.parse(savedEvent);
+          this.isEditMode = true;
+          this.editingEventId = ev.id;
+          this.eventTitle = ev.title || '';
+          this.descriptionText = ev.description || '';
+          this.eventLocation = ev.location || 'YAB Club, Florence';
+          // Format dyal datetime-local khasso ykon YYYY-MM-DDTHH:mm
+          this.eventDate = ev.event_date ? String(ev.event_date).slice(0, 16) : '';
+          this.endTime = ev.end_time ? String(ev.end_time).slice(0, 16) : '';
+          this.maxCapacity = ev.max_capacity || '';
+          this.ticketPrice = ev.ticket_price || '';
+          this.tags = Array.isArray(ev.tags) ? ev.tags.join(', ') : (ev.tags || '');
+          this.eventStatus = ev.status ? ev.status.toLowerCase() : 'active';
+          this.uploadedMediaSrc = ev.media_src || null;
+          this.mediaType = ev.media_type || 'image';
+        } catch (e) {
+          console.error('Error parsing editingEvent:', e);
+        }
+      }
+    } else {
+      // Ila dkhl 3adi bach ysayb event jdid, nms7o ay data qdima
+      localStorage.removeItem('editingEvent');
     }
   },
   methods: {
@@ -36,6 +69,9 @@ export default {
     },
     triggerFileInput() {
       this.$refs.fileInput.click();
+    },
+    toggleMapBox() {
+      this.showMapBox = !this.showMapBox;
     },
     handleFileUpload(event) {
       const file = event.target.files[0];
@@ -46,15 +82,20 @@ export default {
       }
       event.target.value = '';
     },
+    clearMedia() {
+      this.uploadedMediaSrc = null;
+      this.actualFile = null;
+      this.mediaType = null;
+    },
     async handlePublish() {
       if (!this.eventTitle || !this.descriptionText || !this.eventDate || !this.eventStatus) {
-        alert("All mandatory fields must be filled!");
+        alert("All mandatory fields must be filled !");
         return;
       }
 
-      const token = localStorage.getItem('token') || localStorage.getItem('access');
-
+      const token = localStorage.getItem('token') || localStorage.getItem('access') || localStorage.getItem('access_token');
       const formData = new FormData();
+
       formData.append('title', this.eventTitle);
       formData.append('description', this.descriptionText);
       formData.append('location', this.eventLocation);
@@ -64,16 +105,29 @@ export default {
       if (this.maxCapacity) formData.append('max_capacity', this.maxCapacity);
       if (this.ticketPrice) formData.append('ticket_price', this.ticketPrice);
       if (this.endTime) formData.append('end_time', this.endTime);
-      if (this.eventTags) formData.append('tags', this.eventTags);
 
+      if (this.tags) {
+        const tagsArray = this.tags.split(',').map(tag => tag.trim()).filter(Boolean);
+        tagsArray.forEach(tag => {
+          formData.append('tags', tag);
+        });
+      }
+
+      // Ila bddel l'video wla tswira, nsifto l'fichier jdid
       if (this.actualFile) {
         formData.append('media_file', this.actualFile);
         formData.append('media_type', this.mediaType);
+      } else if (this.mediaType) {
+        formData.append('media_type', this.mediaType);
       }
 
+      // Ila kna f Edit Mode, nsifto PUT l /api/events/<id>/, sinon POST l /api/events/
+      const url = this.isEditMode ? `/api/events/${this.editingEventId}/` : '/api/events/';
+      const method = this.isEditMode ? 'PUT' : 'POST';
+
       try {
-        const response = await fetch('/api/events/', {
-          method: 'POST',
+        const response = await fetch(url, {
+          method: method,
           headers: {
             'Authorization': `Bearer ${token}`
           },
@@ -81,14 +135,25 @@ export default {
         });
 
         if (response.ok) {
-          const createdEvent = await response.json();
-          alert("Event created successfully!");
-          this.$emit('event-published', createdEvent);
+          const savedEvent = await response.json();
+          localStorage.removeItem('editingEvent');
+          alert(this.isEditMode ? "Event updated successfully!" : "Event created successfully!");
+          this.$emit('event-published', savedEvent);
           this.goToVisualPage();
-        } else {
+        }
+        else if (response.status === 401) {
+          alert("Unauthorized user; please log in again");
+          this.$router.push('/login');
+        }
+        else if (response.status === 400) {
+          const errorData = await response.json();
+          console.error("Validation error: ", errorData);
+          alert("A validation error was found; please check your input");
+        }
+        else {
           const errorData = await response.json();
           console.error("Backend error:", errorData);
-          alert("There was an error creating the event");
+          alert("There was an error saving the event");
         }
       } catch (error) {
         console.error("Network error", error);
@@ -96,8 +161,9 @@ export default {
       }
     },
     goToVisualPage() {
+      localStorage.removeItem('editingEvent');
       if (this.$router) {
-        this.$router.push('/ViewEvent');
+        this.$router.push('/profile');
       }
       this.$emit('navigate-view');
     }
@@ -117,7 +183,7 @@ export default {
     style="display: none;"
     @change="handleFileUpload"
   />
-  
+
   <header class="navbar glass-panel">
     <div class="nav-left">
       <div class="logo" @click="$router.push('/home')">
@@ -135,7 +201,7 @@ export default {
         </router-link>
         <router-link to="/chat" class="nav-icon-link" title="Chat">
           <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a.75.75 0 01-.81-.54 2.89 2.89 0 01.213-1.637 8.25 8.25 0 01-1.813-5.293C3 7.444 7.03 3.75 12 3.75s9 3.694 9 8.25z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a.75.75 0 01-.81-.54 2.89 2.89 0 01.213-1.637 8.25 8.25 0 01-1.813-5.293C3 7.444 7.03 3.75 12 3.75s9 3.694 9 8.25z" />
           </svg>
         </router-link>
         <router-link to="/profile" class="nav-icon-link" title="Profile">
@@ -149,7 +215,7 @@ export default {
 
   <main class="main-content">
     <div class="page-title-row">
-      <h1 class="page-title">CREATE AN EVENT</h1>
+      <h1 class="page-title">{{ isEditMode ? 'EDIT EVENT' : 'CREATE AN EVENT' }}</h1>
       <button class="action-btn nav-visual-btn" @click="goToVisualPage">
         📂 MY EVENTS
       </button>
@@ -157,69 +223,82 @@ export default {
 
     <section class="glass-card">
       <div class="preview-box">
-        <div class="step-column" :class="{ 'step-active': activeStep === 1 }" @click="goToStep(1)">
-          <div class="step-header-label">1. MAP LOCATION</div>
-          <div class="map-container-inline">
-            <div class="map-inner-wrapper">
-              <div class="map-search-bar">
-                <input
-                  type="text"
-                  placeholder="Find desired address or location"
-                  class="custom-input map-input"
-                  v-model="eventLocation"
-                />
-              </div>
-              <iframe
-                width="100%"
-                height="100%"
-                frameborder="0"
-                scrolling="no"
-                marginheight="0"
-                marginwidth="0"
-                :src="`https://maps.google.com/maps?q=${encodeURIComponent(eventLocation)}&t=&z=15&ie=UTF8&iwloc=&output=embed`"
-                class="map-iframe"
-              ></iframe>
-            </div>
-          </div>
-        </div>
 
-        <!-- STEP 2: CONTENT MEDIA (CENTER) -->
-        <div class="step-column" :class="{ 'step-active': activeStep === 2 }" @click="goToStep(2)">
-          <div class="step-header-label">2. CONTENT MEDIA</div>
+        <!-- STEP 1: CONTENT MEDIA -->
+        <div class="step-column" :class="{ 'step-active': activeStep === 1 }" @click="goToStep(1)">
+          <div class="step-header-label">1. CONTENT MEDIA</div>
           <div class="media-outer-wrapper">
             <div
               class="media-preview clickable"
               :class="{ 'has-content': uploadedMediaSrc }"
-              @click="goToStep(2); triggerFileInput()"
             >
-              <template v-if="!uploadedMediaSrc">
-                <span>Click here to insert photo/video</span>
-              </template>
-              <template v-else>
-                <video
-                  v-if="mediaType === 'video'"
-                  :src="uploadedMediaSrc"
-                  autoplay
-                  loop
-                  muted
-                  class="uploaded-preview"
-                ></video>
-                <img
-                  v-else
-                  :src="uploadedMediaSrc"
-                  alt="Preview"
-                  class="uploaded-preview"
-                />
-              </template>
+              <!-- Map Toggle Button -->
+              <button type="button" class="media-map-toggle-btn" @click.stop="toggleMapBox">
+                {{ showMapBox ? '🗺️ Hide map' : '🗺️ View map' }}
+              </button>
+
+              <!-- Remove Media Button (Only shows when file is uploaded) -->
+              <button
+                v-if="uploadedMediaSrc"
+                type="button"
+                class="media-remove-btn"
+                @click.stop="clearMedia"
+                title="Remove media"
+              >
+                ✕
+              </button>
+
+              <div @click="triggerFileInput" class="media-inner-click-area">
+                <template v-if="!uploadedMediaSrc">
+                  <span>Click here to insert photo/video</span>
+                </template>
+                <template v-else>
+                  <video
+                    v-if="mediaType === 'video'"
+                    :src="uploadedMediaSrc"
+                    autoplay
+                    loop
+                    muted
+                    class="uploaded-preview"
+                  ></video>
+                  <img
+                    v-else
+                    :src="uploadedMediaSrc"
+                    alt="Preview"
+                    class="uploaded-preview"
+                  />
+                </template>
+              </div>
             </div>
           </div>
         </div>
+
+        <!-- STEP 2: MAP LOCATION (Animated transition wrapper) -->
+        <transition name="map-slide">
+          <div class="step-column" v-if="showMapBox" :class="{ 'step-active': activeStep === 2 }" @click="goToStep(2)">
+            <div class="step-header-label">2. MAP LOCATION</div>
+            <div class="map-container-inline">
+              <div class="map-inner-wrapper">
+                <iframe
+                  width="100%"
+                  height="100%"
+                  frameborder="0"
+                  scrolling="no"
+                  marginheight="0"
+                  marginwidth="0"
+                  :src="`https://maps.google.com/maps?q=${encodeURIComponent(eventLocation)}&t=&z=15&ie=UTF8&iwloc=&output=embed`"
+                  class="map-iframe"
+                ></iframe>
+              </div>
+            </div>
+          </div>
+        </transition>
 
         <!-- STEP 3: EVENT DETAILS (RIGHT) -->
         <div class="step-column right-section" :class="{ 'step-active': activeStep === 3 }" @click="goToStep(3)">
           <div class="step-header-label">3. EVENT DETAILS</div>
           <div class="event-details-bar-vertical">
-            
+
             <div class="detail-input-group">
               <label for="event-title">TITLE *</label>
               <input
@@ -242,6 +321,17 @@ export default {
                 rows="2"
                 required
               ></textarea>
+            </div>
+
+            <div class="detail-input-group">
+              <label for="event-location">LOCATION *</label>
+              <input
+                id="event-location"
+                type="text"
+                placeholder="Find desired address or location"
+                class="custom-input map-input"
+                v-model="eventLocation"
+              />
             </div>
 
             <div class="detail-input-group">
@@ -292,11 +382,11 @@ export default {
             </div>
 
             <div class="detail-input-group">
-              <label for="event-tags">TAGS</label>
+              <label for="tags">TAGS</label>
               <input
-                id="event-tags"
+                id="tags"
                 type="text"
-                v-model="eventTags"
+                v-model="tags"
                 placeholder="E.g. party, club, dj"
                 class="custom-input"
               />
@@ -305,9 +395,9 @@ export default {
             <div class="detail-input-group">
               <label for="event-status">STATUS *</label>
               <select id="event-status" v-model="eventStatus" class="custom-input custom-select" required>
-                <option value="Active">Active</option>
-                <option value="Draft">Draft</option>
-                <option value="Cancelled">Cancelled</option>
+                <option value="active">Active</option>
+                <option value="draft">Draft</option>
+                <option value="cancelled">Cancelled</option>
               </select>
             </div>
 
@@ -318,7 +408,7 @@ export default {
 
       <div class="publish-action-bar">
         <button class="publish-btn" @click="handlePublish">
-          PUBLISH EVENT
+          {{ isEditMode ? 'SAVE CHANGES' : 'PUBLISH EVENT' }}
         </button>
       </div>
     </section>
@@ -560,6 +650,26 @@ textarea::placeholder {
   flex-shrink: 0;
 }
 
+/* Smooth Map Slide/Fade Transition Styles */
+.map-slide-enter-active,
+.map-slide-leave-active {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 380px;
+  opacity: 1;
+  overflow: hidden;
+}
+
+.map-slide-enter-from,
+.map-slide-leave-to {
+  opacity: 0;
+  max-width: 0;
+  transform: scaleX(0);
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
 /* Transparent Glass Content Boxes Restored */
 .event-details-bar-vertical {
   display: flex;
@@ -668,6 +778,63 @@ textarea::placeholder {
   border-color: rgba(0, 242, 254, 0.8);
 }
 
+.media-inner-click-area {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.media-map-toggle-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid #00f2fe;
+  color: #00f2fe;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease;
+}
+
+.media-map-toggle-btn:hover {
+  background: #00f2fe;
+  color: #000;
+}
+
+.media-remove-btn {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  background: rgba(214, 48, 49, 0.8);
+  border: 1px solid #ff7675;
+  color: #ffffff;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease;
+}
+
+.media-remove-btn:hover {
+  background: #d63031;
+  transform: scale(1.1);
+}
+
 .uploaded-preview {
   width: 100%;
   height: 100%;
@@ -709,24 +876,11 @@ textarea::placeholder {
   box-sizing: border-box;
 }
 
-.map-search-bar {
-  display: flex;
-  gap: 10px;
-  padding: 12px;
-  background: rgba(0,0,0,0.4);
-  backdrop-filter: blur(5px);
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-
-.map-input {
-  flex-grow: 1;
-}
-
 .map-iframe {
   flex-grow: 1;
   width: 100%;
   height: 100%;
-  border-radius: 0 0 14px 14px;
+  border-radius: 14px;
   filter: invert(90%) hue-rotate(180deg) contrast(80%);
 }
 
