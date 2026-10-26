@@ -88,4 +88,5 @@ class DirectMessage(models.Model):
     is_request = models.BooleanField(default=True)
 
     class Meta:
+        ordering = ['created_at']
         db_table = 'direct_messages'

@@ -1,32 +1,92 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 
-// Mock contacts list
-const contacts = ref([
-  { id: 1, name: 'Xhul', img: 'https://i.pravatar.cc/150?u=1', lastMsg: 'Yo bro!' },
-  { id: 2, name: 'Anna', img: 'https://i.pravatar.cc/150?u=2', lastMsg: 'Are we still going?' },
-  { id: 3, name: 'thilina', img: 'https://i.pravatar.cc/150?u=3', lastMsg: 'Send me the link.' }
-]);
-
-// Active chat mock data
-const activeChat = ref('Xhul');
+const contacts = ref([]);
+const activeContact = ref(null);
+const messages = ref([]);
 const newMessage = ref('');
-const messages = ref([
-  { id: 1, sender: 'Xhul', text: 'The drop on that first track was insanity!', isMe: false },
-  { id: 2, sender: 'Me', text: 'I know right! Best set of the year.', isMe: true },
-]);
+let socket = null;
+
+const getToken = () =>
+  localStorage.getItem('token') ||
+  localStorage.getItem('access') ||
+  localStorage.getItem('access_token');
+
+// 1. Fetch contacts when the page loads
+const fetchContacts = async () => {
+  const token = getToken();
+  try {
+    const res = await fetch('/api/social/contacts/', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (res.ok) {
+      contacts.value = await res.json();
+    }
+  } catch (error) {
+    console.error('Error fetching contacts:', error);
+  }
+};
+
+// 2. Open a DM and connect the WebSocket
+const selectContact = async (contact) => {
+  activeContact.value = contact;
+
+  if (socket) {
+    socket.close();
+  }
+
+  const token = getToken();
+  const res = await fetch(`/api/social/messages/${contact.id}/`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (res.ok) {
+    messages.value = await res.json();
+  }
+
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = `${protocol}//${window.location.host}/ws/chat/${contact.id}/?token=${token}`;
+
+  console.log("Attempting to connect to:", wsUrl);
+  socket = new WebSocket(wsUrl);
+
+  socket.onopen = () => {
+    console.log("✅ WebSocket Connected!");
+  };
+
+  socket.onmessage = (event) => {
+    const incomingMsg = JSON.parse(event.data);
+    messages.value.push(incomingMsg);
+  };
+
+  socket.onerror = (error) => {
+    console.error("❌ WebSocket Error:", error);
+  };
+
+  socket.onclose = (event) => {
+    console.log("🔌 WebSocket Closed. Code:", event.code);
+  };
+};
 
 const sendMessage = () => {
+  // Check if socket is open
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    alert("Cannot send: The live chat connection dropped! (State: " + (socket ? socket.readyState : 'null') + ")");
+    return;
+  }
+
   if (newMessage.value.trim() !== '') {
-    messages.value.push({
-      id: Date.now(),
-      sender: 'Me',
-      text: newMessage.value,
-      isMe: true
-    });
+    socket.send(JSON.stringify({ text: newMessage.value }));
     newMessage.value = '';
   }
 };
+
+onMounted(() => {
+  fetchContacts(); // Fire the fetch on load!
+});
+
+onBeforeUnmount(() => {
+  if (socket) socket.close();
+});
 </script>
 
 <template>
@@ -60,7 +120,9 @@ const sendMessage = () => {
       <aside class="left-sidebar glass-panel">
         <h3>Messages</h3>
         <ul>
-          <li v-for="contact in contacts" :key="contact.id" class="contact-item" :class="{ active: activeChat === contact.name }" @click="activeChat = contact.name">
+          <li v-for="contact in contacts" :key="contact.id" class="contact-item"
+              :class="{ active: activeContact?.id === contact.id }"
+              @click="selectContact(contact)">
             <img :src="contact.img" alt="avatar" class="avatar">
             <div class="contact-info">
               <span class="contact-name">{{ contact.name }}</span>
@@ -73,7 +135,8 @@ const sendMessage = () => {
       <!-- Center: Active Chat Area -->
       <main class="chat-container glass-panel">
         <div class="chat-header">
-          <h2>{{ activeChat }}</h2>
+          <h2 v-if="activeContact">{{ activeContact.name }}</h2>
+          <h2 v-else>Select a contact</h2>
         </div>
 
         <div class="chat-messages">

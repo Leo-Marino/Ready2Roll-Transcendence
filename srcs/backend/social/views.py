@@ -1,12 +1,16 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from events.models import Event
-#from users.serializers import PublicUserProfileSerializer ##ilyas he did it u can take it off
+from rest_framework.views import APIView
+from .models import DirectMessage
+from django.db.models import Q
+from django.contrib.auth import get_user_model
+
 from .models import Subscription, Comment, EventLike, Reaction
 from .serializers import CommentSerializer
 
@@ -137,6 +141,7 @@ def toggle_comment_reaction_view(request, comment_id):
         'reactions_count': reactions_count,
     })
 
+<<<<<<< HEAD
 # @api_view(['GET'])
 # @permission_classes([IsAuthenticated])
 # def get_followers_view(request, user_id):
@@ -158,3 +163,42 @@ def toggle_comment_reaction_view(request, comment_id):
 
 #     serializer = PublicUserProfileSerializer(followed_users, many=True, context={'request': request})
 #     return Response(serializer.data)
+=======
+class ChatHistoryView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, user_id):
+        messages = DirectMessage.objects.filter(
+            Q(sender=request.user, receiver_id=user_id) |
+            Q(sender_id=user_id, receiver=request.user)
+        ).order_by('created_at')
+
+        data = [{
+            "id": m.id,
+            "sender_id": m.sender_id,
+            "sender": m.sender.username,
+            "text": m.content,
+            "isMe": m.sender_id == request.user.id,
+            "created_at": m.created_at.isoformat()
+        } for m in messages]
+        return Response(data)
+
+class ContactsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        # Grab all users except the person making the request
+        users = User.objects.exclude(id=request.user.id)
+
+        data = []
+        for u in users:
+            data.append({
+                "id": u.id,
+                "name": u.username,
+                # Fallback to a placeholder if they don't have an avatar setup yet
+                "img": "https://i.pravatar.cc/150?u=" + str(u.id),
+                "lastMsg": "Click to chat..."
+            })
+
+        return Response(data)
+>>>>>>> Database_changes
