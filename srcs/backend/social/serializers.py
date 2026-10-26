@@ -53,3 +53,5 @@ class CommentSerializer(serializers.ModelSerializer):
             if reaction.user_id == request.user.id:
                 return reaction.reaction_type
         return None
+
+

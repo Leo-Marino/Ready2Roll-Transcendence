@@ -53,6 +53,13 @@ const scrollCommentsToBottom = async () => {
   if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
 };
 
+// Newest comments are at the TOP of the list
+const scrollCommentsToTop = async () => {
+  await nextTick();
+  const el = commentsListRef.value;
+  if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
 const timeAgo = (iso) => {
   const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
   if (diff < 60) return 'now';
@@ -72,8 +79,11 @@ const fetchComments = async (eventId) => {
     if (response.ok) {
       const data = await response.json();
       if (eventId !== activeEventId.value) return; // user already scrolled to another video
-      comments.value = data;
-      scrollCommentsToBottom();
+      // Only top-level comments (replies live inside their parent), newest first
+      comments.value = data
+        .filter(c => !c.parent_comment)
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      scrollCommentsToTop();
     }
   } catch (error) {
     console.error('Errore durante il recupero dei commenti:', error);
@@ -126,9 +136,9 @@ const postComment = async () => {
           expandedReplies[parentId] = true;
         }
       } else {
-        // New comment goes at the END: right above the input box
-        comments.value.push(added);
-        scrollCommentsToBottom();
+        // New comment goes at the TOP (newest first)
+        comments.value.unshift(added);
+        scrollCommentsToTop();
       }
       newCommentText.value = '';
       replyingTo.value = null;

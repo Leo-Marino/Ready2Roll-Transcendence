@@ -5,13 +5,18 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 const API = '/api';
 
+// --- USER ID TRACKING ---
+const currentUserId = ref(null);
+
 // --- MODAL STATES ---
 const showFollowModal = ref(false);
 const followModalType = ref('');
 const followList = ref([]);
 const showLogoutModal = ref(false);
 const isFollowListLoading = ref(false);
+
 const openFollowModal = async (type) => {
+  console.log('profile id:', userProfile.value.id);
   followModalType.value = type;
   showFollowModal.value = true;
   followList.value = [];
@@ -24,14 +29,14 @@ const openFollowModal = async (type) => {
   // N3zlo l'endpoint 3la 7sab l'click (followers wla following)
   // T2kked mn sahbek mn l'path s7i7 dyal l'URL
   const endpoint = type === 'following'
-    ? `${API}/social/users/${userProfile.value.id}/following/`
-    : `${API}/social/users/${userProfile.value.id}/followers/`;
+    ? `${API}/users/${userProfile.value.id}/following/`
+    : `${API}/users/${userProfile.value.id}/followers/`;
 
   try {
     const response = await fetch(endpoint, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
-
+    console.log('URL:', response.url, 'status:', response.status, 'type:', response.headers.get('content-type'));
     if (response.ok) {
       const data = await response.json();
       // Kan-adaptiw data li rj3at m3a chno kaytsenna l'HTML dyalna
@@ -108,13 +113,12 @@ const fetchMyEvents = async () => {
       myEvents.value = await response.json();
     }
   } catch (error) {
-    console.error('Could not load my events', error);
+    console.error('Impossibile caricare gli eventi', error);
   }
 };
 
 // --- EVENT ACTIONS ---
 const goToCreateEvent = () => {
-  // Clear any existing editing data so we start fresh
   localStorage.removeItem('editingEvent');
   router.push('/CreateEvent');
 };
@@ -128,7 +132,6 @@ const closePreview = () => {
 };
 
 const openEdit = (event) => {
-  // Save the event to localStorage and route to CreateEvent in edit mode
   localStorage.setItem('editingEvent', JSON.stringify(event));
   router.push({ path: '/CreateEvent', query: { edit: 'true' } });
 };
@@ -160,7 +163,7 @@ onMounted(async () => {
     }
 
     if (!response.ok) {
-      console.error('Could not load profile, status', response.status);
+      console.error('Impossibile caricare il profilo, status', response.status);
       return;
     }
 
@@ -175,13 +178,12 @@ onMounted(async () => {
     userProfile.value.followers = data.followers_count || 0;
     userProfile.value.isBusiness = (data.type_of_user === 'business');
 
-    // Switch to events tab by default for business accounts
     if (userProfile.value.isBusiness) {
       activeTab.value = 'events';
       fetchMyEvents();
     }
   } catch (error) {
-    console.error('Fetch failed (CORS or server off?)', error);
+    console.error('Errore di fetch del profilo', error);
   }
 });
 
@@ -247,13 +249,13 @@ const saveProfile = async () => {
       }
       showEditModal.value = false;
     } else {
-      console.error('Backend rejected the save:', data);
+      console.error('Il backend ha rifiutato il salvataggio:', data);
       const firstError = Object.values(data)[0];
-      alert(Array.isArray(firstError) ? firstError[0] : 'Error saving profile.');
+      alert(Array.isArray(firstError) ? firstError[0] : 'Errore durante il salvataggio del profilo.');
     }
   } catch (error) {
-    console.error('Network error saving profile:', error);
-    alert('Unable to connect to the server.');
+    console.error('Errore di rete durante il salvataggio del profilo:', error);
+    alert('Impossibile connettersi al server.');
   }
 };
 </script>
@@ -361,7 +363,6 @@ const saveProfile = async () => {
               class="event-reel-card glass-panel"
               @click="openPreview(event)"
             >
-              <!-- Background Media Content (Clickable to open stats) -->
               <div class="reel-media-bg">
                 <img
                   v-if="event.media_type === 'image'"
@@ -380,12 +381,10 @@ const saveProfile = async () => {
                 ></video>
               </div>
 
-              <!-- Status Badge -->
               <span class="status-badge" :class="event.status ? event.status.toLowerCase() : ''">
                 {{ event.status }}
               </span>
 
-              <!-- Content Overlay on top of Media -->
               <div class="reel-overlay-content">
                 <h3 class="event-title">{{ event.title }}</h3>
                 <div class="event-info-row">
@@ -396,13 +395,11 @@ const saveProfile = async () => {
                   {{ event.description || 'No description was inserted' }}
                 </p>
 
-                <!-- Quick mini stats on card -->
                 <div class="mini-stats-row">
                   <span>❤️ {{ event.likes_count || 0 }}</span>
                   <span>💬 {{ event.comments_count || 0 }}</span>
                 </div>
 
-                <!-- Edit Button (.stop prevents opening the stats modal when clicking Edit) -->
                 <div class="card-actions">
                   <button class="action-btn edit-btn-card" @click.stop="openEdit(event)">
                     ✏️ Edit
@@ -430,7 +427,6 @@ const saveProfile = async () => {
     <div class="stats-modal-card glass-panel">
       <button class="close-modal-btn stats-close-btn" @click="closePreview">✕</button>
 
-      <!-- Left: Tall 9/16 Video/Image (Clean without sidebar) -->
       <div class="stats-media-box">
         <img
           v-if="activePreviewEvent.media_type === 'image'"
@@ -449,7 +445,6 @@ const saveProfile = async () => {
         ></video>
       </div>
 
-      <!-- Right: Event Statistics & Details -->
       <div class="stats-info-box">
         <div class="stats-header">
           <span class="status-badge-inline" :class="activePreviewEvent.status ? activePreviewEvent.status.toLowerCase() : ''">
@@ -459,10 +454,7 @@ const saveProfile = async () => {
           <p class="stats-desc">{{ activePreviewEvent.description || 'No description provided.' }}</p>
         </div>
 
-        <!-- Big Stats Counters -->
         <div class="stats-metrics-grid">
-
-<!-- LIKES (Static Display) -->
           <div class="metric-card">
             <span class="metric-icon">❤️</span>
             <div class="metric-data">
@@ -471,7 +463,6 @@ const saveProfile = async () => {
             </div>
           </div>
 
-          <!-- COMMENTS -->
           <div class="metric-card">
             <span class="metric-icon">💬</span>
             <div class="metric-data">
@@ -480,7 +471,6 @@ const saveProfile = async () => {
             </div>
           </div>
 
-          <!-- TICKET PRICE -->
           <div class="metric-card">
             <span class="metric-icon">🎟️</span>
             <div class="metric-data">
@@ -489,7 +479,6 @@ const saveProfile = async () => {
             </div>
           </div>
 
-          <!-- CAPACITY -->
           <div class="metric-card">
             <span class="metric-icon">👥</span>
             <div class="metric-data">
@@ -499,13 +488,11 @@ const saveProfile = async () => {
           </div>
         </div>
 
-        <!-- Extra Info -->
         <div class="stats-meta-list">
           <div><strong>📍 Location:</strong> {{ activePreviewEvent.location || 'TBD' }}</div>
           <div><strong>📅 Date:</strong> {{ activePreviewEvent.event_date ? activePreviewEvent.event_date.replace('T', ' ').slice(0, 16) : 'TBD' }}</div>
         </div>
 
-        <!-- Edit Button takes user to CreateEvent page -->
         <button class="create-event-btn" style="width: 100%; margin-top: auto;" @click="openEdit(activePreviewEvent)">
           ✏️ Edit this Event
         </button>
@@ -620,7 +607,7 @@ const saveProfile = async () => {
 .left-sidebar { width: 250px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
 ul { list-style: none; padding: 0; }
 li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor: pointer; }
-.avatar { width: 40px; height: 40px; border-radius: 50%; }
+.avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
 .show-more { color: #cccccc; cursor: pointer; font-size: 0.9rem; }
 .profile-container { flex-grow: 1; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; scrollbar-width: none; }
 .profile-container::-webkit-scrollbar { display: none; }
