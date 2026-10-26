@@ -1,8 +1,36 @@
-COMPOSE = docker compose -f compose.yaml
+COMPOSE = docker compose
 
 DATA_DIR = /sgoinfre/$(USER)/ready2roll
 
-all: down up #setup
+all: down up
+
+
+keygen:
+	$(COMPOSE) exec vault vault operator init -key-shares=5 -key-threshold=2
+
+unseal:
+	$(COMPOSE) exec vault vault operator unseal
+	$(COMPOSE) exec vault vault operator unseal
+	$(COMPOSE) exec vault vault login
+#	docker compose restart vault-agent
+
+enable:	# Run only once per initialization
+	docker compose exec vault vault audit enable file file_path=/vault/logs/audit.log
+	docker compose exec vault vault secrets enable -path=r2r kv-v2
+	printf 'path "r2r/data/django" {\n  capabilities = ["read"]\n}\n' | \
+	    docker compose exec -T vault vault policy write django-read -
+# 	docker compose exec -T vault vault policy write django-read - <<'EOF' 
+# 	path "r2r/data/django" { capabilities = ["read"] }
+# 	EOF
+	docker compose exec vault vault auth enable approle
+	docker compose exec vault vault write auth/approle/role/django token_policies=django-read token_ttl=1h token_max_ttl=4h
+	mkdir -p secrets/approle
+	docker compose exec vault vault read -field=role_id auth/approle/role/django/role-id > secrets/approle/role_id
+	docker compose exec vault vault write -f -field=secret_id auth/approle/role/django/secret-id > secrets/approle/secret_id
+
+loadsecrets:
+	$(COMPOSE) exec -T vault vault kv put r2r/django - < ../r2r-secrets.json
+#	shred -u ./r2r-secrets.json
 
 setup:
 	@mkdir -p /sgoinfre/$(USER)/ready2roll
@@ -13,11 +41,13 @@ setup:
 up: setup
 	$(COMPOSE) build --parallel
 	$(COMPOSE) up -d
-# 	@echo Access to https://"$(USER)".42.fr
-
+	@echo "login at https://localhost:8443/login"
 
 down:
 	$(COMPOSE) down
+
+restart:
+	$(COMPOSE) restart
 
 clear:
 	$(COMPOSE) down -v
@@ -34,18 +64,9 @@ migration-clean: clear
 	@find srcs/backend -name "__pycache__" -type d -exec rm -rf {} +
 	@echo "Database and migrations clean completed."
 
-stop:
-	docker stop vuejs_container
-
-start:
-	docker vuejs_container
-# 	@echo Access to https://"$(USER)".42.fr
-
-reup: down up
 
 clean:
 	$(COMPOSE) down -v
-# 	sudo rm -rf $(DATA_DIR)
 
 fclean: clean
 	docker system prune --all --force
@@ -53,9 +74,6 @@ fclean: clean
 cleardatabase: fclean
 	docker volume rm ready2roll_pg_data
 
-enterdb:
-	@docker exec -it postgre_db psql -U r2r_admin -d ready2roll
-
 re: fclean up
 
-.PHONY: all up down stop start reup clean fclean enterdb re
+.PHONY: all up down restart clean fclean re keygen unseal enable loadsecrets

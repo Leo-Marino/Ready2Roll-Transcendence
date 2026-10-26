@@ -40,3 +40,10 @@ __screenshots__/
 
 # Vite
 *.timestamp-*-*.mjs
+
+# Vault
+srcs/vault/tls/
+srcs/vault/secrets/secrets/
+srcs/vault/tls/*.key
+r2r-secrets.json
+unseal_keys.txt

@@ -1,14 +1,83 @@
 #=============================================================================
-#Ready2Roll — docker-compose.yml
-#Stack: Vue.js + Django + PostgreSQL + Nginx + MinIO + Redis
+# Ready2Roll — compose.yaml (WAF + Vault hardened, school-machine variant)
+#
+# Traffic path:  browser -> waf (ModSecurity+CRS, TLS) -> nginx (internal
+#                router) -> vuejs-prod / django_backend / minio (/media/)
+#
+# Networks (internal: true = no route to the outside, nothing published):
+#   edge    : waf only. The ONLY network with published app ports.
+#   app     : waf, nginx, vuejs-prod, django_backend, minio_storage, minio_setup
+#   data    : django_backend, postgre_db, redis_cache, pgadmin
+#   secrets : vault, vault-agent   (no app container is on this network)
+#   vaultdb : vault <-> postgre_db only (Database secrets engine, step 9)
+#   mgmt    : pgadmin only, so its loopback port can publish (debug profile)
+#
+# Bootstrap secrets (gitignored; create with printf, NOT echo, so there is
+# no trailing newline inside the password):
+#   ./secrets/pg_root_password.txt   must equal POSTGRES_PASSWORD in Vault
+#   ./secrets/redis_password.txt     must equal the password inside REDIS_URL
+#   ./secrets/pgadmin_password.txt
+#   ./secrets/approle/role_id
+#   ./secrets/approle/secret_id
 #=============================================================================
-
+ 
 name: ready2roll
-
+ 
 services:
-
+ 
 #---------------------------------------------------------------------------
-#Vue.js — frontend
+# WAF — ModSecurity v3 + OWASP CRS on nginx. Only public entrypoint.
+#---------------------------------------------------------------------------
+  waf:
+    image: owasp/modsecurity-crs:nginx          # PIN A TAG/DIGEST before the demo
+    container_name: ready2roll-waf
+    restart: unless-stopped
+    ports:
+      - "8080:8080"                             # plain HTTP (debug)
+      - "8443:8443"                             # HTTPS -> https://localhost:8443
+    environment:
+      BACKEND: http://nginx:80
+      PORT: "8080"
+      SSL_PORT: "8443"
+      PROXY_SSL: "off"                          # backend is plain HTTP; "on" crashes the WAF
+      SERVER_NAME: localhost
+      # Stage 1: observe. Stage 2: set to On, then raise PARANOIA to 2.
+      MODSEC_RULE_ENGINE: DetectionOnly
+      PARANOIA: "1"
+      BLOCKING_PARANOIA: "1"
+      ANOMALY_INBOUND: "5"
+      ANOMALY_OUTBOUND: "4"
+      MODSEC_AUDIT_LOG_FORMAT: JSON
+      MODSEC_REQ_BODY_LIMIT: "13107200"         # poster uploads: set to your real max (bytes)
+    volumes:
+      - ./srcs/waf/certs/server.crt:/etc/nginx/conf/server.crt:ro
+      - ./srcs/waf/certs/server.key:/etc/nginx/conf/server.key:ro
+      # Targeted, documented exclusions (chat, uploads, chatbot):
+      # - ./srcs/waf/rules/before-crs.conf:/etc/modsecurity.d/owasp-crs/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf:ro
+    networks:
+      - edge
+      - app
+    depends_on:
+      - nginx
+ 
+#---------------------------------------------------------------------------
+# Internal router: / -> vue, /api + /ws -> django, /media/ -> minio
+#---------------------------------------------------------------------------
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: nginx_proxy
+    restart: unless-stopped
+    volumes:
+      - ./srcs/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - app
+    depends_on:
+      - vuejs-prod
+      - django_backend
+      - minio_storage
+ 
+#---------------------------------------------------------------------------
+# Vue.js — frontend (still the dev build)
 #---------------------------------------------------------------------------
   vuejs-prod:
     build:
@@ -17,35 +86,63 @@ services:
       target: builder
     container_name: vuejs_container
     image: vue_frontend
-    ports:
-      - "5173:5173"
+    expose:
+      - "5173"
     volumes:
       - ./srcs/frontend:/app
       - /app/node_modules
     environment:
       - CHOKIDAR_USEPOLLING=true
     networks:
-      - frontend-net
-
+      - app
+ 
 #---------------------------------------------------------------------------
-#Reverse proxy — Nginx
+# Vault — server mode, Raft storage, TLS. NOT dev mode.
 #---------------------------------------------------------------------------
-  nginx:
-    image: nginx:latest
-    container_name: nginx_proxy
+  vault:
+    image: hashicorp/vault:1.18
+    container_name: ready2roll-vault
     restart: unless-stopped
-    ports:
-      - "8080:80"
+    command: ["server"]
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_ADDR: https://127.0.0.1:8200
+      VAULT_CACERT: /vault/tls/ca.crt
     volumes:
-      - ./srcs/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - vault_data:/vault/file
+      - ./srcs/vault/config:/vault/config:ro
+      - ./srcs/vault/tls:/vault/tls:ro
+      - vault_audit:/vault/logs
     networks:
-      - frontend-net
-    depends_on:
-      - vuejs-prod
-      - django_backend
-
+      - secrets
+      - vaultdb
+    # No published port: docker compose exec vault vault ...
+ 
 #---------------------------------------------------------------------------
-#Django — backend
+# Vault Agent — AppRole login, renders secrets to two separate tmpfs volumes
+#---------------------------------------------------------------------------
+  vault-agent:
+    image: hashicorp/vault:1.18
+    container_name: ready2roll-vault-agent
+    restart: unless-stopped
+    command: ["vault", "agent", "-config=/vault/agent/agent.hcl"]
+    environment:
+      VAULT_ADDR: https://vault:8200
+      VAULT_CACERT: /vault/tls/ca.crt
+    volumes:
+      - ./srcs/vault/agent:/vault/agent:ro
+      - ./srcs/vault/tls/ca.crt:/vault/tls/ca.crt:ro
+      - ./secrets/approle:/vault/approle:ro
+      - vault_secrets:/vault/secrets                  # django.env
+      - vault_secrets_minio:/vault/secrets-minio      # minio.env
+    networks:
+      - secrets
+    depends_on:
+      - vault
+ 
+#---------------------------------------------------------------------------
+# Django — backend. No env_file, no published port, no route to Vault.
 #---------------------------------------------------------------------------
   django_backend:
     build:
@@ -55,123 +152,205 @@ services:
     container_name: django_container
     image: django_backend
     restart: unless-stopped
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     volumes:
       - ./srcs/backend:/app
-    env_file:
-      - .env
+      - vault_secrets:/vault/secrets:ro
+    # Waits (max 90s) for Vault Agent to render the file, then loads it into
+    # the process environment only.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        i=0
+        until [ -s /vault/secrets/django.env ]; do
+          i=$$((i+1))
+          if [ "$$i" -gt 90 ]; then
+            echo "FATAL: vault agent did not render django.env (is Vault sealed?)"
+            exit 1
+          fi
+          echo "waiting for vault agent... ($$i/90)"
+          sleep 1
+        done
+        set -a; . /vault/secrets/django.env; set +a
+        exec "$$@"
+      - --
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
     networks:
-      - frontend-net
-      - backend-net
+      - app
+      - data
     depends_on:
-        postgre_db:
-          condition: service_healthy
-
+      vault-agent:
+        condition: service_started
+      postgre_db:
+        condition: service_healthy
+      redis_cache:
+        condition: service_started
+ 
 #---------------------------------------------------------------------------
-#PostgreSQL — Database (Relational Data & Text)
+# PostgreSQL — data network only. Password from a file, not .env.
 #---------------------------------------------------------------------------
   postgre_db:
     image: postgres:16
     container_name: postgre_db
     restart: unless-stopped
     environment:
-      -  PGDATA=/var/lib/postgresql/data/pgdata
-    ports:
-    - "${POSTGRES_PORT:-5432}:5432"
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_USER: r2r_admin                 # must match POSTGRES_USER in Vault
+      POSTGRES_DB: ready2roll
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_root_password
+    secrets:
+      - pg_root_password
     volumes:
       - /tmp/${USER}_ready2roll_pg_data:/var/lib/postgresql/data
-      - ./srcs/postgre_db/init:/docker-entrypoint-initdb.d
+      - ./srcs/postgre_db/init:/docker-entrypoint-initdb.d:ro
     networks:
-      - backend-net
-    env_file:
-      - .env
+      - data
+      - vaultdb
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 5s
       retries: 5
-
+ 
+#---------------------------------------------------------------------------
+# pgAdmin — debug only:  docker compose --profile debug up -d pgadmin
 #---------------------------------------------------------------------------
   pgadmin:
     image: dpage/pgadmin4
+    profiles: ["debug"]
     environment:
-        PGADMIN_DEFAULT_EMAIL: "admin@ready2roll.com"
-        PGADMIN_DEFAULT_PASSWORD: "admin"
+      PGADMIN_DEFAULT_EMAIL: "admin@ready2roll.com"
+      PGADMIN_DEFAULT_PASSWORD_FILE: /run/secrets/pgadmin_password
+    secrets:
+      - pgadmin_password
     ports:
-      - "5050:80"
+      - "127.0.0.1:5050:80"
+    volumes:
+      - ./srcs/postgre_db/servers.json:/pgadmin4/servers.json:ro
     depends_on:
       - postgre_db
     networks:
-      - backend-net
-    volumes:
-      - ./srcs/postgre_db/servers.json:/pgadmin4/servers.json:ro
-
-#MinIO — Object Storage (Event Posters & Media)
+      - data
+      - mgmt
+ 
+#---------------------------------------------------------------------------
+# MinIO — Event posters. Built ONCE into an image (see srcs/minio/Dockerfile)
+# instead of compiling at every start, so it needs no internet at runtime.
+# Reachable only from the app network (nginx proxies /media/ to it).
 #---------------------------------------------------------------------------
   minio_storage:
-    image: golang:alpine
+    build:
+      context: ./srcs/minio
+    image: ready2roll_minio
     container_name: ready2roll-storage
-    environment:
-      MINIO_ROOT_USER: ${MINIO_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
-    ports:
-      - "9000:9000"
-      - "9001:9001"
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        i=0
+        until [ -s /vault/secrets/minio.env ]; do
+          i=$$((i+1))
+          if [ "$$i" -gt 90 ]; then echo "FATAL: minio.env not rendered (is Vault sealed?)"; exit 1; fi
+          sleep 1
+        done
+        . /vault/secrets/minio.env
+        export MINIO_ROOT_USER="$$MINIO_USER" MINIO_ROOT_PASSWORD="$$MINIO_PASSWORD"
+        exec minio server /data --console-address ":9001"
     volumes:
       - /sgoinfre/${USER}/ready2roll/minio_data:/data
-    env_file:
-      - .env
+      - vault_secrets_minio:/vault/secrets:ro
     networks:
-      - backend-net
-      - frontend-net
-    command: >
-      /bin/sh -c "
-      apk add --no-cache git gcc musl-dev > /dev/null;
-      echo 'Building MinIO from source (this takes 1-2 minutes)...';
-      go install github.com/minio/minio@latest > /dev/null 2>&1;
-      /go/bin/minio server /data --console-address ':9001';
-      "
-
+      - app
+    depends_on:
+      - vault-agent
+ 
   minio_setup:
-    image: golang:alpine
+    build:
+      context: ./srcs/minio
+    image: ready2roll_minio
     container_name: ready2roll-minio-setup
+    restart: "no"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        i=0
+        until [ -s /vault/secrets/minio.env ]; do
+          i=$$((i+1)); [ "$$i" -gt 90 ] && { echo "FATAL: minio.env not rendered"; exit 1; }
+          sleep 1
+        done
+        . /vault/secrets/minio.env
+        until mc alias set myminio http://ready2roll-storage:9000 "$$MINIO_USER" "$$MINIO_PASSWORD" >/dev/null 2>&1; do
+          echo "Waiting for MinIO..."; sleep 2
+        done
+        mc mb myminio/media || true
+        mc anonymous set public myminio/media
+        echo "MinIO bucket setup complete!"
+    volumes:
+      - vault_secrets_minio:/vault/secrets:ro
+    networks:
+      - app
     depends_on:
       - minio_storage
-    env_file:
-      - .env
-    networks:
-      - backend-net
-    command: >
-      /bin/sh -c "
-      apk add --no-cache git gcc musl-dev > /dev/null;
-      echo 'Building MinIO Client from source...';
-      go install github.com/minio/mc@latest > /dev/null 2>&1;
-      until (/go/bin/mc alias set myminio http://ready2roll-storage:9000 $${MINIO_USER} $${MINIO_PASSWORD} > /dev/null 2>&1) do echo 'Waiting for MinIO...' && sleep 2; done;
-      /go/bin/mc mb myminio/media || true;
-      /go/bin/mc anonymous set public myminio/media;
-      echo 'MinIO Bucket setup complete!';
-      exit 0;
-      "
-
+ 
 #---------------------------------------------------------------------------
-#Redis — In-Memory Datastore (WebSockets & Live Chat)
+# Redis — data network only, password required
 #---------------------------------------------------------------------------
   redis_cache:
     image: redis:7-alpine
     container_name: ready2roll-redis
     restart: unless-stopped
     user: "${UID:-1000}:${GID:-1000}"
-    command: redis-server --appendonly yes
-    ports:
-      - "6380:6379"
+    command: >
+      sh -c 'exec redis-server --appendonly yes
+      --requirepass "$$(cat /run/secrets/redis_password)"'
+    secrets:
+      - redis_password
     volumes:
       - /sgoinfre/${USER}/ready2roll/redis_data:/data
     networks:
-      - backend-net
-
+      - data
+ 
+secrets:
+  pg_root_password:
+    file: ./secrets/pg_root_password.txt
+  redis_password:
+    file: ./secrets/redis_password.txt
+  pgadmin_password:
+    file: ./secrets/pgadmin_password.txt
+ 
+volumes:
+  vault_data:
+  vault_audit:
+  vault_secrets:            # RAM-backed: Django secrets never touch disk
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: "size=4m,uid=100,gid=1000,mode=0755"
+  vault_secrets_minio:      # RAM-backed: MinIO sees only its own two values
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: "size=1m,uid=100,gid=1000,mode=0755"
+ 
 networks:
-  frontend-net:
-      driver: bridge
-  backend-net:
-      driver: bridge
+  edge:
+    driver: bridge
+  mgmt:
+    driver: bridge
+  app:
+    driver: bridge
+    internal: true
+  data:
+    driver: bridge
+    internal: true
+  secrets:
+    driver: bridge
+    internal: true
+  vaultdb:
+    driver: bridge
+    internal: true
+ 
