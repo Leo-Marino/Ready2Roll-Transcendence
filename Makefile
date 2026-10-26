@@ -8,7 +8,6 @@ setup:
 	@mkdir -p /sgoinfre/$(USER)/ready2roll
 	@mkdir -p $(DATA_DIR)/pg_data
 	@mkdir -p $(DATA_DIR)/minio_data
-	@mkdir -p $(DATA_DIR)/redis_data
 
 up: setup
 	$(COMPOSE) build --parallel
@@ -45,7 +44,6 @@ start:
 reup: down up
 
 clean: down
-# 	sudo rm -rf $(DATA_DIR)
 
 fclean: clean
 	docker system prune --all --force

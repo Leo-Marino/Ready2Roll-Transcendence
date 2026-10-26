@@ -80,7 +80,7 @@ services:
     ports:
     - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - /tmp/${USER}_ready2roll_pg_data:/var/lib/postgresql/data
+      - ready2roll_pg_data:/var/lib/postgresql/data
       - ./srcs/postgre_db/init:/docker-entrypoint-initdb.d
     networks:
       - backend-net
@@ -161,12 +161,11 @@ services:
     image: redis:7-alpine
     container_name: ready2roll-redis
     restart: unless-stopped
-    user: "${UID:-1000}:${GID:-1000}"
     command: redis-server --appendonly yes
     ports:
       - "6380:6379"
     volumes:
-      - /sgoinfre/${USER}/ready2roll/redis_data:/data
+      - redis_data:/data # <--- CHANGED THIS LINE
     networks:
       - backend-net
 
@@ -175,3 +174,7 @@ networks:
       driver: bridge
   backend-net:
       driver: bridge
+
+volumes:
+  ready2roll_pg_data:
+  redis_data:
