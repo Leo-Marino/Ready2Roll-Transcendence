@@ -12,12 +12,6 @@ const getToken = () =>
   localStorage.getItem('access') ||
   localStorage.getItem('access_token');
 
-// Mock data for the left sidebar
-const subscribedAccounts = ref([
-  { id: 1, name: 'Xhul', img: 'https://i.pravatar.cc/150?u=1' },
-  { id: 2, name: 'Anna', img: 'https://i.pravatar.cc/150?u=2' },
-  { id: 3, name: 'thilina', img: 'https://i.pravatar.cc/150?u=3' },
-]);
 
 const likedVideos = ref([
   { id: 1, title: 'Video 1', thumbnail: '' },
@@ -177,19 +171,6 @@ const toggleFollow = async () => {
             <li>🧭 discover</li>
           </ul>
         </nav>
-        <div class="subscribed-list">
-          <h3>subscribed accounts</h3>
-          <ul>
-            <li v-for="account in subscribedAccounts" :key="account.id">
-              <!-- ZIDNA ROUTER-LINK HNA BACH JWLI KHEDDAM -->
-              <router-link :to="{ name: 'UserProfile', params: { id: account.id } }" class="user-link">
-                <img :src="account.img" alt="avatar" class="avatar">
-                <span>{{ account.name }}</span>
-              </router-link>
-            </li>
-          </ul>
-          <p class="show-more">show more ⌄</p>
-        </div>
       </aside>
 
       <main class="profile-container">

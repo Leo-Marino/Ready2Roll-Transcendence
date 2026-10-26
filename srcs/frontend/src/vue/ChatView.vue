@@ -6,6 +6,32 @@ const activeContact = ref(null);
 const messages = ref([]);
 const newMessage = ref('');
 let socket = null;
+let pollTimer = null;
+
+// ---- time helpers ----
+const formatTime = (iso) => {
+  if (!iso) return '';
+  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
+// Sidebar: hour if today, otherwise a short date
+const formatContactTime = (iso) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) return formatTime(iso);
+  return d.toLocaleDateString([], { day: '2-digit', month: '2-digit' });
+};
+
+// Latest conversation first (contacts without messages stay at the bottom)
+const sortContacts = () => {
+  contacts.value.sort((a, b) => {
+    if (a.lastMsgAt && b.lastMsgAt) return new Date(b.lastMsgAt) - new Date(a.lastMsgAt);
+    if (a.lastMsgAt) return -1;
+    if (b.lastMsgAt) return 1;
+    return a.name.localeCompare(b.name);
+  });
+};
 
 const getToken = () =>
   localStorage.getItem('token') ||
@@ -21,6 +47,9 @@ const fetchContacts = async () => {
     });
     if (res.ok) {
       contacts.value = await res.json();
+      // the chat that is open is already read
+      const open = contacts.value.find(c => c.id === activeContact.value?.id);
+      if (open) open.unread = 0;
     }
   } catch (error) {
     console.error('Error fetching contacts:', error);
@@ -30,6 +59,7 @@ const fetchContacts = async () => {
 // 2. Open a DM and connect the WebSocket
 const selectContact = async (contact) => {
   activeContact.value = contact;
+  contact.unread = 0;   // opening the chat removes the dot
 
   if (socket) {
     socket.close();
@@ -42,6 +72,7 @@ const selectContact = async (contact) => {
   if (res.ok) {
     messages.value = await res.json();
   }
+  fetchContacts();   // the history request marked the messages as read
 
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const wsUrl = `${protocol}//${window.location.host}/ws/chat/${contact.id}/?token=${token}`;
@@ -56,6 +87,15 @@ const selectContact = async (contact) => {
   socket.onmessage = (event) => {
     const incomingMsg = JSON.parse(event.data);
     messages.value.push(incomingMsg);
+
+    // Update the sidebar: last message + move this conversation to the top
+    const c = contacts.value.find(x => x.id === activeContact.value?.id);
+    if (c) {
+      c.lastMsg = (incomingMsg.isMe ? 'You: ' : '') + incomingMsg.text;
+      c.lastMsgAt = incomingMsg.created_at;
+      c.unread = 0;
+      sortContacts();
+    }
   };
 
   socket.onerror = (error) => {
@@ -82,10 +122,13 @@ const sendMessage = () => {
 
 onMounted(() => {
   fetchContacts(); // Fire the fetch on load!
+  // Refresh the list so new messages from other contacts show up (dot + order)
+  pollTimer = setInterval(fetchContacts, 3000);
 });
 
 onBeforeUnmount(() => {
   if (socket) socket.close();
+  if (pollTimer) clearInterval(pollTimer);
 });
 </script>
 
@@ -126,7 +169,11 @@ onBeforeUnmount(() => {
             <img :src="contact.img" alt="avatar" class="avatar">
             <div class="contact-info">
               <span class="contact-name">{{ contact.name }}</span>
-              <span class="contact-last-msg">{{ contact.lastMsg }}</span>
+              <span class="contact-last-msg" :class="{ 'has-unread': contact.unread > 0 && activeContact?.id !== contact.id }">{{ contact.lastMsg }}</span>
+            </div>
+            <div class="contact-meta">
+              <span class="contact-time">{{ formatContactTime(contact.lastMsgAt) }}</span>
+              <span v-if="contact.unread > 0 && activeContact?.id !== contact.id" class="unread-dot"></span>
             </div>
           </li>
         </ul>
@@ -142,7 +189,8 @@ onBeforeUnmount(() => {
         <div class="chat-messages">
           <div v-for="msg in messages" :key="msg.id" class="message-wrapper" :class="{ 'my-message': msg.isMe }">
             <div class="message-bubble">
-              {{ msg.text }}
+              <span class="message-text">{{ msg.text }}</span>
+              <span class="message-time">{{ formatTime(msg.created_at) }}</span>
             </div>
           </div>
         </div>
@@ -206,9 +254,19 @@ ul { list-style: none; padding: 0; margin: 0; }
 }
 .contact-item:hover, .contact-item.active { background: rgba(255, 255, 255, 0.2); }
 .avatar { width: 45px; height: 45px; border-radius: 50%; }
-.contact-info { display: flex; flex-direction: column; }
+.contact-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .contact-name { font-weight: bold; font-size: 1rem; }
-.contact-last-msg { font-size: 0.8rem; color: #cccccc; margin-top: 4px; }
+.contact-last-msg {
+  font-size: 0.8rem; color: #cccccc; margin-top: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.contact-last-msg.has-unread { color: #FFFFFF; font-weight: bold; }
+.contact-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+.contact-time { font-size: 0.7rem; color: #cccccc; }
+.unread-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #00f2fe; box-shadow: 0 0 6px #00f2fe;
+}
 
 /* Chat Container */
 .chat-container {
@@ -233,6 +291,11 @@ ul { list-style: none; padding: 0; margin: 0; }
 }
 .my-message .message-bubble {
   background: rgba(0, 242, 254, 0.3); border-bottom-right-radius: 4px;
+}
+.message-text { white-space: pre-wrap; word-break: break-word; }
+.message-time {
+  display: block; text-align: right; margin-top: 4px;
+  font-size: 0.7rem; color: rgba(255, 255, 255, 0.65);
 }
 .message-wrapper:not(.my-message) .message-bubble { border-bottom-left-radius: 4px; }
 

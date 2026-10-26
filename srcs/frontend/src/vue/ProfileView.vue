@@ -82,11 +82,6 @@ const confirmLogout = () => {
 };
 
 // --- SIDEBAR DATA ---
-const subscribedAccounts = ref([
-  { id: 1, name: 'Xhul', img: 'https://i.pravatar.cc/150?u=1' },
-  { id: 2, name: 'Anna', img: 'https://i.pravatar.cc/150?u=2' },
-  { id: 3, name: 'thilina', img: 'https://i.pravatar.cc/150?u=3' },
-]);
 
 // --- PROFILE DATA ---
 const userProfile = ref({
@@ -299,18 +294,6 @@ const saveProfile = async () => {
             <li>🧭 Discover</li>
           </ul>
         </nav>
-        <div class="subscribed-list">
-          <h3>Subscribed accounts</h3>
-          <ul>
-            <li v-for="account in subscribedAccounts" :key="account.id">
-              <router-link :to="{ name: 'UserProfile', params: { id: account.id } }" class="user-link">
-                <img :src="account.img" alt="avatar" class="avatar">
-                <span>{{ account.name }}</span>
-              </router-link>
-            </li>
-          </ul>
-          <p class="show-more">Show more ⌄</p>
-        </div>
       </aside>
 
       <!-- Center: Profile Area -->
