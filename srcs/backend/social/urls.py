@@ -1,6 +1,5 @@
 from django.urls import path
-from .views import toggle_follow_view, event_comments_view, toggle_like_view,  toggle_comment_reaction_view
-#from .views import get_followers_view, get_following_view
+from .views import toggle_follow_view, event_comments_view, toggle_like_view, toggle_comment_reaction_view, ChatHistoryView, ContactsView
 
 urlpatterns = [
     path('follow/<int:user_id>/', toggle_follow_view, name='toggle_follow'),
@@ -10,4 +9,6 @@ urlpatterns = [
 	#path('events/<int:event_id>/like/', toggle_like_view, name='toggle_like'),
 	#path('users/<int:user_id>/followers/', get_followers_view, name='get_followers'),
     #path('users/<int:user_id>/following/', get_following_view, name='get_following'),
+	path('messages/<int:user_id>/', ChatHistoryView.as_view(), name='chat-history'),
+	path('contacts/', ContactsView.as_view(), name='chat-contacts'),
 ]
