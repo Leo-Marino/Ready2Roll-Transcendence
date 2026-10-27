@@ -47,3 +47,6 @@ srcs/vault/secrets/secrets/
 srcs/vault/tls/*.key
 r2r-secrets.json
 unseal_keys.txt
+
+# Migration
+*initial.py

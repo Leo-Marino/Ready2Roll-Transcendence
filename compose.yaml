@@ -157,25 +157,6 @@ services:
     volumes:
       - ./srcs/backend:/app
       - vault_secrets:/vault/secrets:ro
-    # Waits (max 90s) for Vault Agent to render the file, then loads it into
-    # the process environment only.
-    entrypoint:
-      - /bin/sh
-      - -c
-      - |
-        i=0
-        until [ -s /vault/secrets/django.env ]; do
-          i=$$((i+1))
-          if [ "$$i" -gt 90 ]; then
-            echo "FATAL: vault agent did not render django.env (is Vault sealed?)"
-            exit 1
-          fi
-          echo "waiting for vault agent... ($$i/90)"
-          sleep 1
-        done
-        set -a; . /vault/secrets/django.env; set +a
-        exec "$$@"
-      - --
     command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
     networks:
       - app
