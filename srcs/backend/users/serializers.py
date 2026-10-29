@@ -98,7 +98,7 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
             'instagram_handle',
             'phone_number',
             'legal_name',
-            'date_ois_followingf_birth',
+            'date_of_birth',
             'bs_website',
         ]
 
