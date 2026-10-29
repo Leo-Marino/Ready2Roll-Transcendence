@@ -3,11 +3,14 @@ from django.conf import settings
 
 class Tag(models.Model):
     tag_name = models.CharField(max_length=55, unique=True)
+    def __str__(self):
+        return self.tag_name
     class Meta:
         db_table = 'tags'
 
 class Event(models.Model):
-
+    def __str__(self):
+        return self.title
     STATUS_CHOICES = [
         ('active', 'Active'),
         ('draft', 'Draft'),

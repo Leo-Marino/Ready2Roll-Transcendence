@@ -2,7 +2,9 @@
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import RChat from './RChat.vue';
 
-
+//--------------------xh start----------------
+const props = defineProps({ mode: { type: String, default: 'for_you' } });
+//-------------xh end----------------------------
 // --- Video feed: real events published by the owners (GET /api/feed/) ---
 const videos = ref([]);
 const feedLoading = ref(true);
@@ -268,9 +270,27 @@ const setupObserver = async () => {
   wrapperRefs.forEach((el) => el && observer.observe(el));
 };
 
+// const fetchFeed = async () => {
+//   try {
+//     const res = await fetch(`${API}/feed/`, { headers: authHeaders() });
+//     if (res.ok) {
+//       videos.value = await res.json();
+//       wrapperRefs.length = 0;
+//     }
+//   } catch (error) {
+//     console.error('Could not load the feed:', error);
+//   } finally {
+//     feedLoading.value = false;
+//   }
+  // setupObserver();
+// };
+//-----------------xh add part start-----------------------------
 const fetchFeed = async () => {
+  feedLoading.value = true;
+  videos.value = [];
+  activeIndex.value = 0;
   try {
-    const res = await fetch(`${API}/feed/`, { headers: authHeaders() });
+    const res = await fetch(`${API}/feed/?mode=${props.mode}`, { headers: authHeaders() });
     if (res.ok) {
       videos.value = await res.json();
       wrapperRefs.length = 0;
@@ -280,9 +300,13 @@ const fetchFeed = async () => {
   } finally {
     feedLoading.value = false;
   }
+  await nextTick();
   setupObserver();
 };
 
+watch(() => props.mode, fetchFeed);   // passando da For you a Discover la pagina resta la stessa
+onMounted(fetchFeed);
+//-----------------------xh add part end----------------------------
 // Scrolled to another video -> load ITS comments
 watch(activeEventId, (id) => {
   comments.value = [];
