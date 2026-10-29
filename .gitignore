@@ -43,3 +43,6 @@ __screenshots__/
 
 # Local Redis Storage
 data/
+
+media_backup.tar.gz
+demo_data.json
