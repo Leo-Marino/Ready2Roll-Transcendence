@@ -38,12 +38,6 @@ const getToken = () =>
   localStorage.getItem('access') ||
   localStorage.getItem('access_token');
 
-// Mock data for the left sidebar
-const subscribedAccounts = ref([
-  { id: 1, name: 'Xhul', img: 'https://i.pravatar.cc/150?u=1' },
-  { id: 2, name: 'Anna', img: 'https://i.pravatar.cc/150?u=2' },
-  { id: 3, name: 'thilina', img: 'https://i.pravatar.cc/150?u=3' },
-]);
 
 // The active user's profile data
 const userProfile = ref({
@@ -202,7 +196,7 @@ onMounted(async () => {
     userProfile.value.following = data.following_count || 2;
     userProfile.value.followers = data.followers_count || 3;
     userProfile.value.isBusiness = (data.type_of_user === 'business');
-    
+
     if (userProfile.value.isBusiness) {
       activeTab.value = 'events';
       fetchMyEvents();
@@ -327,18 +321,6 @@ const saveProfile = async () => {
             <li>🧭 discover</li>
           </ul>
         </nav>
-        <div class="subscribed-list">
-          <h3>subscribed accounts</h3>
-          <ul>
-            <li v-for="account in subscribedAccounts" :key="account.id">
-              <router-link :to="{ name: 'UserProfile', params: { id: account.id } }" class="user-link">
-                <img :src="account.img" alt="avatar" class="avatar">
-                <span>{{ account.name }}</span>
-              </router-link>
-            </li>
-          </ul>
-          <p class="show-more">show more ⌄</p>
-        </div>
       </aside>
 
       <!-- Center: Profile Area -->
@@ -449,9 +431,9 @@ const saveProfile = async () => {
     <div class="preview-reel-container">
       <button class="close-modal-btn preview-close" @click="closePreview">✕</button>
       <div class="preview-scroll-wrapper">
-        <div 
-          v-for="event in myEvents" 
-          :key="event.id" 
+        <div
+          v-for="event in myEvents"
+          :key="event.id"
           class="preview-reel-card"
         >
           <div class="preview-media-wrapper">

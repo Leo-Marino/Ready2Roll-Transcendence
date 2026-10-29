@@ -170,7 +170,12 @@ class ChatHistoryView(APIView):
         messages = DirectMessage.objects.filter(
             Q(sender=request.user, receiver_id=user_id) |
             Q(sender_id=user_id, receiver=request.user)
-        ).order_by('created_at')
+        ).select_related('sender').order_by('created_at')
+
+        # Opening the conversation = the messages received from this user are now read
+        DirectMessage.objects.filter(
+            sender_id=user_id, receiver=request.user, is_read=False
+        ).update(is_read=True)
 
         data = [{
             "id": m.id,
@@ -186,17 +191,46 @@ class ContactsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        # Grab all users except the person making the request
-        users = User.objects.exclude(id=request.user.id)
+        me = request.user
+
+        # Walk through all my DMs, newest first: the first message we meet
+        # for a given contact is the last message of that conversation.
+        last_msg = {}      # other_user_id -> DirectMessage
+        unread = {}        # other_user_id -> number of unread messages received
+        dms = (
+            DirectMessage.objects
+            .filter(Q(sender=me) | Q(receiver=me))
+            .order_by('-created_at', '-id')
+        )
+        for m in dms:
+            other_id = m.receiver_id if m.sender_id == me.id else m.sender_id
+            if other_id not in last_msg:
+                last_msg[other_id] = m
+            if m.receiver_id == me.id and not m.is_read:
+                unread[other_id] = unread.get(other_id, 0) + 1
 
         data = []
-        for u in users:
+        for u in User.objects.exclude(id=me.id):
+            m = last_msg.get(u.id)
+            if m:
+                prefix = "You: " if m.sender_id == me.id else ""
+                last_text = prefix + m.content
+                last_at = m.created_at.isoformat()
+            else:
+                last_text = "Click to chat..."
+                last_at = None
             data.append({
                 "id": u.id,
                 "name": u.username,
                 # Fallback to a placeholder if they don't have an avatar setup yet
                 "img": "https://i.pravatar.cc/150?u=" + str(u.id),
-                "lastMsg": "Click to chat..."
+                "lastMsg": last_text,
+                "lastMsgAt": last_at,
+                "unread": unread.get(u.id, 0),
             })
 
         return Response(data)
+        # Latest conversation first; users we never talked to go at the bottom (A-Z)
+        with_msgs = sorted((d for d in data if d["lastMsgAt"]), key=lambda d: d["lastMsgAt"], reverse=True)
+        without = sorted((d for d in data if not d["lastMsgAt"]), key=lambda d: d["name"].lower())
+        return Response(with_msgs + without)

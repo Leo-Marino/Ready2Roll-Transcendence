@@ -49,6 +49,11 @@ class DMConsumer(AsyncWebsocketConsumer):
         )
 
     async def chat_message(self, event):
+        # This socket is open on this conversation, so a message coming from the
+        # other user is seen right away -> mark it as read (no dot in the sidebar).
+        if event["sender_id"] != self.user.id:
+            await self.mark_read(event["id"])
+
         # Send the broadcasted message down the WebSocket to Vue
         await self.send(text_data=json.dumps({
             "id": event["id"],
@@ -66,3 +71,7 @@ class DMConsumer(AsyncWebsocketConsumer):
             receiver_id=receiver_id,
             content=text
         )
+
+    @database_sync_to_async
+    def mark_read(self, message_id):
+        DirectMessage.objects.filter(pk=message_id, is_read=False).update(is_read=True)

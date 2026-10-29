@@ -6,6 +6,21 @@ class TagSerializer(serializers.ModelSerializer):
         model = Tag
         fields = ["id", "tag_name"]
 
+class TagNameField(serializers.SlugRelatedField):
+    """
+    Accetta i tag come NOMI (es. "party", "techno") invece che come id.
+    Se un tag non esiste ancora lo crea al volo.
+    In lettura restituisce il nome del tag.
+    """
+    def to_internal_value(self, data):
+        name = str(data).strip().lower()
+        if not name:
+            raise serializers.ValidationError("Il tag non può essere vuoto.")
+        if len(name) > 55:
+            raise serializers.ValidationError("Il tag può avere al massimo 55 caratteri.")
+        tag, _ = self.get_queryset().get_or_create(tag_name=name)
+        return tag
+
 class MediaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Media
@@ -15,6 +30,12 @@ class EventSerializer(serializers.ModelSerializer):
     media_file = serializers.FileField(write_only=True, required=False)
     media_src = serializers.SerializerMethodField()
     media_type = serializers.SerializerMethodField()
+    tags = TagNameField(
+    many=True,
+    slug_field='tag_name',
+    queryset=Tag.objects.all(),
+    required=False,
+    )
     # statistics shown in the owner's profile
     likes_count = serializers.SerializerMethodField()
     comments_count = serializers.SerializerMethodField()

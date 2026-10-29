@@ -24,11 +24,14 @@ const routes = [
     path: '/',
     redirect: '/login'
   },
-  {
-    path: '/home',
-    name: 'home',
-    component: HomePage
-  },
+  // {
+  //   path: '/home',
+  //   name: 'home',
+  //   component: HomePage
+  // },
+  { path: '/home',          name: 'home',          component: HomePage, props: { mode: 'for_you' } },
+  { path: '/discover',      name: 'discover',      component: HomePage, props: { mode: 'discover' } },
+  { path: '/subscriptions', name: 'subscriptions', component: HomePage, props: { mode: 'following' } },
   {
     path: '/chat',
     name: 'chat',
@@ -39,11 +42,11 @@ const routes = [
     name: '/profile',
     component: ProfileView
   },
-  {
-    path: '/subscriptions',
-    name: 'subscriptions',
-    component: SubscriptionsView
-  },
+  // {
+  //   path: '/subscriptions',
+  //   name: 'subscriptions',
+  //   component: SubscriptionsView
+  // },
   {
     path: '/CreateEvent',
     name: 'CreateEvent',
@@ -64,5 +67,6 @@ const router = createRouter({
   history: createWebHistory(),
   routes
 })
+
 
 export default router
