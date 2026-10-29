@@ -98,7 +98,7 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
             'instagram_handle',
             'phone_number',
             'legal_name',
-            'date_ois_followingf_birth',
+            'date_of_birth',
             'bs_website',
         ]
 
@@ -109,6 +109,3 @@ class FollowUserSerializer(ViewerRelationMixin, serializers.ModelSerializer):
         fields = [
             'id', 'username', 'avatar_url', 'is_following', 'is_self',
         ]
-
-
-

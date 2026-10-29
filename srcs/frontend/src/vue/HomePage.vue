@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import RChat from './RChat.vue';
 
 
 // --- Video feed: real events published by the owners (GET /api/feed/) ---
@@ -550,6 +551,9 @@ onBeforeUnmount(() => {
       </aside>
     </div>
   </div>
+
+  <!-- R Chat: floating assistant (frontend only for now) -->
+  <RChat />
 </template>
 
 <style scoped>
