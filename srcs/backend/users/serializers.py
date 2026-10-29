@@ -109,6 +109,3 @@ class FollowUserSerializer(ViewerRelationMixin, serializers.ModelSerializer):
         fields = [
             'id', 'username', 'avatar_url', 'is_following', 'is_self',
         ]
-
-
-

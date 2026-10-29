@@ -6,6 +6,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from events.models import Event
+#from users.serializers import PublicUserProfileSerializer ##ilyas he did it u can take it off
 from rest_framework.views import APIView
 from .models import DirectMessage
 from django.db.models import Q
@@ -141,6 +142,27 @@ def toggle_comment_reaction_view(request, comment_id):
         'reactions_count': reactions_count,
     })
 
+# @api_view(['GET'])
+# @permission_classes([IsAuthenticated])
+# def get_followers_view(request, user_id):
+#     """ Returns the list of users following the given user_id """
+#     target_user = get_object_or_404(User, pk=user_id)
+#     followers_subs = target_user.followers.select_related('follower').all()
+#     followers_users = [sub.follower for sub in followers_subs]
+
+#     serializer = PublicUserProfileSerializer(followers_users, many=True, context={'request': request})
+#     return Response(serializer.data)
+
+# @api_view(['GET'])
+# @permission_classes([IsAuthenticated])
+# def get_following_view(request, user_id):
+#     """ Returns the list of users that the given user_id is following """
+#     target_user = get_object_or_404(User, pk=user_id)
+#     following_subs = target_user.following.select_related('followed').all()
+#     followed_users = [sub.followed for sub in following_subs]
+
+#     serializer = PublicUserProfileSerializer(followed_users, many=True, context={'request': request})
+#     return Response(serializer.data)
 class ChatHistoryView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -207,6 +229,7 @@ class ContactsView(APIView):
                 "unread": unread.get(u.id, 0),
             })
 
+        return Response(data)
         # Latest conversation first; users we never talked to go at the bottom (A-Z)
         with_msgs = sorted((d for d in data if d["lastMsgAt"]), key=lambda d: d["lastMsgAt"], reverse=True)
         without = sorted((d for d in data if not d["lastMsgAt"]), key=lambda d: d["name"].lower())
