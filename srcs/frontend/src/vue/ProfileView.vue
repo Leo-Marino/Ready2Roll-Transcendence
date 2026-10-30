@@ -1,6 +1,7 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import EventMediaGrid from './EventMediaGrid.vue';//xh
 
 const router = useRouter();
 const API = '/api';
@@ -131,10 +132,28 @@ const openEdit = (event) => {
   router.push({ path: '/CreateEvent', query: { edit: 'true' } });
 };
 
-const likedVideos = ref([
-  { id: 1, title: 'Video 1', thumbnail: '' },
-  { id: 2, title: 'Video 2', thumbnail: '' },
-]);
+// ----- xh events like start--------
+const likedEvents = ref([]);
+
+const fetchLikedEvents = async () => {
+  try {
+    const response = await fetch(`${API}/social/liked-events/`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    if (response.ok) {
+      likedEvents.value = await response.json();
+    }
+  } catch (error) {
+    console.error('Impossibile caricare i video piaciuti', error);
+  }
+};
+
+// ricarica ogni volta che apri il tab (così vedi i like fatti nel frattempo)
+watch(activeTab, (tab) => {
+  if (tab === 'likes') fetchLikedEvents();
+});
+
+//------xh event like end ---------
 
 // --- INITIAL LOAD ---
 onMounted(async () => {
@@ -172,14 +191,17 @@ onMounted(async () => {
     userProfile.value.following = data.following_count || 0;
     userProfile.value.followers = data.followers_count || 0;
     userProfile.value.isBusiness = (data.type_of_user === 'business');
-
+    //------xh events like-----
+    //------xh evetns like-----
     if (userProfile.value.isBusiness) {
       activeTab.value = 'events';
       fetchMyEvents();
     }
+    fetchLikedEvents();
   } catch (error) {
     console.error('Errore di fetch del profilo', error);
   }
+
 });
 
 // --- EDIT PROFILE MODAL LOGIC ---
@@ -393,14 +415,14 @@ const saveProfile = async () => {
           </section>
         </div>
 
-        <!-- LIKES TAB CONTENT -->
-        <div v-else-if="activeTab === 'likes'" class="video-grid">
-          <div class="video-card glass-panel" v-for="video in likedVideos" :key="video.id">
-            <p class="placeholder-text">video</p>
-            <span class="heart-icon">🖤</span>
-          </div>
+        <!-- LIKES TAB CONTENT xh -->
+        <div v-else-if="activeTab === 'likes'">
+          <EventMediaGrid
+            :events="likedEvents"
+            empty-text="You haven't liked any videos yet."
+          />
         </div>
-
+        <!-- LIKES TAB CONTENT xh -->
       </main>
     </div>
   </div>

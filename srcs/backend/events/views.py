@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from .recommender import build_feed
 from .models import Event
 from .serializers import EventSerializer, FeedEventSerializer
+from events.serializers import FeedEventSerializer
 
 class EventListCreateView(generics.ListCreateAPIView):
     queryset = Event.objects.all()
@@ -58,3 +59,5 @@ class FeedView(generics.ListAPIView):
         by_id = {e.id: e for e in events}
         ordered = [by_id[i] for i in ids if i in by_id]
         return Response(self.get_serializer(ordered, many=True).data)
+
+
