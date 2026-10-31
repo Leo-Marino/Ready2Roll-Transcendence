@@ -289,7 +289,7 @@ services:
     secrets:
       - redis_password
     volumes:
-      - /sgoinfre/${USER}/ready2roll/redis_data:/data
+      - redis_data:/data # <--- CHANGED THIS LINE
     networks:
       - data
  

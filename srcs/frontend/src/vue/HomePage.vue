@@ -1,13 +1,10 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import RChat from './RChat.vue';
 
-// (Mock Data for Left Sidebar)
-const subscribedAccounts = ref([
-  { id: 1, name: 'Xhul', img: 'https://i.pravatar.cc/150?u=1' },
-  { id: 2, name: 'Anna', img: 'https://i.pravatar.cc/150?u=2' },
-  { id: 3, name: 'thilina', img: 'https://i.pravatar.cc/150?u=3' }
-]);
-
+//--------------------xh start----------------
+const props = defineProps({ mode: { type: String, default: 'for_you' } });
+//-------------xh end----------------------------
 // --- Video feed: real events published by the owners (GET /api/feed/) ---
 const videos = ref([]);
 const feedLoading = ref(true);
@@ -273,9 +270,27 @@ const setupObserver = async () => {
   wrapperRefs.forEach((el) => el && observer.observe(el));
 };
 
+// const fetchFeed = async () => {
+//   try {
+//     const res = await fetch(`${API}/feed/`, { headers: authHeaders() });
+//     if (res.ok) {
+//       videos.value = await res.json();
+//       wrapperRefs.length = 0;
+//     }
+//   } catch (error) {
+//     console.error('Could not load the feed:', error);
+//   } finally {
+//     feedLoading.value = false;
+//   }
+  // setupObserver();
+// };
+//-----------------xh add part start-----------------------------
 const fetchFeed = async () => {
+  feedLoading.value = true;
+  videos.value = [];
+  activeIndex.value = 0;
   try {
-    const res = await fetch(`${API}/feed/`, { headers: authHeaders() });
+    const res = await fetch(`${API}/feed/?mode=${props.mode}`, { headers: authHeaders() });
     if (res.ok) {
       videos.value = await res.json();
       wrapperRefs.length = 0;
@@ -285,9 +300,13 @@ const fetchFeed = async () => {
   } finally {
     feedLoading.value = false;
   }
+  await nextTick();
   setupObserver();
 };
 
+watch(() => props.mode, fetchFeed);   // passando da For you a Discover la pagina resta la stessa
+onMounted(fetchFeed);
+//-----------------------xh add part end----------------------------
 // Scrolled to another video -> load ITS comments
 watch(activeEventId, (id) => {
   comments.value = [];
@@ -351,18 +370,6 @@ onBeforeUnmount(() => {
             </li>
           </ul>
         </nav>
-        <div class="subscribed-list">
-          <h3>Subscribed accounts</h3>
-          <ul>
-            <li v-for="account in subscribedAccounts" :key="account.id">
-              <router-link :to="{ name: 'UserProfile', params: { id: account.id } }" class="user-link">
-                <img :src="account.img" alt="avatar" class="avatar">
-                <span>{{ account.name }}</span>
-              </router-link>
-            </li>
-          </ul>
-          <p class="show-more">show more</p>
-        </div>
       </aside>
 
       <main class="feed-container">
@@ -568,6 +575,9 @@ onBeforeUnmount(() => {
       </aside>
     </div>
   </div>
+
+  <!-- R Chat: floating assistant (frontend only for now) -->
+  <RChat />
 </template>
 
 <style scoped>

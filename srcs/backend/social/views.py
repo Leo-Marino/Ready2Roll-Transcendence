@@ -1,14 +1,20 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from events.models import Event
 #from users.serializers import PublicUserProfileSerializer ##ilyas he did it u can take it off
+from rest_framework.views import APIView
+from .models import DirectMessage
+from django.db.models import Q
+from django.contrib.auth import get_user_model
+
 from .models import Subscription, Comment, EventLike, Reaction
 from .serializers import CommentSerializer
+from events.serializers import FeedEventSerializer
 
 User = get_user_model()
 
@@ -158,3 +164,88 @@ def toggle_comment_reaction_view(request, comment_id):
 
 #     serializer = PublicUserProfileSerializer(followed_users, many=True, context={'request': request})
 #     return Response(serializer.data)
+class ChatHistoryView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, user_id):
+        messages = DirectMessage.objects.filter(
+            Q(sender=request.user, receiver_id=user_id) |
+            Q(sender_id=user_id, receiver=request.user)
+        ).select_related('sender').order_by('created_at')
+
+        # Opening the conversation = the messages received from this user are now read
+        DirectMessage.objects.filter(
+            sender_id=user_id, receiver=request.user, is_read=False
+        ).update(is_read=True)
+
+        data = [{
+            "id": m.id,
+            "sender_id": m.sender_id,
+            "sender": m.sender.username,
+            "text": m.content,
+            "isMe": m.sender_id == request.user.id,
+            "created_at": m.created_at.isoformat()
+        } for m in messages]
+        return Response(data)
+
+class ContactsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        me = request.user
+
+        # Walk through all my DMs, newest first: the first message we meet
+        # for a given contact is the last message of that conversation.
+        last_msg = {}      # other_user_id -> DirectMessage
+        unread = {}        # other_user_id -> number of unread messages received
+        dms = (
+            DirectMessage.objects
+            .filter(Q(sender=me) | Q(receiver=me))
+            .order_by('-created_at', '-id')
+        )
+        for m in dms:
+            other_id = m.receiver_id if m.sender_id == me.id else m.sender_id
+            if other_id not in last_msg:
+                last_msg[other_id] = m
+            if m.receiver_id == me.id and not m.is_read:
+                unread[other_id] = unread.get(other_id, 0) + 1
+
+        data = []
+        for u in User.objects.exclude(id=me.id):
+            m = last_msg.get(u.id)
+            if m:
+                prefix = "You: " if m.sender_id == me.id else ""
+                last_text = prefix + m.content
+                last_at = m.created_at.isoformat()
+            else:
+                last_text = "Click to chat..."
+                last_at = None
+            data.append({
+                "id": u.id,
+                "name": u.username,
+                # Fallback to a placeholder if they don't have an avatar setup yet
+                "img": "https://i.pravatar.cc/150?u=" + str(u.id),
+                "lastMsg": last_text,
+                "lastMsgAt": last_at,
+                "unread": unread.get(u.id, 0),
+            })
+
+        return Response(data)
+        # Latest conversation first; users we never talked to go at the bottom (A-Z)
+        with_msgs = sorted((d for d in data if d["lastMsgAt"]), key=lambda d: d["lastMsgAt"], reverse=True)
+        without = sorted((d for d in data if not d["lastMsgAt"]), key=lambda d: d["name"].lower())
+        return Response(with_msgs + without)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def liked_events_view(request):
+    likes = (
+        EventLike.objects
+        .filter(user=request.user, event__status__iexact='active')
+        .select_related('event__organizer')
+        .prefetch_related('event__media')
+        .order_by('-created_at')
+    )
+    events = [like.event for like in likes]
+    serializer = FeedEventSerializer(events, many=True, context={'request':request})
+    return Response(serializer.data)

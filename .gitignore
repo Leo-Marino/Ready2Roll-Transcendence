@@ -50,3 +50,7 @@ unseal_keys.txt
 
 # Migration
 *initial.py
+# Local Redis Storage
+data/
+
+

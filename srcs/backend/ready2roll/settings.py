@@ -30,6 +30,7 @@ DEBUG = True
 # Application definition
 
 INSTALLED_APPS = [
+	'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -46,6 +47,9 @@ INSTALLED_APPS = [
     'social',
     'notifications',
 ]
+
+#Loop for multiple connections without one having to wait for one to finish
+ASGI_APPLICATION = 'ready2roll.asgi.application'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -184,3 +188,15 @@ AWS_S3_ADDRESSING_STYLE = 'path'
 # Gli URL dei file sono relativi (/media/...), vedi ready2roll/storage.py:
 # nginx li inoltra a MinIO, quindi non serve scrivere l'IP del server.
 MEDIA_URL = '/media/'
+
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.pubsub.RedisPubSubChannelLayer",
+        "CONFIG": {
+            "hosts": [(os.getenv('REDIS_URL', 'redis://redis_cache:6379/0'))],
+            "capacity": 1500,
+            "expiry": 10,
+        },
+    },
+}
