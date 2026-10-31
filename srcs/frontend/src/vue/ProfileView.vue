@@ -289,9 +289,15 @@ const saveProfile = async () => {
         <nav class="main-menu">
           <h3>Menu</h3>
           <ul>
-            <li @click="$router.push('/home')">🏠 For you</li>
-            <li @click="$router.push('/subscriptions')">👤 Subscription</li>
-            <li>🧭 Discover</li>
+            <li>
+              <router-link to="/home" class="menu-item">🏠 For you</router-link>
+            </li>
+            <li>
+              <router-link to="/subscriptions" class="menu-item">👤 Subscription</router-link>
+            </li>
+            <li>
+              <router-link to="/discover" class="menu-item">🧭 Discover</router-link>
+            </li>
           </ul>
         </nav>
       </aside>
@@ -1039,5 +1045,9 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   background: #05d4ca !important;
   box-shadow: 0 0 15px rgba(0, 242, 254, 0.4);
 }
+
+.main-menu ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 5px; }
+.menu-item { display: flex; align-items: center; padding: 12px 15px; color: #FFFFFF; text-decoration: none; border-radius: 10px; transition: all 0.2s ease-in-out; cursor: pointer; }
+.menu-item:hover { background: rgba(255, 255, 255, 0.1); }
 
 </style>
