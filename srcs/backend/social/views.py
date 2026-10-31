@@ -14,6 +14,7 @@ from django.contrib.auth import get_user_model
 
 from .models import Subscription, Comment, EventLike, Reaction
 from .serializers import CommentSerializer
+from events.serializers import FeedEventSerializer
 
 User = get_user_model()
 
@@ -234,3 +235,17 @@ class ContactsView(APIView):
         with_msgs = sorted((d for d in data if d["lastMsgAt"]), key=lambda d: d["lastMsgAt"], reverse=True)
         without = sorted((d for d in data if not d["lastMsgAt"]), key=lambda d: d["name"].lower())
         return Response(with_msgs + without)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def liked_events_view(request):
+    likes = (
+        EventLike.objects
+        .filter(user=request.user, event__status__iexact='active')
+        .select_related('event__organizer')
+        .prefetch_related('event__media')
+        .order_by('-created_at')
+    )
+    events = [like.event for like in likes]
+    serializer = FeedEventSerializer(events, many=True, context={'request':request})
+    return Response(serializer.data)
