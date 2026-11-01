@@ -166,9 +166,15 @@ const toggleFollow = async () => {
         <nav class="main-menu">
           <h3>Menu</h3>
           <ul>
-            <li @click="$router.push('/home')">🏠 For you</li>
-            <li @click="$router.push('/subscriptions')">👤 subscription</li>
-            <li>🧭 discover</li>
+            <li>
+              <router-link to="/home" class="menu-item">🏠 For you</router-link>
+            </li>
+            <li>
+              <router-link to="/subscriptions" class="menu-item">👤 Subscription</router-link>
+            </li>
+            <li>
+              <router-link to="/discover" class="menu-item">🧭 Discover</router-link>
+            </li>
           </ul>
         </nav>
       </aside>
