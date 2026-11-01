@@ -58,7 +58,7 @@ class _Picker:
 
 
 def for_you_ids(user, size=FEED_SIZE):
-    base = _valid_events().exclude(organizer=user)
+    base = _valid_events()
     my_tags = set(user.tags.values_list('id', flat=True))
     liked = Event.objects.filter(likes__user=user)
     liked_ids = set(liked.values_list('id', flat=True))
@@ -90,7 +90,7 @@ def for_you_ids(user, size=FEED_SIZE):
 
 
 def discover_ids(user, size=FEED_SIZE):
-    base = _valid_events().exclude(organizer=user)
+    base = _valid_events()
     my_tags = set(user.tags.values_list('id', flat=True))
     liked_ids = set(user.event_likes.values_list('event_id', flat=True))
 
