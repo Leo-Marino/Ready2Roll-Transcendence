@@ -28,13 +28,12 @@ export default {
       const parts = this.eventDate.split('T')[0].split('-');
       if (parts.length === 3) {
         const [year, month, day] = parts;
-        return `${day}/${month}/${day}`;
+        return `${day}/${month}/${year}`;
       }
       return this.eventDate;
     }
   },
   mounted() {
-    // Nchoufo wach dkhla l'page 3la wd Edit
     if (this.$route.query.edit === 'true') {
       const savedEvent = localStorage.getItem('editingEvent');
       if (savedEvent) {
@@ -45,7 +44,6 @@ export default {
           this.eventTitle = ev.title || '';
           this.descriptionText = ev.description || '';
           this.eventLocation = ev.location || 'YAB Club, Florence';
-          // Format dyal datetime-local khasso ykon YYYY-MM-DDTHH:mm
           this.eventDate = ev.event_date ? String(ev.event_date).slice(0, 16) : '';
           this.endTime = ev.end_time ? String(ev.end_time).slice(0, 16) : '';
           this.maxCapacity = ev.max_capacity || '';
@@ -59,7 +57,6 @@ export default {
         }
       }
     } else {
-      // Ila dkhl 3adi bach ysayb event jdid, nms7o ay data qdima
       localStorage.removeItem('editingEvent');
     }
   },
@@ -92,6 +89,10 @@ export default {
         alert("All mandatory fields must be filled !");
         return;
       }
+      if (!this.isEditMode && !this.actualFile) {
+        alert("Please insert a photo or video before publishing the event!");
+        return;
+      }
 
       const token = localStorage.getItem('token') || localStorage.getItem('access') || localStorage.getItem('access_token');
       const formData = new FormData();
@@ -113,7 +114,6 @@ export default {
         });
       }
 
-      // Ila bddel l'video wla tswira, nsifto l'fichier jdid
       if (this.actualFile) {
         formData.append('media_file', this.actualFile);
         formData.append('media_type', this.mediaType);
@@ -121,7 +121,6 @@ export default {
         formData.append('media_type', this.mediaType);
       }
 
-      // Ila kna f Edit Mode, nsifto PUT l /api/events/<id>/, sinon POST l /api/events/
       const url = this.isEditMode ? `/api/events/${this.editingEventId}/` : '/api/events/';
       const method = this.isEditMode ? 'PUT' : 'POST';
 
