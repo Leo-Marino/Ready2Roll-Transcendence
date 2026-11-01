@@ -4,6 +4,8 @@ DATA_DIR = /sgoinfre/$(USER)/ready2roll
 
 all: down up
 
+vault_status:
+	$(COMPOSE) exec vault vault status
 
 keygen: # 1. Inititialize vault and create token keys
 	$(COMPOSE) exec vault vault operator init -key-shares=5 -key-threshold=2
@@ -33,6 +35,8 @@ setup:
 	@mkdir -p /sgoinfre/$(USER)/ready2roll
 	@mkdir -p $(DATA_DIR)/pg_data
 	@mkdir -p $(DATA_DIR)/minio_data
+	@mkdir -p $(DATA_DIR)redis_data
+	@export UID GID=$(id -g)
 
 up: setup
 	$(COMPOSE) build --parallel

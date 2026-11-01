@@ -184,8 +184,10 @@ services:
     secrets:
       - pg_root_password
     volumes:
-      - /tmp/${USER}_ready2roll_pg_data:/var/lib/postgresql/data
-      - ./srcs/postgre_db/init:/docker-entrypoint-initdb.d:ro
+#      - /tmp/${USER}_ready2roll_pg_data:/var/lib/postgresql/data
+#      - ./srcs/postgre_db/init:/docker-entrypoint-initdb.d:ro
+      - ready2roll_pg_data:/var/lib/postgresql/data
+      - ./srcs/postgre_db/init:/docker-entrypoint-initdb.d
     networks:
       - data
       - vaultdb
@@ -302,6 +304,9 @@ secrets:
     file: ./secrets/pgadmin_password.txt
  
 volumes:
+# minio_data:
+  ready2roll_pg_data:
+  redis_data:
   vault_data:
   vault_audit:
   vault_secrets:            # RAM-backed: Django secrets never touch disk
