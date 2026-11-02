@@ -42,7 +42,6 @@ const subFeed = ref([
 </template>
 
 <style scoped>
-/* Paste your standard layout styles here (app-container, glass-panel, navbar, sidebar) */
 
 .feed-container {
   flex-grow: 1;

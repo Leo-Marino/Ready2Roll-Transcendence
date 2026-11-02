@@ -1,858 +1,891 @@
-<template>
-<div class="owner-visual-wrapper">
-<video autoplay muted loop playsinline id="bgVideo">
-	<source src="../assets/ready2roll_wave_background.mp4" type="video/mp4" />
-</video>
+<script setup>
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 
-<!-- NAVBAR -->
-<header class="navbar glass-panel">
-	<!-- 1. Left: Logo -->
-	<div class="nav-left">
-	<div class="logo">
-		<img src="../assets/logo_temp.png" alt="Ready2Roll Logo" class="nav-logo-img" />
-		<span class="logo-text">Ready2Roll</span>
-	</div>
-	</div>
+const router = useRouter();
+const API = '/api';
 
-	<div class="nav-right">
-	<div class="nav-icons">
-		<router-link to="/direct" class="nav-icon-link" title="Messaggi diretti">
-		<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-			<path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-		</svg>
-		</router-link>
-		<router-link to="/chat" class="nav-icon-link" title="Chat">
-		<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-			<path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a.75.75 0 01-.81-.54 2.89 2.89 0 01.213-1.637 8.25 8.25 0 01-1.813-5.293C3 7.444 7.03 3.75 12 3.75s9 3.694 9 8.25z" />
-		</svg>
-		</router-link>
-		<router-link to="/profile" class="nav-icon-link" title="Profilo">
-		<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-			<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-		</svg>
-		</router-link>
-	</div>
-	</div>
-</header>
+// For following and followers modals
+const showFollowModal = ref(false);
+const followModalType = ref('');
+const followList = ref([]);
 
-<main class="main-content">
-	<div class="page-header">
-	<h1 class="page-title">I MIEI EVENTI</h1>
-	<p class="subtitle">Gestisci, modifica e visualizza l'anteprima a schermo intero delle tue serate</p>
-	<div class="create-event-cta">
-		<span class="cta-prompt">Non vedi l'evento che cercavi? Crealo ora!</span>
-		<button class="action-btn create-nav-btn" @click="goToCreateEvent">
-		<span class="btn-icon">
-			<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-			<line x1="12" y1="5" x2="12" y2="19"></line>
-			<line x1="5" y1="12" x2="19" y2="12"></line>
-			</svg>
-		</span>
-		<span>Crea nuovo evento</span>
-		</button>
-	</div>
-	</div>
+const openFollowModal = async (type) => {
+  followModalType.value = type;
+  showFollowModal.value = true;
+  followList.value = [];
 
-	<section class="events-grid">
-	<div 
-		v-for="event in eventsList" 
-		:key="event.id" 
-		class="event-card glass-card"
-	>
-		<div class="card-media-header">
-		<img 
-			v-if="event.media_type === 'image'" 
-			:src="event.media_src" 
-			alt="Cover evento" 
-			class="card-thumb" 
-		/>
-		<video 
-			v-else 
-			:src="event.media_src" 
-			autoplay 
-			muted 
-			loop 
-			class="card-thumb"
-		></video>
-		<span class="status-badge" :class="event.status ? event.status.toLowerCase() : ''">
-			{{ event.status }}
-		</span>
-		</div>
+  if (type == 'following') {
+    followList.value = [
+      { id: 1, username: 'Xhul', avatar: 'https://i.pravatar.cc/150?u=1' },
+      { id: 2, username: 'Anna', avatar: 'https://i.pravatar.cc/150?u=2' }
+    ];
+  } else if (type == 'followers') {
+    followList.value = [
+      { id: 3, username: 'thilina', avatar: 'https://i.pravatar.cc/150?u=3' },
+      { id: 4, username: 'Milko', avatar: 'https://i.pravatar.cc/150?u=4' }
+    ];
+  }
+};
 
-		<div class="card-body">
-		<h3 class="event-title">{{ event.title }}</h3>
-		<div class="event-info-row">
-			<span>📍 {{ event.location }}</span>
-			<span>📅 {{ event.event_date }}</span>
-		</div>
-		<p class="event-description-truncated">
-			{{ event.description || 'Nessuna descrizione inserita.' }}
-		</p>
-		</div>
+const closeFollowModal = () => {
+  showFollowModal.value = false;
+};
 
-		<div class="card-actions">
-		<button class="action-btn preview-btn" @click="openPreview(event)">
-			👁️ Anteprima
-		</button>
-		<button class="action-btn edit-btn" @click="openEdit(event)">
-			✏️ Modifica
-		</button>
-		</div>
-	</div>
-	</section>
+// Token helper
+const getToken = () =>
+  localStorage.getItem('token') ||
+  localStorage.getItem('access') ||
+  localStorage.getItem('access_token');
 
-	<!-- Preview Modal -->
-	<div v-if="activePreviewEvent" class="fullscreen-preview-overlay">
-	<button class="fullscreen-close-btn" @click="closePreview">✕</button>
-	
-	<div class="fullscreen-content-container">
-		<section class="glass-card" :class="{ 'is-expanded-card': isExpanded }">
-		<div 
-			class="preview-box" 
-			:class="{ 
-			'is-expanded-box': isExpanded, 
-			'is-map-view': isMapOpen && !isExpanded 
-			}"
-		>
-			<aside v-if="isExpanded" class="sidebar-left">
-			<div class="side-card">
-				<h4>Menu</h4>
-				<ul class="nav-menu">
-				<li>🔥 For you</li>
-				<li>📱 Subscription</li>
-				<li>🧩 Discover</li>
-				</ul>
-				<h4 style="margin-top: 20px;">Subscribed accounts</h4>
-				<ul class="sub-list">
-				<li>👤 Xhul</li>
-				<li>👤 Anna</li>
-				<li>👤 thilina</li>
-				</ul>
-				<small class="show-more">show more _</small>
-			</div>
-			</aside>
-			<div class="media-outer-wrapper" :class="{ 'is-expanded-wrapper': isExpanded }">
-			<div 
-				class="media-preview" 
-				:class="{ 'has-content': activePreviewEvent.media_src, 'is-expanded': isExpanded }"
-			>
-				<div 
-				v-if="!isExpanded"
-				class="map-badge clickable"
-				:class="{ active: isMapOpen }"
-				@click.stop="toggleMap"
-				>
-				<svg class="maps-icon" viewBox="0 0 24 24" width="20" height="20">
-					<path fill="#EA4335" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
-					<circle fill="#FFFFFF" cx="12" cy="9" r="2.5"/>
-				</svg>
-				</div>
-				<button 
-				class="expand-btn" 
-				@click.stop="toggleExpand" 
-				title="Ingrandisci"
-				>
-				<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-					<path v-if="!isExpanded" d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
-					<path v-else d="M4 14h6v6M20 10h-6V4M10 14L3 21M14 10l7-7"/>
-				</svg>
-				</button>
-				<video 
-				v-if="activePreviewEvent.media_type === 'video'" 
-				:src="activePreviewEvent.media_src" 
-				autoplay 
-				loop 
-				muted 
-				class="uploaded-preview"
-				></video>
-				<img 
-				v-else 
-				:src="activePreviewEvent.media_src" 
-				alt="Anteprima" 
-				class="uploaded-preview" 
-				/>
-				<div class="text-preview overlay-description">
-				<p class="preview-description-text">
-					{{ activePreviewEvent.description }}
-				</p>
-				</div>
-			</div>
-			</div>
-			<div v-if="isMapOpen && !isExpanded" class="map-container">
-			<div class="map-inner-wrapper">
-				<div class="map-search-bar">
-				<input 
-					type="text" 
-					v-model="activePreviewEvent.location" 
-					class="custom-input map-input" 
-					readonly 
-				/>
-				</div>
-				<iframe 
-				width="100%" 
-				height="100%" 
-				frameborder="0" 
-				scrolling="no" 
-				marginheight="0" 
-				marginwidth="0" 
-				:src="`https://maps.google.com/maps?q=${encodeURIComponent(activePreviewEvent.location)}&t=&z=15&ie=UTF8&iwloc=&output=embed`"
-				class="map-iframe"
-				></iframe>
-			</div>
-			</div>
-			<aside v-if="isExpanded" class="sidebar-right">
-			<div class="side-card owner-info-box">
-				<div class="owner-header">
-				<div>
-					<strong>local owner ✓</strong><br>
-					<small>@club1 · 2h ago</small>
-				</div>
-				<button class="sub-btn">Subscribe</button>
-				</div>
-				<p class="post-caption">{{ activePreviewEvent.description }}</p>
-			</div>
 
-			<div class="side-card comments-box">
-				<h4>Comments</h4>
-				<div class="comment-item">
-				<strong>Xhul</strong>
-				<p>The drop on that first track was insanity!</p>
-				</div>
-				<div class="comment-item">
-				<strong>Anna</strong>
-				<p>Best set of the year so far!</p>
-				</div>
-			</div>
-			</aside>
-		</div>
-		</section>
-	</div>
-	</div>
+// The active user's profile data
+const userProfile = ref({
+  name: 'Loading...',
+  following: 0,
+  followers: 0,
+  description: 'Loading...',
+  avatar: 'https://i.pravatar.cc/150?u=6',
+  isBusiness: false
+});
 
-	<!-- Edit Modal -->
-	<div v-if="isEditing" class="edit-modal-overlay" @click.self="closeEdit">
-	<div class="edit-modal-card glass-card">
-		<div class="edit-modal-header">
-		<h2>MODIFICA EVENTO</h2>
-		<button class="icon-close-btn" @click="closeEdit">✕</button>
-		</div>
+const myEvents = ref([]);
+const activeTab = ref('likes');
 
-		<form @submit.prevent="saveEdit" class="edit-form">
-		<div class="form-group">
-			<label>Titolo Evento</label>
-			<input type="text" v-model="editForm.title" class="custom-input" required />
-		</div>
+// Event management states (from OwnerEventView)
+const activePreviewEvent = ref(null);
+const isEditing = ref(false);
+const editForm = ref({
+  id: null,
+  title: '',
+  location: '',
+  event_date: '',
+  status: 'active',
+  description: '',
+  media_type: 'image',
+  media_src: ''
+});
+const editFileInput = ref(null);
 
-		<div class="form-row">
-			<div class="form-group">
-			<label>Luogo / Location</label>
-			<input type="text" v-model="editForm.location" class="custom-input" required />
-			</div>
-			<div class="form-group">
-			<label>Data Evento</label>
-			<input type="date" v-model="editForm.event_date" class="custom-input" required />
-			</div>
-		</div>
+const fetchMyEvents = async () => {
+  try {
+    const response = await fetch(`${API}/owner/events/`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    if (response.ok) {
+      myEvents.value = await response.json();
+    }
+  } catch (error) {
+    console.error('Could not load my events', error);
+  }
+};
 
-		<div class="form-group">
-			<label>Stato Evento</label>
-			<select v-model="editForm.status" class="custom-input custom-select">
-			<option value="Attivo">Attivo</option>
-			<option value="Bozza">Bozza</option>
-			<option value="Programmato">Programmato</option>
-			</select>
-		</div>
+// Event Actions
+const goToCreateEvent = () => {
+  router.push('/CreateEvent');
+};
 
-		<div class="form-group">
-			<label>Descrizione</label>
-			<textarea v-model="editForm.description" rows="3" class="custom-input textarea-input"></textarea>
-		</div>
+const openPreview = (event) => {
+  activePreviewEvent.value = event;
+};
 
-		<div class="form-group">
-			<label>Media (Foto/Video)</label>
-			<div class="media-edit-preview-box">
-			<img v-if="editForm.media_type === 'image'" :src="editForm.media_src" class="edit-thumb-preview" />
-			<video v-else :src="editForm.media_src" class="edit-thumb-preview" autoplay muted loop></video>
-			
-			<input 
-				type="file" 
-				ref="editFileInput" 
-				accept="image/png, image/jpeg, video/mp4" 
-				style="display: none;" 
-				@change="handleEditFileUpload" 
-			/>
-			<button type="button" class="action-btn upload-change-btn" @click="triggerEditFileInput">
-				📷 Cambia Foto/Video
-			</button>
-			</div>
-		</div>
+const closePreview = () => {
+  activePreviewEvent.value = null;
+};
 
-		<div class="edit-modal-actions">
-			<button type="button" class="action-btn cancel-btn" @click="closeEdit">Annulla</button>
-			<button type="submit" class="action-btn save-btn">💾 Salva Modifiche</button>
-		</div>
-		</form>
-	</div>
-	</div>
-</main>
-</div>
-</template>
+const openEdit = (event) => {
+  editForm.value = { ...event };
+  isEditing.value = true;
+};
 
-<script>
-export default {
-name: 'OwnerEventView',
-emits: ['navigate-create'],
-data() {
-return {
-	activePreviewEvent: null,
-	isExpanded: false,
-	isMapOpen: false,
-	isEditing: false,
-	editForm: {
-	id: null,
-	title: '',
-	location: '',
-	event_date: '',
-	status: 'Attivo',
-	description: '',
-	media_type: 'image',
-	media_src: ''
-	},
-	eventsList: []
-}
-},
-async mounted() {
-await this.fetchOwnerEvents();
-},
-methods: {
-async fetchOwnerEvents() {
-	try {
-	const token = localStorage.getItem('token');
-	const response = await fetch('/api/owner/events/', {
-		method: 'GET',
-		headers: {
-		'Authorization': `Bearer ${token}`
-		}
-	});
+const closeEdit = () => {
+  isEditing.value = false;
+};
 
-	if (response.ok) {
-		const data = await response.json();
-		this.eventsList = data;
-	} else {
-		console.error("Errore nel recupero degli eventi:", await response.json());
-	}
-	} catch (error) {
-	console.error("Errore di connessione durante il recupero eventi:", error);
-	}
-},
+const triggerEditFileInput = () => {
+  if (editFileInput.value) {
+    editFileInput.value.click();
+  }
+};
 
-goToCreateEvent() {
-	if (this.$router) {
-	this.$router.push('/CreateEvent');
-	}
-	this.$emit('navigate-create');
-},
+const handleEditFileUpload = (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    editForm.value.media_src = URL.createObjectURL(file);
+    editForm.value.media_type = file.type.startsWith('video') ? 'video' : 'image';
+  }
+};
 
-openPreview(event) {
-	this.activePreviewEvent = event;
-	this.isExpanded = false;
-	this.isMapOpen = false;
-},
-closePreview() {
-	this.activePreviewEvent = null;
-	this.isExpanded = false;
-	this.isMapOpen = false;
-},
-toggleExpand() {
-	this.isExpanded = !this.isExpanded;
-	if (this.isExpanded) this.isMapOpen = false;
-},
-toggleMap() {
-	this.isMapOpen = !this.isMapOpen;
-},
+const saveEdit = async () => {
+  const token = getToken();
+  const payload = {
+    title: editForm.value.title,
+    location: editForm.value.location,
+    event_date: editForm.value.event_date,
+    status: editForm.value.status,
+    description: editForm.value.description,
+    media_type: editForm.value.media_type,
+    media_src: editForm.value.media_src
+  };
 
-openEdit(event) {
-	this.editForm = { ...event };
-	this.isEditing = true;
-},
-closeEdit() {
-	this.isEditing = false;
-},
+  try {
+    const response = await fetch(`${API}/events/${editForm.value.id}/`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
 
-async saveEdit() {
-	const token = localStorage.getItem('token');
-	const payload = {
-	title: this.editForm.title,
-	location: this.editForm.location,
-	event_date: this.editForm.event_date,
-	status: this.editForm.status,
-	description: this.editForm.description,
-	media_type: this.editForm.media_type,
-	media_src: this.editForm.media_src
-	};
+    if (response.ok) {
+      const updatedEvent = await response.json();
+      const index = myEvents.value.findIndex(e => e.id === editForm.value.id);
+      if (index !== -1) {
+        myEvents.value.splice(index, 1, updatedEvent);
+      }
+      alert("Event updated successfully!");
+      closeEdit();
+    } else {
+      const errData = await response.json();
+      console.error("Error updating event:", errData);
+      alert("Error saving changes.");
+    }
+  } catch (error) {
+    console.error("Network error during save:", error);
+    alert("Unable to connect to the backend server.");
+  }
+};
 
-	try {
-	const response = await fetch(`/api/events/${this.editForm.id}/`, {
-		method: 'PUT',
-		headers: {
-		'Content-Type': 'application/json',
-		'Authorization': `Bearer ${token}`
-		},
-		body: JSON.stringify(payload)
-	});
+const likedVideos = ref([
+  { id: 1, title: 'Video 1', thumbnail: '' },
+  { id: 2, title: 'Video 2', thumbnail: '' },
+]);
 
-	if (response.ok) {
-		const updatedEvent = await response.json();
-		const index = this.eventsList.findIndex(e => e.id === this.editForm.id);
-		if (index !== -1) {
-		this.eventsList.splice(index, 1, updatedEvent);
-		}
-		alert("Evento aggiornato con successo!");
-		this.closeEdit();
-	} else {
-		const errData = await response.json();
-		console.error("Errore aggiornamento evento:", errData);
-		alert("Errore durante il salvataggio delle modifiche.");
-	}
-	} catch (error) {
-	console.error("Errore di rete durante il salvataggio:", error);
-	alert("Impossibile connettersi al server backend.");
-	}
-},
-triggerEditFileInput() {
-	this.$refs.editFileInput.click();
-},
-handleEditFileUpload(e) {
-	const file = e.target.files[0];
-	if (file) {
-	this.editForm.media_src = URL.createObjectURL(file);
-	this.editForm.media_type = file.type.startsWith('video') ? 'video' : 'image';
-	}
-}
-}
-}
+// --- FETCH DATA ON LOAD ---
+onMounted(async () => {
+  const token = getToken();
+  if (!token) {
+    router.push('/login');
+    return;
+  }
+  try {
+    const response = await fetch(`${API}/profile/`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (response.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('access');
+      localStorage.removeItem('access_token');
+      router.push('/login');
+      return;
+    }
+    if (!response.ok) {
+      console.error('could not load profile, status', response.status);
+      return;
+    }
+    const data = await response.json();
+    userProfile.value.name = data.username || '';
+    userProfile.value.description = data.bio || '';
+    if (data.avatar_url) {
+      userProfile.value.avatar = data.avatar_url;
+    }
+    userProfile.value.following = data.following_count || 2;
+    userProfile.value.followers = data.followers_count || 3;
+    userProfile.value.isBusiness = (data.type_of_user === 'business');
+
+    if (userProfile.value.isBusiness) {
+      activeTab.value = 'events';
+      fetchMyEvents();
+    }
+  } catch (error) {
+    console.error('Fetch failed (CORS or server off?)', error);
+  }
+});
+
+// --- EDIT PROFILE MODAL LOGIC ---
+const showEditModal = ref(false);
+const fileInput = ref(null);
+const tempAvatar = ref('');
+const selectedFile = ref(null);
+
+const profileEditForm = ref({
+  username: '',
+  bio: ''
+});
+
+const openEditModal = () => {
+  profileEditForm.value.username = userProfile.value.name;
+  profileEditForm.value.bio = userProfile.value.description;
+  tempAvatar.value = userProfile.value.avatar;
+  selectedFile.value = null;
+  showEditModal.value = true;
+};
+
+const closeEditModal = () => {
+  showEditModal.value = false;
+};
+
+const triggerFileInput = () => {
+  fileInput.value.click();
+};
+
+const handleImageUpload = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    selectedFile.value = file;
+    tempAvatar.value = URL.createObjectURL(file);
+  }
+};
+
+const saveProfile = async () => {
+  const formData = new FormData();
+  formData.append('username', profileEditForm.value.username);
+  formData.append('bio', profileEditForm.value.bio);
+
+  if (selectedFile.value) {
+    formData.append('avatar_url', selectedFile.value);
+  }
+
+  try {
+    const response = await fetch(`${API}/profile/update/`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${getToken()}`
+      },
+      body: formData
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      userProfile.value.name = data.username ?? profileEditForm.value.username;
+      userProfile.value.description = data.bio ?? profileEditForm.value.bio;
+
+      if (data.avatar_url) {
+        userProfile.value.avatar = data.avatar_url;
+      }
+
+      showEditModal.value = false;
+    } else {
+      console.error('Backend rejected the save:', data);
+      const firstError = Object.values(data)[0];
+      alert(Array.isArray(firstError) ? firstError[0] : 'Error saving profile.');
+    }
+  } catch (error) {
+    console.error('Network error saving profile:', error);
+    alert('Unable to connect to the server.');
+  }
+};
 </script>
 
+<template>
+  <video autoplay muted loop playsinline id="bgVideo">
+      <source src="../assets/ready2roll_wave_background.mp4" type="video/mp4">
+  </video>
+
+  <div class="app-container">
+
+    <!-- Navbar -->
+    <header class="navbar glass-panel">
+      <div class="logo" @click="$router.push('/home')">
+        <img src="../assets/logo_temp.png" alt="Ready2Roll Logo" class="nav-logo-img">
+        <span class="logo-text">Ready2Roll</span>
+      </div>
+      <div class="search-bar">
+        <input type="text" placeholder="search">
+      </div>
+      <div class="nav-icons">
+        <router-link to="/chat" class="nav-icon-link">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg>
+        </router-link>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" /></svg>
+        <router-link to="/profile" class="nav-icon-link">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+        </router-link>
+      </div>
+    </header>
+
+    <div class="main-content">
+
+      <!-- Left Sidebar -->
+      <aside class="left-sidebar glass-panel">
+        <nav class="main-menu">
+          <h3>Menu</h3>
+          <ul>
+            <li @click="$router.push('/home')">🏠 For you</li>
+            <li>👤 subscription</li>
+            <li>🧭 discover</li>
+          </ul>
+        </nav>
+      </aside>
+
+      <!-- Center: Profile Area -->
+      <main class="profile-container">
+
+        <div class="profile-header glass-panel">
+          <img :src="userProfile.avatar" alt="Avatar" class="profile-avatar">
+          <div class="profile-info">
+            <div class="name-row">
+              <h2>{{ userProfile.name }} 🔒</h2>
+            </div>
+            <div class="stats-row">
+              <span class="clickable-stat" @click="openFollowModal('following')">
+                <strong>{{ userProfile.following }}</strong> following
+              </span>
+              <span class="clickable-stat" @click="openFollowModal('followers')">
+                <strong>{{ userProfile.followers }}</strong> followers
+              </span>
+            </div>
+            <div class="description-box">
+              <p>{{ userProfile.description }}</p>
+            </div>
+          </div>
+          <div class="action-buttons">
+            <button v-if="userProfile.isBusiness" class="create-event-btn" @click="goToCreateEvent">
+              create Event 📅
+            </button>
+            <button class="edit-btn" @click="openEditModal">edit profile</button>
+          </div>
+        </div>
+
+        <!-- Profile Tabs -->
+        <div class="profile-tabs glass-panel">
+          <div v-if="userProfile.isBusiness" class="tab" :class="{ active: activeTab === 'events' }" @click="activeTab = 'events'"><span>🎬 My events</span></div>
+          <div class="tab" :class="{ active: activeTab === 'likes' }" @click="activeTab = 'likes'"><span>🖤 Likes</span></div>
+        </div>
+
+        <!-- Events Tab Content (Reels Format matching Likes Section) -->
+        <div v-if="userProfile.isBusiness && activeTab === 'events'">
+          <div v-if="myEvents.length === 0" class="glass-panel" style="text-align: center; padding: 30px; color: #aaa;">
+            You haven't created any events yet.
+          </div>
+          <section class="events-grid">
+            <div
+              v-for="event in myEvents"
+              :key="event.id"
+              class="event-reel-card glass-panel"
+            >
+              <!-- Background Media Content (Clickable to open preview) -->
+              <div class="reel-media-bg" @click="openPreview(event)">
+                <img
+                  v-if="event.media_type === 'image'"
+                  :src="event.media_src"
+                  alt="Event media"
+                  class="reel-thumb"
+                />
+                <video
+                  v-else
+                  :src="event.media_src"
+                  autoplay
+                  muted
+                  loop
+                  playsinline
+                  class="reel-thumb"
+                ></video>
+              </div>
+
+              <!-- Status Badge -->
+              <span class="status-badge" :class="event.status ? event.status.toLowerCase() : ''">
+                {{ event.status }}
+              </span>
+
+              <!-- Content Overlay on top of Media -->
+              <div class="reel-overlay-content">
+                <h3 class="event-title">{{ event.title }}</h3>
+                <div class="event-info-row">
+                  <span>📍 {{ event.location }}</span>
+                  <span>📅 {{ event.event_date }}</span>
+                </div>
+                <p class="event-description-truncated">
+                  {{ event.description || 'No description was inserted' }}
+                </p>
+
+                <div class="card-actions">
+                  <button class="action-btn edit-btn-card" @click="openEdit(event)">
+                    Edit
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- Likes Tab Content -->
+        <div v-else-if="activeTab === 'likes'" class="video-grid">
+          <div class="video-card glass-panel" v-for="video in likedVideos" :key="video.id">
+            <p class="placeholder-text">video</p>
+            <span class="heart-icon">🖤</span>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- EVENT PREVIEW REEL MODAL (Scrollable feed of all posted events) -->
+  <div v-if="activePreviewEvent" class="modal-overlay preview-overlay" @click.self="closePreview">
+    <div class="preview-reel-container">
+      <button class="close-modal-btn preview-close" @click="closePreview">✕</button>
+      <div class="preview-scroll-wrapper">
+        <div
+          v-for="event in myEvents"
+          :key="event.id"
+          class="preview-reel-card"
+        >
+          <div class="preview-media-wrapper">
+            <video
+              v-if="event.media_type === 'video'"
+              :src="event.media_src"
+              autoplay
+              muted
+              loop
+              playsinline
+              class="preview-media-content"
+            ></video>
+            <img
+              v-else
+              :src="event.media_src"
+              alt="Event Preview"
+              class="preview-media-content"
+            />
+          </div>
+          <div class="preview-overlay-content">
+            <div class="preview-user-info">
+              <img :src="userProfile.avatar" alt="avatar" class="preview-avatar" />
+              <span class="preview-username">{{ userProfile.name }}</span>
+            </div>
+            <h2 class="preview-title">{{ event.title }}</h2>
+            <p class="preview-desc">{{ event.description || 'No description provided.' }}</p>
+            <div class="preview-meta">
+              <span>📍 {{ event.location }}</span>
+              <span>📅 {{ event.event_date }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT PROFILE MODAL -->
+  <div v-if="showEditModal" class="modal-overlay" @click.self="closeEditModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Edit profile</h3>
+        <button class="close-modal-btn" @click="closeEditModal">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-section row-section">
+          <label>Profile photo</label>
+          <div class="photo-edit-area" @click="triggerFileInput">
+            <img :src="tempAvatar" alt="avatar" class="edit-avatar">
+            <span class="edit-pencil">✏️</span>
+            <input
+              type="file"
+              accept="image/*"
+              ref="fileInput"
+              class="hidden-file-input"
+              @change="handleImageUpload"
+            >
+          </div>
+        </div>
+
+        <div class="modal-section row-section">
+          <label>Username</label>
+          <div class="input-area">
+            <input type="text" v-model="profileEditForm.username" placeholder="Username">
+            <p class="helper-text">Usernames can only contain letters, numbers, underscores, and periods.</p>
+          </div>
+        </div>
+
+        <div class="modal-section row-section">
+          <label>Bio</label>
+          <div class="input-area">
+            <textarea v-model="profileEditForm.bio" placeholder="Bio" rows="4"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="cancel-btn" @click="closeEditModal">cancel</button>
+        <button class="save-btn" @click="saveProfile">save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT EVENT MODAL -->
+  <div v-if="isEditing" class="modal-overlay" @click.self="closeEdit">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Edit Event</h3>
+        <button class="close-modal-btn" @click="closeEdit">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-section row-section">
+          <label>Title</label>
+          <div class="input-area"><input type="text" v-model="editForm.title"></div>
+        </div>
+        <div class="modal-section row-section">
+          <label>Location</label>
+          <div class="input-area"><input type="text" v-model="editForm.location"></div>
+        </div>
+        <div class="modal-section row-section">
+          <label>Date</label>
+          <div class="input-area"><input type="date" v-model="editForm.event_date"></div>
+        </div>
+        <div class="modal-section row-section">
+          <label>Status</label>
+          <div class="input-area">
+            <select v-model="editForm.status" class="custom-select">
+              <option value="Active">Active</option>
+              <option value="Draft">Draft</option>
+              <option value="Scheduled">Scheduled</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-section row-section">
+          <label>Description</label>
+          <div class="input-area"><textarea v-model="editForm.description" rows="3"></textarea></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="cancel-btn" @click="closeEdit">Cancel</button>
+        <button class="save-btn" @click="saveEdit">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOLLOWERS / FOLLOWING MODAL -->
+  <div v-if="showFollowModal" class="modal-overlay" @click.self="closeFollowModal">
+    <div class="mini-modal-content">
+      <div class="modal-header">
+        <h3 style="text-transform: capitalize;">{{ followModalType }}</h3>
+        <button class="close-modal-btn" @click="closeFollowModal">✕</button>
+      </div>
+      <div class="modal-body list-body">
+        <ul class="follow-list">
+          <li v-for="user in followList" :key="user.id" class="follow-item">
+            <img :src="user.avatar" alt="avatar" class="avatar-small">
+            <span>{{ user.username }}</span>
+          </li>
+        </ul>
+        <p v-if="followList.length === 0" style="text-align: center; color: #aaa;">No users found.</p>
+      </div>
+    </div>
+  </div>
+</template>
+
 <style scoped>
-/* IMPORT GOOGLE FONT FOR LOGO */
-@import url('https://fonts.googleapis.com/css2?family=Bruno+Ace&display=swap');
+#bgVideo { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; z-index: -1; object-fit: cover; }
+.app-container { display: flex; flex-direction: column; height: 100vh; color: #FFFFFF; font-family: sans-serif; padding: 10px 20px; box-sizing: border-box; }
+.glass-panel { background: rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 15px; box-sizing: border-box; }
+.navbar { display: flex; justify-content: space-between; align-items: center; height: 60px; margin-bottom: 15px; flex-shrink: 0; border: 1px solid rgba(255, 255, 255, 0.15); }
+.logo { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.nav-logo-img { height: 35px; width: auto; object-fit: contain; }
+.logo-text { font-family: "Bruno Ace", sans-serif; font-weight: bold; font-size: 1.2rem; }
+.search-bar input { background: rgba(255, 255, 255, 0.1); border: none; border-radius: 17px; padding: 10px 20px; color: white; width: 300px; }
+.nav-icons { display: flex; gap: 20px; align-items: center; }
+.nav-icon { width: 26px; height: 26px; color: #FFFFFF; cursor: pointer; transition: all 0.3s ease; }
+.nav-icon:hover { color: #00f2fe; transform: scale(1.15); }
+.nav-icon-link { display: flex; align-items: center; }
 
-/* CONTAINER BASE */
-.owner-visual-wrapper {
-position: relative;
-min-height: 100vh;
-width: 100%;
-color: #ffffff;
-font-family: "Huninn", sans-serif;
-box-sizing: border-box;
-padding-bottom: 50px;
+.main-content { display: flex; flex-direction: row; gap: 20px; height: calc(100vh - 95px); width: 100%; }
+.left-sidebar { width: 250px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
+ul { list-style: none; padding: 0; }
+li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor: pointer; }
+.avatar { width: 40px; height: 40px; border-radius: 50%; }
+.show-more { color: #cccccc; cursor: pointer; font-size: 0.9rem; }
+
+.profile-container { flex-grow: 1; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; scrollbar-width: none; }
+.profile-container::-webkit-scrollbar { display: none; }
+.profile-header { display: flex; align-items: flex-start; gap: 30px; position: relative; }
+.profile-avatar { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; }
+.profile-info { display: flex; flex-direction: column; gap: 10px; flex-grow: 1; }
+.name-row h2 { margin: 0; display: flex; align-items: center; gap: 5px; }
+.stats-row { display: flex; gap: 20px; font-size: 1rem; }
+.description-box { background: rgba(255, 255, 255, 0.05); padding: 10px 15px; border-radius: 10px; min-height: 50px; width: 60%; border: 1px solid rgba(255, 255, 255, 0.2); }
+
+.action-buttons {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 10px;
 }
 
-#bgVideo {
-position: fixed;
-top: 0;
-left: 0;
-right: 0;
-bottom: 0;
-min-width: 100%;
-min-height: 100%;
-width: 100%;
-height: 100%;
-z-index: -1;
-object-fit: cover;
+.edit-btn {
+  background: #d63031;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+.edit-btn:hover { background: #ff7675; }
+
+.create-event-btn {
+  background: #00f2fe;
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+.create-event-btn:hover { background: #05d4ca; }
+
+.profile-tabs { display: flex; justify-content: center; padding: 10px; border-radius: 10px; gap: 10px; }
+.tab { padding: 10px 40px; font-weight: bold; cursor: pointer; border-bottom: 2px solid transparent; color: rgba(255,255,255,0.6); }
+.tab.active { border-bottom-color: #00f2fe; color: white; }
+
+.video-grid, .events-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+.video-card { aspect-ratio: 9 / 16; display: flex; justify-content: center; align-items: center; position: relative; cursor: pointer; transition: transform 0.2s; }
+.video-card:hover { transform: scale(1.02); }
+.placeholder-text { font-family: "Bruno Ace", sans-serif; font-size: 1.5rem; opacity: 0.5; }
+.heart-icon { position: absolute; bottom: 15px; right: 15px; font-size: 1.5rem; }
+
+.event-reel-card {
+  aspect-ratio: 9 / 16;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  position: relative;
+  overflow: hidden;
+  padding: 15px;
+  box-sizing: border-box;
+  transition: transform 0.2s;
+}
+.event-reel-card:hover { transform: scale(1.02); }
+
+.reel-media-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  cursor: pointer;
 }
 
-.navbar {
-display: flex;
-align-items: center;
-justify-content: space-between;
-padding: 12px 30px;
-width: 100%;
-box-sizing: border-box;
-background: rgba(255, 255, 255, 0.08);
-backdrop-filter: blur(16px);
--webkit-backdrop-filter: blur(16px);
-border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-position: sticky;
-top: 0;
-z-index: 1000;
-}
-
-.nav-left, .nav-right {
-display: flex;
-align-items: center;
-flex: 1;
-}
-
-.nav-right {
-justify-content: flex-end;
-}
-
-.nav-center {
-display: flex;
-justify-content: center;
-align-items: center;
-flex: 2;
-}
-
-/* LOGO */
-.logo {
-display: flex;
-align-items: center;
-gap: 12px;
-cursor: pointer;
-}
-
-.nav-logo-img {
-width: 32px;
-height: 32px;
-object-fit: contain;
-}
-
-/* FONT LOGO AGGIORNATO IN BRUNO ACE */
-.logo-text {
-font-family: 'Bruno Ace', cursive, sans-serif;
-font-weight: 400;
-font-size: 1.25rem;
-color: #ffffff;
-letter-spacing: 0.5px;
-}
-
-/* ICONE A DESTRI */
-.nav-icons {
-display: flex;
-align-items: center;
-gap: 20px;
-}
-
-.nav-icon-link {
-color: rgba(255, 255, 255, 0.85);
-display: flex;
-align-items: center;
-justify-content: center;
-text-decoration: none;
-transition: color 0.2s ease, transform 0.2s ease;
-}
-
-.nav-icon-link:hover {
-color: #00f2fe;
-transform: translateY(-1px);
-}
-
-.nav-icon {
-width: 24px;
-height: 24px;
-}
-
-.main-content {
-max-width: 1200px;
-margin: 0 auto;
-padding: 200px 20px;
-box-sizing: border-box;
-}
-
-.page-header {
-text-align: center;
-margin-bottom: 35px;
-}
-
-.page-title {
-font-size: 2.2rem;
-margin: 0;
-letter-spacing: 1px;
-}
-
-.subtitle {
-font-size: 0.9rem;
-color: rgba(255, 255, 255, 0.7);
-margin: 6px 0 0 0;
-}
-
-.create-event-cta {
-display: flex;
-flex-direction: column;
-align-items: center;
-gap: 12px;
-margin-top: 24px;
-}
-
-.cta-prompt {
-font-size: 0.95rem;
-color: rgba(255, 255, 255, 0.9);
-letter-spacing: 0.5px;
-text-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
-}
-
-.create-nav-btn {
-display: inline-flex;
-align-items: center;
-justify-content: center;
-gap: 10px;
-background: linear-gradient(135deg, rgba(0, 242, 254, 0.2), rgba(0, 150, 255, 0.3));
-border: 1px solid rgba(0, 242, 254, 0.7);
-color: #ffffff;
-padding: 12px 26px;
-font-family: "Huninn", sans-serif;
-font-size: 0.85rem;
-font-weight: bold;
-border-radius: 50px;
-backdrop-filter: blur(12px);
-box-shadow: 0 0 16px rgba(0, 242, 254, 0.25), inset 0 0 10px rgba(0, 242, 254, 0.15);
-cursor: pointer;
-transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-letter-spacing: 0.5px;
-user-select: none;
-}
-
-.create-nav-btn:hover {
-background: #00f2fe;
-color: #000000;
-box-shadow: 0 0 20px rgba(0, 242, 254, 0.7);
-transform: translateY(-2px);
-}
-
-.create-nav-btn:hover .btn-icon {
-background: rgba(10, 10, 15, 0.2);
-transform: rotate(90deg);
-}
-
-.create-nav-btn .btn-icon {
-display: flex;
-align-items: center;
-justify-content: center;
-background: rgba(0, 242, 254, 0.25);
-border-radius: 50%;
-padding: 4px;
-transition: transform 0.4s ease, background 0.3s ease;
-}
-
-.events-grid {
-display: grid;
-grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-gap: 28px;
-width: 100%;
-}
-
-.glass-card {
-background: rgba(255, 255, 255, 0.08);
-border-radius: 20px;
-padding: 18px;
-box-sizing: border-box;
-backdrop-filter: blur(12px);
-border: 1px solid rgba(255, 255, 255, 0.18);
-transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-}
-
-.event-card:hover {
-transform: translateY(-5px);
-border-color: rgba(0, 242, 254, 0.6);
-box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-}
-
-.card-media-header {
-position: relative;
-width: 100%;
-height: 180px;
-border-radius: 14px;
-overflow: hidden;
-margin-bottom: 15px;
-}
-
-.card-thumb {
-width: 100%;
-height: 100%;
-object-fit: cover;
+.reel-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .status-badge {
-position: absolute;
-top: 10px;
-right: 10px;
-padding: 4px 10px;
-border-radius: 10px;
-font-size: 0.7rem;
-font-weight: bold;
-backdrop-filter: blur(6px);
-text-transform: uppercase;
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 3;
+  padding: 4px 10px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  backdrop-filter: blur(6px);
+  text-transform: uppercase;
+  pointer-events: none;
 }
 
-.status-badge.attivo {
-background: rgba(0, 242, 254, 0.3);
-border: 1px solid #00f2fe;
-color: #00f2fe;
+.status-badge.active { background: rgba(0, 242, 254, 0.3); border: 1px solid #00f2fe; color: #00f2fe; }
+.status-badge.draft { background: rgba(255, 193, 7, 0.3); border: 1px solid #ffc107; color: #ffc107; }
+.status-badge.scheduled { background: rgba(156, 39, 176, 0.3); border: 1px solid #e040fb; color: #e040fb; }
+
+.reel-overlay-content {
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
+  margin: -15px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  justify-content: flex-end;
+  height: 100%;
+  pointer-events: none;
 }
 
-.status-badge.bozza {
-background: rgba(255, 193, 7, 0.3);
-border: 1px solid #ffc107;
-color: #ffc107;
+.reel-overlay-content .card-actions {
+  pointer-events: auto;
 }
 
-.status-badge.programmato {
-background: rgba(156, 39, 176, 0.3);
-border: 1px solid #e040fb;
-color: #e040fb;
+.event-title { font-size: 1.1rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #FFFFFF; }
+.event-info-row { display: flex; flex-direction: column; gap: 2px; font-size: 0.75rem; color: rgba(255, 255, 255, 0.85); }
+.event-description-truncated { font-size: 0.75rem; color: rgba(255, 255, 255, 0.7); line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 0; }
+
+.card-actions { display: flex; gap: 8px; margin-top: 5px; }
+.action-btn { flex: 1; padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.1); color: #ffffff; font-size: 0.7rem; cursor: pointer; transition: all 0.3s ease; }
+.edit-btn-card:hover { background: rgba(255, 255, 255, 0.25); border-color: rgba(255, 255, 255, 0.4); }
+
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+.modal-content { background: #1e1e1e; width: 500px; max-width: 90%; border-radius: 12px; border: 1px solid #333; color: white; display: flex; flex-direction: column; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid #333; }
+.modal-header h3 { margin: 0; font-family: "Bruno Ace", sans-serif; }
+.close-modal-btn { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; }
+.modal-body { padding: 20px; display: flex; flex-direction: column; gap: 20px; max-height: 60vh; overflow-y: auto; }
+.modal-section { display: flex; align-items: flex-start; gap: 20px; border-bottom: 1px solid #333; padding-bottom: 20px; }
+.modal-section:last-child { border-bottom: none; padding-bottom: 0; }
+.modal-section label { width: 120px; font-weight: bold; flex-shrink: 0; }
+.input-area { flex-grow: 1; display: flex; flex-direction: column; gap: 5px; }
+.input-area input, .input-area textarea, .custom-select { width: 100%; background: #2a2a2a; border: 1px solid #444; color: white; padding: 10px; border-radius: 6px; font-family: inherit; }
+.helper-text { font-size: 0.75rem; color: #aaa; margin: 0; }
+.photo-edit-area { position: relative; display: inline-block; cursor: pointer; }
+.edit-avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; }
+.edit-pencil { position: absolute; bottom: 0; right: 0; background: #333; padding: 4px; border-radius: 50%; font-size: 0.8rem; }
+.hidden-file-input { display: none; }
+.modal-footer { padding: 15px 20px; border-top: 1px solid #333; display: flex; justify-content: flex-end; gap: 10px; }
+.modal-footer button { padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; }
+.cancel-btn { background: #333; color: white; }
+.cancel-btn:hover { background: #444; }
+.save-btn { background: white; color: black; }
+.save-btn:hover { background: #ccc; }
+.clickable-stat { cursor: pointer; transition: color 0.2s; }
+.clickable-stat:hover { color: #00f2fe; }
+
+.mini-modal-content { background: #1e1e1e; width: 350px; max-width: 90%; border-radius: 12px; border: 1px solid #333; color: white; display: flex; flex-direction: column; max-height: 400px; }
+.list-body { overflow-y: auto; padding: 10px; }
+.follow-list { list-style: none; padding: 0; margin: 0; }
+.follow-item { display: flex; align-items: center; gap: 15px; padding: 10px; border-radius: 8px; transition: background 0.2s; }
+.follow-item:hover { background: rgba(255, 255, 255, 0.05); }
+.avatar-small { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+.user-link { display: flex; align-items: center; gap: 10px; text-decoration: none; color: white; width: 100%; transition: color 0.3s ease; }
+.user-link:hover { color: #00f2fe; }
+
+/* Preview Reel Modal Styles with Vertical Scroll */
+.preview-overlay {
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
 }
 
-.card-body {
-margin-bottom: 18px;
+.preview-reel-container {
+  position: relative;
+  width: 380px;
+  height: 680px;
+  max-width: 95vw;
+  max-height: 90vh;
+  background: #111;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+  display: flex;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.6);
 }
 
-.event-title {
-font-size: 1.1rem;
-margin: 0 0 10px 0;
-white-space: nowrap;
-overflow: hidden;
-text-overflow: ellipsis;
+.preview-scroll-wrapper {
+  width: 100%;
+  height: 100%;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+}
+.preview-scroll-wrapper::-webkit-scrollbar {
+  display: none;
 }
 
-.event-info-row {
-display: flex;
-flex-direction: column;
-gap: 4px;
-font-size: 0.78rem;
-color: rgba(255, 255, 255, 0.8);
-margin-bottom: 12px;
+.preview-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 20;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 
-.event-description-truncated {
-font-size: 0.8rem;
-color: rgba(255, 255, 255, 0.65);
-line-height: 1.4;
-display: -webkit-box;
--webkit-line-clamp: 2;
-line-clamp: 2;
--webkit-box-orient: vertical;
-overflow: hidden;
-margin: 0;
+.preview-reel-card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
 }
 
-.card-actions {
-display: flex;
-gap: 10px;
+.preview-media-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
 }
 
-.action-btn {
-flex: 1;
-padding: 10px 12px;
-border-radius: 12px;
-border: 1px solid rgba(255, 255, 255, 0.2);
-background: rgba(255, 255, 255, 0.1);
-color: #ffffff;
-font-family: "Huninn", sans-serif;
-font-size: 0.75rem;
-cursor: pointer;
-transition: all 0.3s ease;
+.preview-media-content {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.preview-btn:hover {
-background: rgba(0, 242, 254, 0.7);
-border-color: #00f2fe;
-color: #000000;
+.preview-overlay-content {
+  position: relative;
+  z-index: 2;
+  padding: 20px;
+  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.edit-btn:hover {
-background: rgba(255, 255, 255, 0.25);
-border-color: rgba(255, 255, 255, 0.4);
+.preview-user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.fullscreen-preview-overlay {
-position: fixed;
-top: 0;
-left: 0;
-width: 100vw;
-height: 100vh;
-background: rgba(10, 10, 15, 0.95);
-backdrop-filter: blur(16px);
-z-index: 2000;
-display: flex;
-flex-direction: column;
-box-sizing: border-box;
-padding: 20px;
-overflow: hidden;
+.preview-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #00f2fe;
 }
 
-.fullscreen-close-btn {
-position: absolute;
-top: 20px;
-right: 25px;
-z-index: 2010;
-background: rgba(255, 71, 87, 0.8);
-border: 1px solid rgba(255, 255, 255, 0.4);
-color: #ffffff;
-padding: 10px 20px;
-border-radius: 30px;
-cursor: pointer;
-font-family: "Huninn", sans-serif;
-font-size: 0.85rem;
-box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-transition: all 0.3s ease;
+.preview-username {
+  font-weight: bold;
+  font-size: 0.95rem;
+  color: #FFFFFF;
 }
 
-.fullscreen-close-btn:hover {
-background: #ff4757;
-transform: scale(1.05);
+.preview-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-family: "Bruno Ace", sans-serif;
+  color: #FFFFFF;
 }
 
-.fullscreen-content-container {
-width: 100%;
-height: 100%;
-display: flex;
-align-items: center;
-justify-content: center;
+.preview-desc {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.preview-box {
-background: rgba(0, 0, 0, 0.45);
-border-radius: 20px;
-border: 1px solid rgba(255, 255, 255, 0.2);
-padding: 20px;
-position: relative;
-text-align: center;
-display: flex;
-justify-content: center;
-align-items: stretch;
-gap: 20px;
-transition: all 0.5s ease;
-max-height: 90vh;
-}
-
-.media-outer-wrapper {
-background: rgba(255, 255, 255, 0.08);
-border: 1px solid rgba(255, 255, 255, 0.2);
-border-radius: 24px;
-padding: 12px;
-backdrop-filter: blur(12px);
-box-sizing: border-box;
-display: flex;
-justify-content: center;
-align-items: center;
-width: 100%;
-max-width: 380px;
-height: calc(85vh);
-flex-shrink: 0;
-transition: all 0.5s ease;
-}
-
-.media-preview {
-border: 2px dashed rgba(255, 255, 255, 0.5);
-border-radius: 18px;
-width: 100%;
-aspect-ratio: 9 / 16;
-height: 100%;
-overflow: hidden;
-display: flex;
-flex-direction: column;
-align-items: center;
-justify-content: center;
-background: rgba(255, 255, 255, 0.03);
-position: relative;
-box-sizing: border-box;
-}
-
-.uploaded-preview {
-width: 100%;
-height: 100%;
-object-fit: cover;
+.preview-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.78rem;
+  color: #00f2fe;
+  margin-top: 4px;
 }
 </style>

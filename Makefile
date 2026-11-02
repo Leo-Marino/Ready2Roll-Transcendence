@@ -8,13 +8,11 @@ setup:
 	@mkdir -p /sgoinfre/$(USER)/ready2roll
 	@mkdir -p $(DATA_DIR)/pg_data
 	@mkdir -p $(DATA_DIR)/minio_data
-	@mkdir -p $(DATA_DIR)/redis_data
 
 up: setup
 	$(COMPOSE) build --parallel
 	$(COMPOSE) up -d
 # 	@echo Access to https://"$(USER)".42.fr
-
 
 
 down:
@@ -43,10 +41,32 @@ start:
 	docker vuejs_container
 # 	@echo Access to https://"$(USER)".42.fr
 
+save-database:
+	@docker compose exec django_backend python manage.py dumpdata > srcs/backend/demo_data.json
+	@echo "Database has been saved! You are ready to roll!"
+
+restore-database:
+	@docker compose exec django_backend python manage.py loaddata demo_data.json
+	@echo "Database is restored. You are ready to roll!"
+
+save-media:
+	@echo "Compressing MinIO media..."
+	@tar -czvf media_backup.tar.gz -C /sgoinfre/$(USER)/ready2roll/minio_data media/
+	@echo "Backup complete! You can now upload media_backup.tar.gz to Google Drive."
+
+restore-media: setup
+	@echo "Restoring MinIO media..."
+	@tar -xzvf media_backup.tar.gz -C /sgoinfre/$(USER)/ready2roll/minio_data
+	@rm -rf media_backup.tar.gz
+	@echo "Media restored successfully!"
+
+save-all: save-database save-media
+
+restore-all: restore-database restore-media
+
 reup: down up
 
 clean: down
-# 	sudo rm -rf $(DATA_DIR)
 
 fclean: clean
 	docker system prune --all --force

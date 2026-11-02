@@ -32,6 +32,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+	'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -48,6 +49,9 @@ INSTALLED_APPS = [
     'social',
     'notifications',
 ]
+
+#Loop for multiple connections without one having to wait for one to finish
+ASGI_APPLICATION = 'ready2roll.asgi.application'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -170,7 +174,7 @@ AWS_S3_ENDPOINT_URL = f"http://ready2roll-storage:9000"
 AWS_STORAGE_BUCKET_NAME = 'media'
 STORAGES = {
     "default": {
-        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        "BACKEND": "ready2roll.storage.MediaStorage",
     },
     "staticfiles": {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
@@ -183,5 +187,18 @@ AWS_S3_FILE_OVERWRITE = False
 AWS_DEFAULT_ACL = 'public-read'
 AWS_S3_REGION_NAME = 'us-east-1'
 AWS_S3_ADDRESSING_STYLE = 'path'
-AWS_S3_CUSTOM_DOMAIN = 'localhost:9000/media'
-MEDIA_URL = f"http://{AWS_S3_CUSTOM_DOMAIN}/"
+# Gli URL dei file sono relativi (/media/...), vedi ready2roll/storage.py:
+# nginx li inoltra a MinIO, quindi non serve scrivere l'IP del server.
+MEDIA_URL = '/media/'
+
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.pubsub.RedisPubSubChannelLayer",
+        "CONFIG": {
+            "hosts": [(os.getenv('REDIS_URL', 'redis://redis_cache:6379/0'))],
+            "capacity": 1500,
+            "expiry": 10,
+        },
+    },
+}
