@@ -13,6 +13,7 @@ const input = ref('');
 const isTyping = ref(false);
 const listRef = ref(null);
 const inputRef = ref(null);
+const props = defineProps({ eventId: { type: Number, default: null } });
 
 let nextId = 1;
 const makeMsg = (from, text) => ({ id: nextId++, from, text });
@@ -25,6 +26,10 @@ const suggestions = [
   'How do I find events?',
   'How do I subscribe?',
   'Who are you?',
+  'What kind of night is it?',
+  'Who is playing?',
+  'Where is it?',
+  'How much does it cost?',
 ];
 
 // ---------------------------------------------------------------------
@@ -71,12 +76,34 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  *   const data = await res.json();
  *   return data.reply;
  */
-const askBot = async (text /*, history */) => {
+const askLocal = async (text) => {
   await sleep(700 + Math.random() * 700);   // fake "thinking" time
   const hit = rules.find((r) => r.re.test(text));
   if (hit) return hit.reply;
   return fallbacks[fallbackIdx++ % fallbacks.length];
 };
+
+const getToken = () =>
+  localStorage.getItem('token') || localStorage.getItem('access') || localStorage.getItem('access_token');
+
+const askBot = async (text, history = []) => {
+  if (!props.eventId) return askLocal(text);          // nessun video attivo
+  try {
+    const res = await fetch(`/api/events/${props.eventId}/ask/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+      // send() ha già aggiunto la domanda corrente allo storico: la tolgo, il backend la aggiunge da solo
+      body: JSON.stringify({ question: text, history: history.slice(0, -1) }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.answer) return data.answer;
+    if (res.status === 429) return data.error || 'I need a minute, try again soon 🙏';
+  } catch (e) {
+    // rete o server non disponibili: uso le risposte locali
+  }
+  return askLocal(text);
+};
+
 
 // ---------------------------------------------------------------------
 //  UI logic

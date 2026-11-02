@@ -8,6 +8,7 @@ import ChatView from '../vue/ChatView.vue';
 import ProfileView from '../vue/ProfileView.vue';
 import SubscriptionsView from '../vue/SubscriptionsView.vue';
 import OtherUserProfileView from '../vue/OtherUserProfileView.vue';
+import SearchView from '../vue/SearchView.vue'
 
 const routes = [
   {
@@ -60,7 +61,9 @@ const routes = [
 {
     path: '/ViewEvent',
     redirect: '/profile'
-  }
+  },
+
+  { path: '/search', name: 'search', component: SearchView },
 ]
 
 const router = createRouter({

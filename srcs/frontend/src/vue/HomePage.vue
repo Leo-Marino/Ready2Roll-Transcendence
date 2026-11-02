@@ -1,6 +1,7 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import RChat from './RChat.vue';
+import SearchBar from './SearchBar.vue';
 
 //--------------------xh start----------------
 const props = defineProps({ mode: { type: String, default: 'for_you' } });
@@ -334,9 +335,10 @@ onBeforeUnmount(() => {
         <img src="../assets/logo_temp.png" alt="Ready2Roll Logo" class="nav-logo-img">
         <span class="logo-text">Ready2Roll</span>
       </div>
-      <div class="search-bar">
+      <!-- <div class="search-bar">
         <input type="text" placeholder="Search...">
-      </div>
+      </div> -->
+      <SearchBar />
       <div class="nav-icons">
         <router-link to="/chat" class="nav-icon-link">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
@@ -576,8 +578,7 @@ onBeforeUnmount(() => {
     </div>
   </div>
 
-  <!-- R Chat: floating assistant (frontend only for now) -->
-  <RChat />
+<RChat :event-id="activeEvent ? activeEvent.id : null" />
 </template>
 
 <style scoped>

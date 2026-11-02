@@ -13,6 +13,7 @@ export default {
       eventDate: '',
       maxCapacity: '',
       ticketPrice: '',
+      startTime:'',
       endTime: '',
       tags: '',
       availableTags: ['Disco', 'Strip', 'DJ', 'Rave', 'Nostalgia', 'VIP', 'Cocktail', '420'],
@@ -50,6 +51,7 @@ export default {
           this.descriptionText = ev.description || '';
           this.eventLocation = ev.location || 'YAB Club, Florence';
           this.eventDate = ev.event_date ? String(ev.event_date).slice(0, 16) : '';
+          this.startTime = this.eventDate;
           this.endTime = ev.end_time ? String(ev.end_time).slice(0, 16) : '';
           this.maxCapacity = ev.max_capacity || '';
           this.ticketPrice = ev.ticket_price || '';
@@ -133,7 +135,11 @@ export default {
       if (this.maxCapacity) formData.append('max_capacity', this.maxCapacity);
       if (this.ticketPrice) formData.append('ticket_price', this.ticketPrice);
       if (this.endTime) formData.append('end_time', this.endTime);
-
+      // start time = eventDAte
+      if (this.eventDate) {
+        formData.append('start_time', this.eventDate);
+      }
+      //------------------------------------------
       if (this.tags) {
         const tagsArray = this.tags.split(',').map(tag => tag.trim()).filter(Boolean);
         tagsArray.forEach(tag => {
@@ -375,7 +381,13 @@ function currenttagsIncludes(arr, val) {
                 required
               />
             </div>
-
+            <!-- <input
+              id="event-date"
+              type="datetime-local"
+              v-model="eventDate"
+              class="custom-input date-picker"
+              required
+            /> -->
             <div class="form-row">
               <div class="detail-input-group">
                 <label for="end-time">EVENT END & TIME</label>
@@ -983,37 +995,37 @@ textarea::placeholder {
   transform: translateY(-1px);
 }
 
-.business-badge { 
-  display: inline-flex; 
-  align-items: center; 
-  gap: 4px; 
-  background: rgba(0, 242, 254, 0.15); 
-  border: 1px solid #00f2fe; 
-  color: #00f2fe; 
-  padding: 2px 8px; 
-  border-radius: 12px; 
-  font-size: 0.65rem; 
-  font-weight: bold; 
-  letter-spacing: 0.5px; 
-  text-transform: uppercase; 
-  backdrop-filter: blur(4px); 
-  box-shadow: 0 0 6px rgba(0, 242, 254, 0.2); 
-} 
+.business-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 242, 254, 0.15);
+  border: 1px solid #00f2fe;
+  color: #00f2fe;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.65rem;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 0 6px rgba(0, 242, 254, 0.2);
+}
 
-.standard-badge { 
-  display: inline-flex; 
-  align-items: center; 
-  gap: 4px; 
-  background: rgba(255, 255, 255, 0.1); 
-  border: 1px solid rgba(255, 255, 255, 0.3); 
-  color: rgba(255, 255, 255, 0.85); 
-  padding: 2px 8px; 
-  border-radius: 12px; 
-  font-size: 0.65rem; 
-  font-weight: bold; 
-  letter-spacing: 0.5px; 
-  text-transform: uppercase; 
-  backdrop-filter: blur(4px); 
+.standard-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.85);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.65rem;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  backdrop-filter: blur(4px);
 }
 
 @media (max-width: 1200px) {

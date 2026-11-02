@@ -6,6 +6,18 @@ from .models import Event
 from .serializers import EventSerializer, FeedEventSerializer
 from events.serializers import FeedEventSerializer
 
+import logging
+
+from django.shortcuts import get_object_or_404
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.throttling import UserRateThrottle
+
+from .ai import AIBusyError, ask_about_event
+
+logger = logging.getLogger(__name__)
+
 class EventListCreateView(generics.ListCreateAPIView):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
@@ -61,3 +73,30 @@ class FeedView(generics.ListAPIView):
         return Response(self.get_serializer(ordered, many=True).data)
 
 
+class AskThrottle(UserRateThrottle):
+    rate = '10/min'   # tetto per utente: protegge la quota gratuita
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@throttle_classes([AskThrottle])
+def event_ask_view(request, event_id):
+    """POST /api/events/<id>/ask/   body: {question, history?}  ->  {answer}"""
+    event = get_object_or_404(
+        Event.objects.select_related('organizer').prefetch_related('tags'),
+        pk=event_id, status__iexact='active',
+    )
+    question = (request.data.get('question') or '').strip()
+    if not question or len(question) > 500:
+        return Response({'error': 'Question must be 1-500 characters.'},
+                        status=status.HTTP_400_BAD_REQUEST)
+    try:
+        answer = ask_about_event(event, question, request.data.get('history'))
+    except AIBusyError:
+        return Response({'error': 'The assistant is busy, try again in a minute.'},
+                        status=status.HTTP_429_TOO_MANY_REQUESTS)
+    except Exception:
+        logger.exception('AI assistant failed')
+        return Response({'error': 'The assistant is not available right now.'},
+                        status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    return Response({'answer': answer})
