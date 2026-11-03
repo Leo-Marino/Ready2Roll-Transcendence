@@ -2,6 +2,7 @@
 import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import EventMediaGrid from './EventMediaGrid.vue';//xh
+import SearchBar from './SearchBar.vue';
 
 const router = useRouter();
 const API = '/api';
@@ -16,19 +17,33 @@ const followList = ref([]);
 const showLogoutModal = ref(false);
 const isFollowListLoading = ref(false);
 
+// --- MAP MODAL STATE ---
+const showMapModal = ref(false);
+const activeMapLocation = ref('');
+const activeMapTitle = ref('');
+
+const openMapModal = (location, title, event) => {
+  if (event) event.stopPropagation();
+  activeMapLocation.value = location || 'Florence, Italy';
+  activeMapTitle.value = title || 'Event Location';
+  showMapModal.value = true;
+};
+
+const closeMapModal = () => {
+  showMapModal.value = false;
+};
+
 const openFollowModal = async (type) => {
   console.log('profile id:', userProfile.value.id);
   followModalType.value = type;
   showFollowModal.value = true;
   followList.value = [];
 
-  if (!userProfile.value.id) return; // Khass l'id ikoun wajd
+  if (!userProfile.value.id) return;
 
   isFollowListLoading.value = true;
   const token = getToken();
 
-  // N3zlo l'endpoint 3la 7sab l'click (followers wla following)
-  // T2kked mn sahbek mn l'path s7i7 dyal l'URL
   const endpoint = type === 'following'
     ? `${API}/users/${userProfile.value.id}/following/`
     : `${API}/users/${userProfile.value.id}/followers/`;
@@ -40,8 +55,6 @@ const openFollowModal = async (type) => {
     console.log('URL:', response.url, 'status:', response.status, 'type:', response.headers.get('content-type'));
     if (response.ok) {
       const data = await response.json();
-      // Kan-adaptiw data li rj3at m3a chno kaytsenna l'HTML dyalna
-      // Matalan ila l'backend kayrje3 {id, username, avatar_url}, ghadi nsiftouhom f followList
       followList.value = data.map(user => ({
         id: user.id,
         username: user.username,
@@ -82,20 +95,22 @@ const confirmLogout = () => {
   router.push('/login');
 };
 
-// --- SIDEBAR DATA ---
-
 // --- PROFILE DATA ---
 const userProfile = ref({
   id: null,
   name: 'Loading...',
   following: 0,
   followers: 0,
-  description: 'Loading...',
+  description: '',
   avatar: 'https://i.pravatar.cc/150?u=6',
   isBusiness: false
 });
 
 const myEvents = ref([]);
+const likedVideos = ref([
+  { id: 1, title: 'Video 1', media_type: 'image', media_src: '' },
+  { id: 2, title: 'Video 2', media_type: 'image', media_src: '' },
+]);
 const activeTab = ref('likes');
 const activePreviewEvent = ref(null);
 
@@ -196,6 +211,8 @@ onMounted(async () => {
     if (userProfile.value.isBusiness) {
       activeTab.value = 'events';
       fetchMyEvents();
+    } else {
+      activeTab.value = 'likes';
     }
     fetchLikedEvents();
   } catch (error) {
@@ -289,9 +306,10 @@ const saveProfile = async () => {
         <img src="../assets/logo_temp.png" alt="Ready2Roll Logo" class="nav-logo-img">
         <span class="logo-text">Ready2Roll</span>
       </div>
-      <div class="search-bar">
+      <!-- <div class="search-bar">
         <input type="text" placeholder="Search...">
-      </div>
+      </div> -->
+      <SearchBar />
       <div class="nav-icons">
         <router-link to="/direct" class="nav-icon-link" title="Direct Messages">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg>
@@ -331,7 +349,19 @@ const saveProfile = async () => {
           <img :src="userProfile.avatar" alt="Avatar" class="profile-avatar">
           <div class="profile-info">
             <div class="name-row">
-              <h2>{{ userProfile.name }} <span v-if="userProfile.isBusiness">💼</span></h2>
+              <h2>{{ userProfile.name }}</h2>
+              <div v-if="userProfile.isBusiness" class="business-badge" title="Business Account">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="badge-icon">
+                  <path fill-rule="evenodd" d="M7.5 5.25a3 3 0 013-3h3a3 3 0 013 3v.205c.933.085 1.858.197 2.774.334 1.454.218 2.476 1.483 2.476 2.917v3.033c0 1.211-.734 2.302-1.855 2.748-1.01.404-2.083.719-3.201 9.385a19.78 19.78 0 01-5.748 0 25.206 25.206 0 01-3.201-.938 2.955 2.955 0 01-1.855-2.748V8.705c0-1.434 1.022-2.7 2.477-2.917A48.816 48.816 0 017.5 5.455V5.25zm7.5 0v.09a49.488 49.488 0 00-6 0v-.09a1.5 1.5 0 011.5-1.5h3a1.5 1.5 0 011.5 1.5zm-15 8.25a.75.75 0 01.75-.75h2.25a.75.75 0 010 1.5H3.25a.75.75 0 01-.75-.75z" clip-rule="evenodd" />
+                </svg>
+                <span>Business</span>
+              </div>
+              <div v-else class="standard-badge" title="Standard Account">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="badge-icon">
+                  <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clip-rule="evenodd" />
+                </svg>
+                <span>Standard</span>
+              </div>
             </div>
             <div class="stats-row">
               <span class="clickable-stat" @click="openFollowModal('following')">
@@ -342,16 +372,22 @@ const saveProfile = async () => {
               </span>
             </div>
             <div class="description-box">
-              <p>{{ userProfile.description }}</p>
+              <p :class="{ 'empty-bio': !userProfile.description }">
+                {{ userProfile.description || 'This user has not set a bio yet' }}
+              </p>
             </div>
           </div>
 
-          <div class="action-buttons">
-            <button v-if="userProfile.isBusiness" class="create-event-btn" @click="goToCreateEvent">
-              Create Event 📅
+          <div class="action-buttons-styled">
+            <button v-if="userProfile.isBusiness" class="action-pill create-pill" @click="goToCreateEvent">
+              <span>Create Event</span>
             </button>
-            <button class="edit-btn" @click="openEditModal">Edit profile</button>
-            <button class="logout-btn" @click="openLogoutModal">Logout</button>
+            <button class="action-pill edit-pill" @click="openEditModal">
+              <span>Edit Profile</span>
+            </button>
+            <button class="action-pill logout-pill" @click="openLogoutModal">
+              <span>Logout</span>
+            </button>
           </div>
         </div>
 
@@ -399,7 +435,9 @@ const saveProfile = async () => {
               <div class="reel-overlay-content">
                 <h3 class="event-title">{{ event.title }}</h3>
                 <div class="event-info-row">
-                  <span>📍 {{ event.location }}</span>
+                  <span class="clickable-location" @click="openMapModal(event.location, event.title, $event)">
+                    📍 {{ event.location || 'Location TBD' }}
+                  </span>
                   <span>📅 {{ event.event_date ? event.event_date.slice(0, 10) : '' }}</span>
                 </div>
                 <p class="event-description-truncated">
@@ -413,7 +451,10 @@ const saveProfile = async () => {
 
                 <div class="card-actions">
                   <button class="action-btn edit-btn-card" @click.stop="openEdit(event)">
-                    ✏️ Edit
+                    Edit
+                  </button>
+                  <button class="action-btn delete-btn-card" @click.stop="deleteEvent(event, $event)">
+                    Delete
                   </button>
                 </div>
               </div>
@@ -458,7 +499,7 @@ const saveProfile = async () => {
 
       <div class="stats-info-box">
         <div class="stats-header">
-          <span class="status-badge-inline" :class="activePreviewEvent.status ? activePreviewEvent.status.toLowerCase() : ''">
+          <span class="status-badge-inline" :class="activePreviewEvent.status ? activePreviewEvent.status.toLowerCase() : ''" v-if="activePreviewEvent.status">
             {{ activePreviewEvent.status }}
           </span>
           <h2>{{ activePreviewEvent.title }}</h2>
@@ -482,7 +523,7 @@ const saveProfile = async () => {
             </div>
           </div>
 
-          <div class="metric-card">
+          <div class="metric-card" v-if="activePreviewEvent.ticket_price !== undefined">
             <span class="metric-icon">🎟️</span>
             <div class="metric-data">
               <strong>{{ activePreviewEvent.ticket_price ? `€${activePreviewEvent.ticket_price}` : 'Free' }}</strong>
@@ -490,7 +531,7 @@ const saveProfile = async () => {
             </div>
           </div>
 
-          <div class="metric-card">
+          <div class="metric-card" v-if="activePreviewEvent.max_capacity !== undefined">
             <span class="metric-icon">👥</span>
             <div class="metric-data">
               <strong>{{ activePreviewEvent.max_capacity || '∞' }}</strong>
@@ -499,14 +540,49 @@ const saveProfile = async () => {
           </div>
         </div>
 
-        <div class="stats-meta-list">
-          <div><strong>📍 Location:</strong> {{ activePreviewEvent.location || 'TBD' }}</div>
+        <div class="stats-meta-list" v-if="activePreviewEvent.location">
+          <div>
+            <strong>📍 Location:</strong>
+            <span class="clickable-location" @click="openMapModal(activePreviewEvent.location, activePreviewEvent.title)">
+              {{ activePreviewEvent.location }} 🗺️ (View Map)
+            </span>
+          </div>
           <div><strong>📅 Date:</strong> {{ activePreviewEvent.event_date ? activePreviewEvent.event_date.replace('T', ' ').slice(0, 16) : 'TBD' }}</div>
         </div>
 
-        <button class="create-event-btn" style="width: 100%; margin-top: auto;" @click="openEdit(activePreviewEvent)">
-          ✏️ Edit this Event
-        </button>
+        <div style="display: flex; gap: 10px; margin-top: auto;">
+          <button v-if="userProfile.isBusiness && activePreviewEvent.id" class="create-event-btn" style="flex: 1;" @click="openEdit(activePreviewEvent)">
+            ✏️ Edit
+          </button>
+          <button v-if="userProfile.isBusiness && activePreviewEvent.id" class="action-btn delete-btn-card" style="flex: 1; padding: 12px; font-size: 0.85rem;" @click="deleteEvent(activePreviewEvent)">
+            🗑️ Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAP POPUP MODAL (Larger Size) -->
+  <div v-if="showMapModal" class="modal-overlay" @click.self="closeMapModal">
+    <div class="modal-content map-modal-card glass-panel">
+      <div class="modal-header">
+        <h3>📍 {{ activeMapTitle }}</h3>
+        <button class="close-modal-btn stats-close-btn" @click="closeMapModal">✕</button>
+      </div>
+      <div class="map-modal-body">
+        <p style="margin-top: 0; color: #00f2fe; font-size: 0.95rem;">{{ activeMapLocation }}</p>
+        <div class="map-popup-wrapper">
+          <iframe
+            width="100%"
+            height="100%"
+            frameborder="0"
+            scrolling="no"
+            marginheight="0"
+            marginwidth="0"
+            :src="`https://maps.google.com/maps?q=${encodeURIComponent(activeMapLocation)}&t=&z=16&ie=UTF8&iwloc=&output=embed`"
+            class="map-iframe-popup"
+          ></iframe>
+        </div>
       </div>
     </div>
   </div>
@@ -570,7 +646,6 @@ const saveProfile = async () => {
       <div class="modal-body list-body">
         <ul class="follow-list" v-if="!isFollowListLoading">
           <li v-for="user in followList" :key="user.id" class="follow-item">
-            <!-- Tqder tzid hna router-link bach mli tclicki 3la chi 7ed f liste idik l profile dyalo -->
             <router-link :to="{ name: 'UserProfile', params: { id: user.id } }" style="display: flex; align-items: center; gap: 15px; text-decoration: none; color: white;">
               <img :src="user.avatar" alt="avatar" class="avatar-small">
               <span>{{ user.username }}</span>
@@ -625,15 +700,102 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 .profile-header { display: flex; align-items: flex-start; gap: 30px; position: relative; }
 .profile-avatar { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; }
 .profile-info { display: flex; flex-direction: column; gap: 10px; flex-grow: 1; }
-.name-row h2 { margin: 0; display: flex; align-items: center; gap: 5px; }
+.name-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.name-row h2 { margin: 0; }
+
+.business-badge {
+   display: inline-flex;
+   align-items: center;
+   gap: 6px;
+   background: rgba(0, 242, 254, 0.15);
+   border: 1px solid #00f2fe;
+   color: #00f2fe;
+   padding: 3px 10px;
+   border-radius: 20px;
+   font-size: 0.75rem;
+   font-weight: bold;
+   letter-spacing: 0.5px;
+   text-transform: uppercase;
+   backdrop-filter: blur(4px);
+   box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
+ }
+
+ .standard-badge {
+   display: inline-flex;
+   align-items: center;
+   gap: 6px;
+   background: rgba(255, 255, 255, 0.1);
+   border: 1px solid rgba(255, 255, 255, 0.3);
+   color: rgba(255, 255, 255, 0.85);
+   padding: 3px 10px;
+   border-radius: 20px;
+   font-size: 0.75rem;
+   font-weight: bold;
+   letter-spacing: 0.5px;
+   text-transform: uppercase;
+   backdrop-filter: blur(4px);
+ }
+
+.badge-icon {
+  width: 14px;
+  height: 14px;
+}
+
 .stats-row { display: flex; gap: 20px; font-size: 1rem; }
 .description-box { background: rgba(255, 255, 255, 0.05); padding: 10px 15px; border-radius: 10px; min-height: 50px; width: 60%; border: 1px solid rgba(255, 255, 255, 0.2); }
-.action-buttons {
+.empty-bio { color: rgba(255, 255, 255, 0.4); font-style: italic; }
+.action-buttons-styled {
   position: absolute;
   bottom: 20px;
   right: 20px;
   display: flex;
-  gap: 10px;
+  gap: 12px;
+  align-items: center;
+}
+
+.action-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(6px);
+}
+
+.create-pill {
+  background: rgba(0, 242, 254, 0.2);
+  border-color: #00f2fe;
+  color: #00f2fe;
+}
+.create-pill:hover {
+  background: #00f2fe;
+  color: #000;
+  box-shadow: 0 0 15px rgba(0, 242, 254, 0.4);
+}
+
+.edit-pill {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+.edit-pill:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.logout-pill {
+  background: rgba(214, 48, 49, 0.2);
+  border-color: #ff7675;
+  color: #ff7675;
+}
+.logout-pill:hover {
+  background: #d63031;
+  color: #fff;
+  box-shadow: 0 0 15px rgba(214, 48, 49, 0.4);
 }
 .edit-btn {
   background: rgba(255, 255, 255, 0.15);
@@ -781,6 +943,17 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 .action-btn { flex: 1; padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.1); color: #ffffff; font-size: 0.7rem; cursor: pointer; transition: all 0.3s ease; }
 .edit-btn-card:hover { background: rgba(255, 255, 255, 0.25); border-color: rgba(255, 255, 255, 0.4); }
 
+.delete-btn-card {
+  background: rgba(214, 48, 49, 0.2);
+  border-color: rgba(255, 118, 117, 0.5);
+  color: #ff7675;
+}
+.delete-btn-card:hover {
+  background: #d63031;
+  color: #fff;
+  border-color: #d63031;
+}
+
 .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
 .modal-content { background: #1e1e1e; width: 500px; max-width: 90%; border-radius: 12px; border: 1px solid #333; color: white; display: flex; flex-direction: column; }
 .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid #333; }
@@ -793,9 +966,6 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 .input-area { flex-grow: 1; display: flex; flex-direction: column; gap: 5px; }
 .input-area input, .input-area textarea, .custom-select { width: 100%; background: #2a2a2a; border: 1px solid #444; color: white; padding: 10px; border-radius: 6px; font-family: inherit; }
 .helper-text { font-size: 0.75rem; color: #aaa; margin: 0; }
-.photo-edit-area { position: relative; display: inline-block; cursor: pointer; }
-.edit-avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; }
-.edit-pencil { position: absolute; bottom: 0; right: 0; background: #333; padding: 4px; border-radius: 50%; font-size: 0.8rem; }
 .hidden-file-input { display: none; }
 .modal-footer { padding: 15px 20px; border-top: 1px solid #333; display: flex; justify-content: flex-end; gap: 10px; }
 .modal-footer button { padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; }
@@ -1072,4 +1242,42 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 .menu-item { display: flex; align-items: center; padding: 12px 15px; color: #FFFFFF; text-decoration: none; border-radius: 10px; transition: all 0.2s ease-in-out; cursor: pointer; }
 .menu-item:hover { background: rgba(255, 255, 255, 0.1); }
 
+/* Clickable Location Link Styling */
+.clickable-location {
+  cursor: pointer;
+  color: #00f2fe;
+  transition: opacity 0.2s;
+  display: inline-block;
+}
+.clickable-location:hover {
+  text-decoration: underline;
+  opacity: 0.85;
+}
+
+/* Larger Map Modal Styling */
+.map-modal-card {
+  background: rgba(20, 20, 30, 0.95) !important;
+  border: 1px solid rgba(0, 242, 254, 0.4) !important;
+  width: 700px !important;
+  max-width: 95% !important;
+  border-radius: 20px !important;
+}
+.map-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.map-popup-wrapper {
+  width: 100%;
+  height: 480px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.map-iframe-popup {
+  width: 100%;
+  height: 100%;
+  filter: invert(90%) hue-rotate(180deg) contrast(80%);
+}
 </style>

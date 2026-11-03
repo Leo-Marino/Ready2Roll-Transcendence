@@ -229,9 +229,8 @@ class ContactsView(APIView):
                 "lastMsgAt": last_at,
                 "unread": unread.get(u.id, 0),
             })
-
         return Response(data)
-        # Latest conversation first; users we never talked to go at the bottom (A-Z)
+    # Latest conversation first; users we never talked to go at the bottom (A-Z)
         with_msgs = sorted((d for d in data if d["lastMsgAt"]), key=lambda d: d["lastMsgAt"], reverse=True)
         without = sorted((d for d in data if not d["lastMsgAt"]), key=lambda d: d["name"].lower())
         return Response(with_msgs + without)

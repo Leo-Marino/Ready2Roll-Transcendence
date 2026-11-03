@@ -13,8 +13,10 @@ export default {
       eventDate: '',
       maxCapacity: '',
       ticketPrice: '',
+      startTime:'',
       endTime: '',
       tags: '',
+      availableTags: ['Disco', 'Strip', 'DJ', 'Rave', 'Nostalgia', 'VIP', 'Cocktail', '420'],
       eventStatus: 'draft',
       uploadedMediaSrc: null,
       actualFile: null,
@@ -28,13 +30,16 @@ export default {
       const parts = this.eventDate.split('T')[0].split('-');
       if (parts.length === 3) {
         const [year, month, day] = parts;
-        return `${day}/${month}/${day}`;
+        return `${day}/${month}/${year}`;
       }
       return this.eventDate;
+    },
+    selectedTagsList() {
+      if (!this.tags) return [];
+      return this.tags.split(',').map(t => t.trim()).filter(Boolean);
     }
   },
   mounted() {
-    // Nchoufo wach dkhla l'page 3la wd Edit
     if (this.$route.query.edit === 'true') {
       const savedEvent = localStorage.getItem('editingEvent');
       if (savedEvent) {
@@ -45,8 +50,8 @@ export default {
           this.eventTitle = ev.title || '';
           this.descriptionText = ev.description || '';
           this.eventLocation = ev.location || 'YAB Club, Florence';
-          // Format dyal datetime-local khasso ykon YYYY-MM-DDTHH:mm
           this.eventDate = ev.event_date ? String(ev.event_date).slice(0, 16) : '';
+          this.startTime = this.eventDate;
           this.endTime = ev.end_time ? String(ev.end_time).slice(0, 16) : '';
           this.maxCapacity = ev.max_capacity || '';
           this.ticketPrice = ev.ticket_price || '';
@@ -59,7 +64,6 @@ export default {
         }
       }
     } else {
-      // Ila dkhl 3adi bach ysayb event jdid, nms7o ay data qdima
       localStorage.removeItem('editingEvent');
     }
   },
@@ -72,6 +76,18 @@ export default {
     },
     toggleMapBox() {
       this.showMapBox = !this.showMapBox;
+    },
+    toggleTag(tagName) {
+      let currentTags = this.selectedTagsList;
+      if (currenttagsIncludes(currentTags, tagName)) {
+        currentTags = currentTags.filter(t => t.toLowerCase() !== tagName.toLowerCase());
+      } else {
+        currentTags.push(tagName);
+      }
+      this.tags = currentTags.join(', ');
+    },
+    isTagSelected(tagName) {
+      return this.selectedTagsList.some(t => t.toLowerCase() === tagName.toLowerCase());
     },
     handleFileUpload(event) {
       const file = event.target.files[0];
@@ -92,6 +108,20 @@ export default {
         alert("All mandatory fields must be filled !");
         return;
       }
+      if (!this.isEditMode && !this.actualFile) {
+        alert("Please insert a photo or video before publishing the event!");
+        return;
+      }
+
+      // Controllo valori negativi per Max Capacity e Ticket Price
+      if (this.maxCapacity !== '' && Number(this.maxCapacity) < 0) {
+        alert("Max capacity cannot be less than 0!");
+        return;
+      }
+      if (this.ticketPrice !== '' && Number(this.ticketPrice) < 0) {
+        alert("Ticket price cannot be less than 0!");
+        return;
+      }
 
       const token = localStorage.getItem('token') || localStorage.getItem('access') || localStorage.getItem('access_token');
       const formData = new FormData();
@@ -105,7 +135,11 @@ export default {
       if (this.maxCapacity) formData.append('max_capacity', this.maxCapacity);
       if (this.ticketPrice) formData.append('ticket_price', this.ticketPrice);
       if (this.endTime) formData.append('end_time', this.endTime);
-
+      // start time = eventDAte
+      if (this.eventDate) {
+        formData.append('start_time', this.eventDate);
+      }
+      //------------------------------------------
       if (this.tags) {
         const tagsArray = this.tags.split(',').map(tag => tag.trim()).filter(Boolean);
         tagsArray.forEach(tag => {
@@ -113,7 +147,6 @@ export default {
         });
       }
 
-      // Ila bddel l'video wla tswira, nsifto l'fichier jdid
       if (this.actualFile) {
         formData.append('media_file', this.actualFile);
         formData.append('media_type', this.mediaType);
@@ -121,7 +154,6 @@ export default {
         formData.append('media_type', this.mediaType);
       }
 
-      // Ila kna f Edit Mode, nsifto PUT l /api/events/<id>/, sinon POST l /api/events/
       const url = this.isEditMode ? `/api/events/${this.editingEventId}/` : '/api/events/';
       const method = this.isEditMode ? 'PUT' : 'POST';
 
@@ -137,7 +169,7 @@ export default {
         if (response.ok) {
           const savedEvent = await response.json();
           localStorage.removeItem('editingEvent');
-          alert(this.isEditMode ? "Event updated successfully!" : "Event created successfully!");
+          alert(this.isEditMode ? "Event updated successfully!" : (this.eventStatus === 'scheduled' ? "Event scheduled successfully!" : "Event created successfully!"));
           this.$emit('event-published', savedEvent);
           this.goToVisualPage();
         }
@@ -168,6 +200,11 @@ export default {
       this.$emit('navigate-view');
     }
   }
+}
+
+// Helper interno per la ricerca dei tag selezionati
+function currenttagsIncludes(arr, val) {
+  return arr.some(t => t.toLowerCase() === val.toLowerCase());
 }
 </script>
 
@@ -318,7 +355,7 @@ export default {
                 v-model="descriptionText"
                 placeholder="Describe your event..."
                 class="custom-input textarea-input"
-                rows="2"
+                rows="1"
                 required
               ></textarea>
             </div>
@@ -344,7 +381,13 @@ export default {
                 required
               />
             </div>
-
+            <!-- <input
+              id="event-date"
+              type="datetime-local"
+              v-model="eventDate"
+              class="custom-input date-picker"
+              required
+            /> -->
             <div class="form-row">
               <div class="detail-input-group">
                 <label for="end-time">EVENT END & TIME</label>
@@ -363,6 +406,7 @@ export default {
                 <input
                   id="max-capacity"
                   type="number"
+                  min="0"
                   v-model="maxCapacity"
                   placeholder="E.g. 500"
                   class="custom-input"
@@ -374,6 +418,7 @@ export default {
                   id="ticket-price"
                   type="number"
                   step="0.01"
+                  min="0"
                   v-model="ticketPrice"
                   placeholder="E.g. 15.00"
                   class="custom-input"
@@ -381,24 +426,31 @@ export default {
               </div>
             </div>
 
-            <div class="detail-input-group">
-              <label for="tags">TAGS</label>
-              <input
-                id="tags"
-                type="text"
-                v-model="tags"
-                placeholder="E.g. party, club, dj"
-                class="custom-input"
-              />
-            </div>
-
+            <!-- STATUS POSTO PRIMA DEI TAGS -->
             <div class="detail-input-group">
               <label for="event-status">STATUS *</label>
               <select id="event-status" v-model="eventStatus" class="custom-input custom-select" required>
                 <option value="active">Active</option>
                 <option value="draft">Draft</option>
-                <option value="cancelled">Cancelled</option>
+                <option value="scheduled">Scheduled</option>
               </select>
+            </div>
+
+            <!-- TAGS POSTI SOTTO ALLO STATUS -->
+            <div class="detail-input-group">
+              <label>TAGS</label>
+              <div class="tag-selector-container">
+                <div
+                  v-for="t in availableTags"
+                  :key="t"
+                  @click="toggleTag(t)"
+                  :class="isTagSelected(t) ? 'business-badge' : 'standard-badge'"
+                  class="selectable-tag-pill"
+                >
+                  <span>{{ isTagSelected(t) ? '✓' : '+' }}</span>
+                  <span>{{ t }}</span>
+                </div>
+              </div>
             </div>
 
           </div>
@@ -408,7 +460,7 @@ export default {
 
       <div class="publish-action-bar">
         <button class="publish-btn" @click="handlePublish">
-          {{ isEditMode ? 'SAVE CHANGES' : 'PUBLISH EVENT' }}
+          {{ isEditMode ? 'SAVE CHANGES' : (eventStatus === 'scheduled' ? 'SCHEDULE EVENT' : 'PUBLISH EVENT') }}
         </button>
       </div>
     </section>
@@ -419,14 +471,24 @@ export default {
 <style scoped>
 @import url('https://cdn.jsdelivr.net/gh/justfont/open-huninn-font@1.1/font/jf-openhuninn.css');
 
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
 .owner-visual-wrapper {
   position: relative;
-  min-height: 100vh;
-  width: 100%;
+  height: 100vh;
+  width: 100vw;
   color: #ffffff;
   font-family: 'jf-openhuninn', 'Huninn', sans-serif;
   box-sizing: border-box;
-  padding-bottom: 50px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .page-title {
@@ -480,6 +542,7 @@ textarea::placeholder {
   margin: 0 auto;
   padding: 10px 20px;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .page-title-row {
@@ -487,7 +550,7 @@ textarea::placeholder {
   justify-content: space-between;
   align-items: center;
   max-width: 1550px;
-  margin: 0 auto 20px auto;
+  margin: 0 auto 15px auto;
   flex-wrap: wrap;
   gap: 15px;
 }
@@ -521,16 +584,14 @@ textarea::placeholder {
   padding: 12px 30px;
   width: calc(100% - 40px);
   max-width: 1550px;
-  margin: 15px auto 0 auto;
+  margin: 15px auto 15px auto;
   box-sizing: border-box;
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 16px;
-  position: sticky;
-  top: 15px;
-  z-index: 1000;
+  flex-shrink: 0;
 }
 
 .nav-left, .nav-right {
@@ -596,7 +657,6 @@ textarea::placeholder {
   box-sizing: border-box;
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  transition: all 0.5s ease;
   max-width: 1550px;
   margin: 0 auto;
 }
@@ -646,7 +706,7 @@ textarea::placeholder {
 }
 
 .right-section {
-  width: 420px;
+  width: 380px;
   flex-shrink: 0;
 }
 
@@ -670,24 +730,27 @@ textarea::placeholder {
   padding-right: 0;
 }
 
-/* Transparent Glass Content Boxes Restored */
+/* Event Details Box - Spaziatura aumentata e field ingranditi */
 .event-details-bar-vertical {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background: rgba(0, 0, 0, 0.3);
-  padding: 20px;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  max-height: 680px;
-  overflow-y: auto;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 18px 16px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(12px);
+  width: 380px;
+  height: 525px;
+  box-sizing: border-box;
+  overflow: hidden;
   cursor: default;
   transition: border 0.3s ease, box-shadow 0.3s ease;
 }
 
 .form-row {
   display: flex;
-  gap: 10px;
+  gap: 12px;
 }
 
 .form-row .detail-input-group {
@@ -702,7 +765,7 @@ textarea::placeholder {
 }
 
 .detail-input-group label {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: rgba(255, 255, 255, 0.75);
   letter-spacing: 0.5px;
 }
@@ -720,7 +783,9 @@ textarea::placeholder {
 }
 
 .textarea-input {
-  resize: vertical;
+  resize: none;
+  min-height: 36px;
+  max-height: 36px;
 }
 
 .date-picker {
@@ -737,6 +802,7 @@ textarea::placeholder {
   color: #ffffff;
 }
 
+/* Media Outer Wrapper - Altezza perfettamente identica a event details (525px) */
 .media-outer-wrapper {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -748,7 +814,7 @@ textarea::placeholder {
   justify-content: center;
   align-items: center;
   width: 380px;
-  height: 535px;
+  height: 525px;
   flex-shrink: 0;
   cursor: default;
   transition: border 0.3s ease, box-shadow 0.3s ease;
@@ -785,19 +851,20 @@ textarea::placeholder {
   align-items: center;
   justify-content: center;
   position: relative;
+  font-size: 0.8rem;
 }
 
 .media-map-toggle-btn {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 10px;
+  right: 10px;
   z-index: 10;
   background: rgba(0, 0, 0, 0.7);
   border: 1px solid #00f2fe;
   color: #00f2fe;
-  padding: 6px 12px;
-  border-radius: 10px;
-  font-size: 0.75rem;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 0.7rem;
   font-weight: bold;
   cursor: pointer;
   backdrop-filter: blur(4px);
@@ -811,16 +878,16 @@ textarea::placeholder {
 
 .media-remove-btn {
   position: absolute;
-  top: 12px;
-  left: 12px;
+  top: 10px;
+  left: 10px;
   z-index: 10;
   background: rgba(214, 48, 49, 0.8);
   border: 1px solid #ff7675;
   color: #ffffff;
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   font-weight: bold;
   display: flex;
   align-items: center;
@@ -849,7 +916,7 @@ textarea::placeholder {
 
 .map-container-inline {
   width: 380px;
-  height: 535px;
+  height: 525px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 24px;
@@ -885,7 +952,7 @@ textarea::placeholder {
 }
 
 .publish-action-bar {
-  margin-top: 25px;
+  margin-top: 20px;
   display: flex;
   justify-content: center;
 }
@@ -894,10 +961,10 @@ textarea::placeholder {
   background: rgba(0, 242, 254, 0.2);
   border: 1px solid #00f2fe;
   color: #00f2fe;
-  padding: 14px 40px;
-  font-size: 0.95rem;
+  padding: 12px 35px;
+  font-size: 0.9rem;
   font-weight: bold;
-  border-radius: 14px;
+  border-radius: 12px;
   cursor: pointer;
   box-shadow: 0 0 15px rgba(0, 242, 254, 0.3);
   transition: all 0.3s ease;
@@ -910,18 +977,73 @@ textarea::placeholder {
   transform: translateY(-2px);
 }
 
+/* Tag Selector Box Styles */
+.tag-selector-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.selectable-tag-pill {
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.selectable-tag-pill:hover {
+  transform: translateY(-1px);
+}
+
+.business-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 242, 254, 0.15);
+  border: 1px solid #00f2fe;
+  color: #00f2fe;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.65rem;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 0 6px rgba(0, 242, 254, 0.2);
+}
+
+.standard-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.85);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.65rem;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  backdrop-filter: blur(4px);
+}
+
 @media (max-width: 1200px) {
   .preview-box {
     flex-direction: column;
     align-items: center;
   }
-  .right-section {
+  .right-section,
+  .event-details-bar-vertical {
     width: 100%;
+    max-width: 480px;
+    height: auto;
   }
   .map-container-inline,
   .media-outer-wrapper {
     width: 100%;
     max-width: 480px;
+    height: 440px;
   }
 }
 </style>
