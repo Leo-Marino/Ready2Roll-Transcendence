@@ -323,20 +323,58 @@ const saveProfile = async () => {
       </div>
     </header>
 
-    <div class="main-content">
-      <!-- Left Sidebar -->
+        <div class="main-content">
       <aside class="left-sidebar glass-panel">
         <nav class="main-menu">
           <h3>Menu</h3>
           <ul>
-            <li>
-              <router-link to="/home" class="menu-item">🏠 For you</router-link>
+            <li @click="$router.push('/home')" class="menu-item">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="menu-svg-icon"
+              >
+                <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/>
+                <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              </svg>
+              <span>For you</span>
             </li>
-            <li>
-              <router-link to="/subscriptions" class="menu-item">👤 Subscription</router-link>
+            <li @click="$router.push('/subscriptions')" class="menu-item">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="menu-svg-icon"
+              >
+                <path d="M16.051 12.616a1 1 0 0 1 1.909.024l.737 1.452a1 1 0 0 0 .737.535l1.634.256a1 1 0 0 1 .588 1.806l-1.172 1.168a1 1 0 0 0-.282.866l.259 1.613a1 1 0 0 1-1.541 1.134l-1.465-.75a1 1 0 0 0-.912 0l-1.465.75a1 1 0 0 1-1.539-1.133l.258-1.613a1 1 0 0 0-.282-.866l-1.156-1.153a1 1 0 0 1 .572-1.822l1.633-.256a1 1 0 0 0 .737-.535z"/>
+                <path d="M8 15H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/>
+              </svg>
+              <span>subscriptions</span>
             </li>
-            <li>
-              <router-link to="/discover" class="menu-item">🧭 Discover</router-link>
+            <li @click="$router.push('/discover')" class="menu-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-svg-icon">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M8 16l2 -6l6 -2l-2 6l-6 2" />
+                  <path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                  <path d="M12 3l0 2" />
+                  <path d="M12 19l0 2" />
+                  <path d="M3 12l2 0" />
+                  <path d="M19 12l2 0" />
+                </svg>
+              <span>discover</span>
             </li>
           </ul>
         </nav>
@@ -349,20 +387,16 @@ const saveProfile = async () => {
           <img :src="userProfile.avatar" alt="Avatar" class="profile-avatar">
           <div class="profile-info">
             <div class="name-row">
-              <h2>{{ userProfile.name }}</h2>
-              <div v-if="userProfile.isBusiness" class="business-badge" title="Business Account">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="badge-icon">
-                  <path fill-rule="evenodd" d="M7.5 5.25a3 3 0 013-3h3a3 3 0 013 3v.205c.933.085 1.858.197 2.774.334 1.454.218 2.476 1.483 2.476 2.917v3.033c0 1.211-.734 2.302-1.855 2.748-1.01.404-2.083.719-3.201 9.385a19.78 19.78 0 01-5.748 0 25.206 25.206 0 01-3.201-.938 2.955 2.955 0 01-1.855-2.748V8.705c0-1.434 1.022-2.7 2.477-2.917A48.816 48.816 0 017.5 5.455V5.25zm7.5 0v.09a49.488 49.488 0 00-6 0v-.09a1.5 1.5 0 011.5-1.5h3a1.5 1.5 0 011.5 1.5zm-15 8.25a.75.75 0 01.75-.75h2.25a.75.75 0 010 1.5H3.25a.75.75 0 01-.75-.75z" clip-rule="evenodd" />
-                </svg>
-                <span>Business</span>
-              </div>
-              <div v-else class="standard-badge" title="Standard Account">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="badge-icon">
-                  <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clip-rule="evenodd" />
-                </svg>
-                <span>Standard</span>
-              </div>
-            </div>
+                <h2>
+                  {{ userProfile.name }}
+                  <!-- VERIFIED BADGE (Cyan background with WHITE tick) -->
+                 <svg v-if="userProfile.isBusiness" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="#00f2fe" stroke="#00f2fe" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="verified-badge" title="Business Account">
+                   <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/>
+                   <!-- Had l'path hwa l'tick, dertlih stroke byad w ghelledt l'khett chwya bach yban wadeh -->
+                   <path d="m16 9-5.5 5.5L8 12" stroke="#ffffff" stroke-width="2.5"/>
+                 </svg>
+               </h2>
+             </div>
             <div class="stats-row">
               <span class="clickable-stat" @click="openFollowModal('following')">
                 <strong>{{ userProfile.following }}</strong> following
@@ -393,8 +427,54 @@ const saveProfile = async () => {
 
         <!-- Profile Tabs -->
         <div class="profile-tabs glass-panel">
-          <div v-if="userProfile.isBusiness" class="tab" :class="{ active: activeTab === 'events' }" @click="activeTab = 'events'"><span>📅 My Events</span></div>
-          <div class="tab" :class="{ active: activeTab === 'likes' }" @click="activeTab = 'likes'"><span>🖤 Likes</span></div>
+          <div
+            v-if="userProfile.isBusiness"
+            class="tab"
+            :class="{ active: activeTab === 'events' }"
+            @click="activeTab = 'events'"
+          >
+            <span class="tab-label">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="tab-icon"
+              >
+                <path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M8 13h.01"/><path d="M12 13h.01"/><path d="M16 13h.01"/><path d="M8 17h.01"/><path d="M12 17h.01"/><path d="M16 17h.01"/>
+              </svg>
+              My Events
+            </span>
+          </div>
+
+          <div
+            class="tab"
+            :class="{ active: activeTab === 'likes' }"
+            @click="activeTab = 'likes'"
+          >
+            <span class="tab-label">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="tab-icon"
+              >
+                <path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/>
+              </svg>
+              Likes
+            </span>
+          </div>
         </div>
 
         <!-- EVENTS TAB CONTENT (Business Only) -->
@@ -432,35 +512,49 @@ const saveProfile = async () => {
                 {{ event.status }}
               </span>
 
+<!-- Content Overlay on top of Media -->
               <div class="reel-overlay-content">
                 <h3 class="event-title">{{ event.title }}</h3>
+
                 <div class="event-info-row">
-                  <span class="clickable-location" @click="openMapModal(event.location, event.title, $event)">
-                    📍 {{ event.location || 'Location TBD' }}
+                  <span class="meta-item clickable-location" @click="openMapModal(event.location, event.title, $event)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ui-icon lucide lucide-map-pin"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+                    {{ event.location || 'Location TBD' }}
                   </span>
-                  <span>📅 {{ event.event_date ? event.event_date.slice(0, 10) : '' }}</span>
+
+                  <span class="meta-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ui-icon lucide lucide-calendar-days"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M8 13h.01"/><path d="M12 13h.01"/><path d="M16 13h.01"/><path d="M8 17h.01"/><path d="M12 17h.01"/><path d="M16 17h.01"/></svg>
+                    {{ event.event_date ? event.event_date.slice(0, 10) : '' }}
+                  </span>
                 </div>
+
                 <p class="event-description-truncated">
                   {{ event.description || 'No description was inserted' }}
                 </p>
 
+                <!-- Quick mini stats on card -->
                 <div class="mini-stats-row">
-                  <span>❤️ {{ event.likes_count || 0 }}</span>
-                  <span>💬 {{ event.comments_count || 0 }}</span>
+                  <span class="meta-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ui-icon lucide lucide-heart"><path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/></svg>
+                    {{ event.likes_count || 0 }}
+                  </span>
+                  <span class="meta-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ui-icon lucide lucide-message-circle-more"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/></svg>
+                    {{ event.comments_count || 0 }}
+                  </span>
                 </div>
 
+                <!-- Edit Button -->
                 <div class="card-actions">
-                  <button class="action-btn edit-btn-card" @click.stop="openEdit(event)">
-                    Edit
-                  </button>
-                  <button class="action-btn delete-btn-card" @click.stop="deleteEvent(event, $event)">
-                    Delete
-                  </button>
+                    <button class="action-btn edit-btn-card" style="display: flex; align-items: center; justify-content: center; gap: 6px;" @click.stop="openEdit(event)">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pen"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg>
+                      Edit
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          </section>
-        </div>
+            </section>
+          </div>
 
         <!-- LIKES TAB CONTENT xh -->
         <div v-else-if="activeTab === 'likes'">
@@ -506,33 +600,47 @@ const saveProfile = async () => {
           <p class="stats-desc">{{ activePreviewEvent.description || 'No description provided.' }}</p>
         </div>
 
+<!-- Big Stats Counters -->
         <div class="stats-metrics-grid">
+
+          <!-- LIKES (Static Display) -->
           <div class="metric-card">
-            <span class="metric-icon">❤️</span>
+            <span class="metric-icon-wrap">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart"><path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/></svg>
+            </span>
             <div class="metric-data">
               <strong>{{ activePreviewEvent.likes_count || 0 }}</strong>
               <small>Total Likes</small>
             </div>
           </div>
 
+          <!-- COMMENTS -->
           <div class="metric-card">
-            <span class="metric-icon">💬</span>
+            <span class="metric-icon-wrap">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle-more"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/></svg>
+            </span>
             <div class="metric-data">
               <strong>{{ activePreviewEvent.comments_count || 0 }}</strong>
               <small>Comments</small>
             </div>
           </div>
 
-          <div class="metric-card" v-if="activePreviewEvent.ticket_price !== undefined">
-            <span class="metric-icon">🎟️</span>
+          <!-- TICKET PRICE -->
+          <div class="metric-card">
+            <span class="metric-icon-wrap">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-ticket"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M15 5l0 2" /><path d="M15 11l0 2" /><path d="M15 17l0 2" /><path d="M5 5h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-3a2 2 0 0 0 0 -4v-3a2 2 0 0 1 2 -2" /></svg>
+            </span>
             <div class="metric-data">
               <strong>{{ activePreviewEvent.ticket_price ? `€${activePreviewEvent.ticket_price}` : 'Free' }}</strong>
               <small>Ticket Price</small>
             </div>
           </div>
 
-          <div class="metric-card" v-if="activePreviewEvent.max_capacity !== undefined">
-            <span class="metric-icon">👥</span>
+          <!-- CAPACITY -->
+          <div class="metric-card">
+            <span class="metric-icon-wrap">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg>
+            </span>
             <div class="metric-data">
               <strong>{{ activePreviewEvent.max_capacity || '∞' }}</strong>
               <small>Max Capacity</small>
@@ -540,7 +648,19 @@ const saveProfile = async () => {
           </div>
         </div>
 
-        <div class="stats-meta-list" v-if="activePreviewEvent.location">
+        <!-- Extra Info (Location & Date) -->
+        <div class="stats-meta-list">
+          <div class="meta-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ui-icon lucide lucide-map-pin"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+            <span><strong>Location:</strong> {{ activePreviewEvent.location || 'TBD' }}</span>
+          </div>
+          <div class="meta-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ui-icon lucide lucide-calendar-days"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M8 13h.01"/><path d="M12 13h.01"/><path d="M16 13h.01"/><path d="M8 17h.01"/><path d="M12 17h.01"/><path d="M16 17h.01"/></svg>
+            <span><strong>Date:</strong> {{ activePreviewEvent.event_date ? activePreviewEvent.event_date.replace('T', ' ').slice(0, 16) : 'TBD' }}</span>
+          </div>
+        </div>
+
+        <!-- <div class="stats-meta-list" v-if="activePreviewEvent.location">
           <div>
             <strong>📍 Location:</strong>
             <span class="clickable-location" @click="openMapModal(activePreviewEvent.location, activePreviewEvent.title)">
@@ -548,19 +668,24 @@ const saveProfile = async () => {
             </span>
           </div>
           <div><strong>📅 Date:</strong> {{ activePreviewEvent.event_date ? activePreviewEvent.event_date.replace('T', ' ').slice(0, 16) : 'TBD' }}</div>
-        </div>
+        </div> -->
 
-        <div style="display: flex; gap: 10px; margin-top: auto;">
-          <button v-if="userProfile.isBusiness && activePreviewEvent.id" class="create-event-btn" style="flex: 1;" @click="openEdit(activePreviewEvent)">
-            ✏️ Edit
-          </button>
-          <button v-if="userProfile.isBusiness && activePreviewEvent.id" class="action-btn delete-btn-card" style="flex: 1; padding: 12px; font-size: 0.85rem;" @click="deleteEvent(activePreviewEvent)">
-            🗑️ Delete
-          </button>
+          <div style="display: flex; gap: 10px; margin-top: auto;">
+          <!-- EDIT BUTTON -->
+            <button v-if="userProfile.isBusiness && activePreviewEvent.id" class="action-btn edit-btn-card" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;" @click="openEdit(activePreviewEvent)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pen"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg>
+              Edit
+            </button>
+
+          <!-- DELETE BUTTON -->
+            <button v-if="userProfile.isBusiness && activePreviewEvent.id" class="action-btn delete-btn-card" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 12px; font-size: 0.85rem;" @click="deleteEvent(activePreviewEvent)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              Delete
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
   <!-- MAP POPUP MODAL (Larger Size) -->
   <div v-if="showMapModal" class="modal-overlay" @click.self="closeMapModal">
@@ -597,11 +722,11 @@ const saveProfile = async () => {
 
       <div class="modal-body profile-edit-body">
 
-        <div class="edit-photo-section">
+      <div class="edit-photo-section">
           <div class="photo-edit-area" @click="triggerFileInput">
             <img :src="tempAvatar" alt="avatar" class="edit-avatar-large">
             <div class="edit-overlay-icon">
-              <span>✏️</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pen"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg>
             </div>
             <input
               type="file"
@@ -701,44 +826,17 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 .profile-avatar { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; }
 .profile-info { display: flex; flex-direction: column; gap: 10px; flex-grow: 1; }
 .name-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.name-row h2 { margin: 0; }
+.name-row h2 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Tiser 3la smya */
 
-.business-badge {
-   display: inline-flex;
-   align-items: center;
-   gap: 6px;
-   background: rgba(0, 242, 254, 0.15);
-   border: 1px solid #00f2fe;
-   color: #00f2fe;
-   padding: 3px 10px;
-   border-radius: 20px;
-   font-size: 0.75rem;
-   font-weight: bold;
-   letter-spacing: 0.5px;
-   text-transform: uppercase;
-   backdrop-filter: blur(4px);
-   box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
- }
+}
 
- .standard-badge {
-   display: inline-flex;
-   align-items: center;
-   gap: 6px;
-   background: rgba(255, 255, 255, 0.1);
-   border: 1px solid rgba(255, 255, 255, 0.3);
-   color: rgba(255, 255, 255, 0.85);
-   padding: 3px 10px;
-   border-radius: 20px;
-   font-size: 0.75rem;
-   font-weight: bold;
-   letter-spacing: 0.5px;
-   text-transform: uppercase;
-   backdrop-filter: blur(4px);
- }
-
-.badge-icon {
-  width: 14px;
-  height: 14px;
+.verified-badge {
+  display: inline-block;
+  margin-bottom: 2px; /* Kat9adha m3a l'ktaba */
 }
 
 .stats-row { display: flex; gap: 20px; font-size: 1rem; }
@@ -1280,4 +1378,76 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   height: 100%;
   filter: invert(90%) hue-rotate(180deg) contrast(80%);
 }
+
+.tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tab-icon {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  transition: transform 0.2s ease, stroke 0.2s ease;
+}
+
+.tab:hover .tab-icon {
+  transform: scale(1.1);
+}
+
+.tab.active .tab-icon {
+  stroke: #00f2fe;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.menu-svg-icon {
+  width: 20px;
+  height: 20px;
+  color: rgba(255, 255, 255, 0.7);
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.menu-item:hover .menu-svg-icon {
+  color: #00f2fe;
+  transform: scale(1.1);
+}
+
+/* --- UI Icons Layout --- */
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ui-icon {
+  color: #00f2fe; /* Cyan accent color */
+  flex-shrink: 0;
+}
+
+.metric-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #00f2fe;
+}
+
+.delete-btn-card {
+  color: #ff4d4d !important;
+  border-color: rgba(255, 77, 77, 0.3) !important;
+}
+
+.delete-btn-card:hover {
+  background: rgba(255, 77, 77, 0.2) !important;
+  border-color: #ff4d4d !important;
+  color: white !important;
+}
+
 </style>
