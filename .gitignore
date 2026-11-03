@@ -1,5 +1,6 @@
 .env
 *Zone.Identifier
+vault-bootstrap.sh
 
 # Logs
 logs
@@ -45,6 +46,7 @@ __screenshots__/
 srcs/vault/tls/
 srcs/vault/secrets/secrets/
 srcs/vault/tls/*.key
+/secrets/
 r2r-secrets.json
 unseal_keys.txt
 

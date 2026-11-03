@@ -4,7 +4,7 @@ DATA_DIR = /sgoinfre/$(USER)/ready2roll
 
 all: down up
 
-vault_status:
+vault-status:
 	$(COMPOSE) exec vault vault status
 
 keygen: # 1. Inititialize vault and create token keys
@@ -74,7 +74,8 @@ save-database:
 	@echo "Database has been saved! You are ready to roll!"
 
 restore-database:
-	@docker compose exec django_backend python manage.py loaddata demo_data.json
+	@docker compose exec django_backend sh -c \
+    	'set -a; . /vault/secrets/django.env; set +a; python manage.py loaddata demo_data.json'
 	@echo "Database is restored. You are ready to roll!"
 
 save-media:
@@ -99,6 +100,7 @@ clean:
 
 fclean: clean
 	docker system prune --all --force
+	@rm -rf secrets/vault-init.json
 
 cleardatabase: fclean
 	docker volume rm ready2roll_pg_data
