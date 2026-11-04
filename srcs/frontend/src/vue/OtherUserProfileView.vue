@@ -168,14 +168,53 @@ const toggleFollow = async () => {
         <nav class="main-menu">
           <h3>Menu</h3>
           <ul>
-            <li>
-              <router-link to="/home" class="menu-item">🏠 For you</router-link>
+            <li @click="$router.push('/home')" class="menu-item">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="menu-svg-icon"
+              >
+                <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/>
+                <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              </svg>
+              <span>For you</span>
             </li>
-            <li>
-              <router-link to="/subscriptions" class="menu-item">👤 Subscription</router-link>
+            <li @click="$router.push('/subscriptions')" class="menu-item">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="menu-svg-icon"
+              >
+                <path d="M16.051 12.616a1 1 0 0 1 1.909.024l.737 1.452a1 1 0 0 0 .737.535l1.634.256a1 1 0 0 1 .588 1.806l-1.172 1.168a1 1 0 0 0-.282.866l.259 1.613a1 1 0 0 1-1.541 1.134l-1.465-.75a1 1 0 0 0-.912 0l-1.465.75a1 1 0 0 1-1.539-1.133l.258-1.613a1 1 0 0 0-.282-.866l-1.156-1.153a1 1 0 0 1 .572-1.822l1.633-.256a1 1 0 0 0 .737-.535z"/>
+                <path d="M8 15H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/>
+              </svg>
+              <span>subscriptions</span>
             </li>
-            <li>
-              <router-link to="/discover" class="menu-item">🧭 Discover</router-link>
+            <li @click="$router.push('/discover')" class="menu-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-svg-icon">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M8 16l2 -6l6 -2l-2 6l-6 2" />
+                  <path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                  <path d="M12 3l0 2" />
+                  <path d="M12 19l0 2" />
+                  <path d="M3 12l2 0" />
+                  <path d="M19 12l2 0" />
+                </svg>
+              <span>discover</span>
             </li>
           </ul>
         </nav>
@@ -248,7 +287,7 @@ const toggleFollow = async () => {
 .nav-icon-link { display: flex; align-items: center; }
 
 .main-content { display: flex; flex-direction: row; gap: 20px; height: calc(100vh - 95px); width: 100%; }
-.left-sidebar { width: 250px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
+.left-sidebar { width: 280px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
 ul { list-style: none; padding: 0; }
 li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor: pointer; }
 
@@ -323,5 +362,62 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 
 .clickable-stat {
   cursor: default;
+}
+
+/* --- MENU ITEMS STYLES --- */
+.main-menu h3 {
+  margin-bottom: 20px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.main-menu ul {
+  display: flex;
+  flex-direction: column;
+  gap: 15px; /* Espace bin l'items dyal l'menu */
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1.05rem; /* Bach tbghb kbre chwia */
+}
+
+.menu-svg-icon {
+  width: 22px;
+  height: 22px;
+  color: rgba(255, 255, 255, 0.7);
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.menu-item:hover .menu-svg-icon,
+.menu-item:hover {
+  color: #00f2fe;
+  transform: scale(1.02);
+}
+
+/* --- SUBSCRIBED LIST STYLES --- */
+.subscribed-list {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px; /* Espace bin titre o l'list */
+}
+
+.subscribed-list h3 {
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 5px;
+}
+
+.subscribed-list ul {
+  display: flex;
+  flex-direction: column;
+  gap: 12px; /* Espace bin l'users */
+}
+
+.subscribed-list li {
+  margin-bottom: 0; /* 7iydna l'margin lqdim bach nkhdmo b gap */
 }
 </style>
