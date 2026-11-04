@@ -15,6 +15,7 @@ from django.contrib.auth import get_user_model
 from .models import Subscription, Comment, EventLike, Reaction
 from .serializers import CommentSerializer
 from events.serializers import FeedEventSerializer
+from notifications.services import notify, unnotify, short
 
 User = get_user_model()
 
@@ -38,8 +39,11 @@ def toggle_follow_view(request, user_id):
     subscription, created = Subscription.objects.get_or_create(
         follower=request.user, followed=target
     )
-    if not created:
+    if created:
+        notify(target, request.user, 'subscription', 'started following you', unique=True)
+    else:
         subscription.delete()
+        unnotify(target, request.user, 'subscription')
 
     return Response({
         'is_following': created,
@@ -54,8 +58,12 @@ def toggle_like_view(request, event_id):
     """POST /api/social/events/<id>/like/  -> like / unlike toggle."""
     event = get_object_or_404(Event, pk=event_id)
     like, created = EventLike.objects.get_or_create(user=request.user, event=event)
-    if not created:
+    if created:
+        notify(event.organizer, request.user, 'like',
+               f'liked your event \u201c{event.title}\u201d', event=event, unique=True)
+    else:
         like.delete()
+        unnotify(event.organizer, request.user, 'like', event=event)
     return Response({'is_liked': created, 'likes_count': event.likes.count()})
 
 
@@ -79,26 +87,40 @@ def event_comments_view(request, event_id):
     elif request.method == 'POST':
         content = (request.data.get('content') or '').strip()
         if not content:
-            return Response({'error': 'Il contenuto del commento è obbligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Il contenuto del commento \u00e8 obbligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    parent = None
-    parent_id = request.data.get('parent_comment')
-    if parent_id:
-        # The parent must belong to the same event
-        parent = get_object_or_404(Comment, pk=parent_id, event=event)
-        # Replying to a reply? Attach it to the root comment (Instagram style)
-        if parent.parent_comment_id is not None:
-            parent = parent.parent_comment
+        parent = None
+        replied_to = None          # il commento a cui l'utente sta davvero rispondendo
+        parent_id = request.data.get('parent_comment')
+        if parent_id:
+            # The parent must belong to the same event
+            parent = get_object_or_404(Comment, pk=parent_id, event=event)
+            replied_to = parent
+            # Replying to a reply? Attach it to the root comment (Instagram style)
+            if parent.parent_comment_id is not None:
+                parent = parent.parent_comment
 
-    comment = Comment.objects.create(
-        user=request.user,
-        event=event,
-        content=content,
-        type_content='text',
-        parent_comment=parent,
-    )
-    return Response(
-        CommentSerializer(comment, context={'request':request}).data, status=status.HTTP_201_CREATED,
+        comment = Comment.objects.create(
+            user=request.user,
+            event=event,
+            content=content,
+            type_content='text',
+            parent_comment=parent,
+        )
+
+        # Notifiche: risposta -> autore del commento; commento nuovo -> organizzatore dell'evento
+        if replied_to is not None:
+            notify(replied_to.user, request.user, 'reply',
+                   f'replied to your comment: \u201c{short(content)}\u201d',
+                   event=event, comment=comment)
+        else:
+            notify(event.organizer, request.user, 'comment',
+                   f'commented on your event \u201c{event.title}\u201d: \u201c{short(content)}\u201d',
+                   event=event, comment=comment)
+
+        return Response(
+            CommentSerializer(comment, context={'request': request}).data,
+            status=status.HTTP_201_CREATED,
         )
 
 @api_view(['POST'])
@@ -124,15 +146,23 @@ def toggle_comment_reaction_view(request, comment_id):
         defaults={'reaction_type': reaction_type}
     )
 
+    emoji = dict(Reaction.REACTION_CHOICES)[reaction_type]
+    reaction_text = f'reacted {emoji} to your comment: \u201c{short(comment.content, 40)}\u201d'
+
     if created:
-        user_reaction=reaction_type
+        user_reaction = reaction_type
+        notify(comment.user, request.user, 'reaction', reaction_text,
+               event=comment.event, comment=comment, unique=True)
     elif reaction.reaction_type == reaction_type:
         reaction.delete()
         user_reaction = None
+        unnotify(comment.user, request.user, 'reaction', event=comment.event, comment=comment)
     else:
         reaction.reaction_type = reaction_type
         reaction.save(update_fields=['reaction_type'])
         user_reaction = reaction_type
+        notify(comment.user, request.user, 'reaction', reaction_text,
+               event=comment.event, comment=comment, unique=True)
 
     counts = comment.reactions.values('reaction_type').annotate(count=Count('id'))
     reactions_count = {item['reaction_type']: item['count'] for item in counts}
@@ -229,8 +259,9 @@ class ContactsView(APIView):
                 "lastMsgAt": last_at,
                 "unread": unread.get(u.id, 0),
             })
+
         return Response(data)
-    # Latest conversation first; users we never talked to go at the bottom (A-Z)
+        # Latest conversation first; users we never talked to go at the bottom (A-Z)
         with_msgs = sorted((d for d in data if d["lastMsgAt"]), key=lambda d: d["lastMsgAt"], reverse=True)
         without = sorted((d for d in data if not d["lastMsgAt"]), key=lambda d: d["name"].lower())
         return Response(with_msgs + without)
