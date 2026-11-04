@@ -28,7 +28,7 @@ enable:	# 3. Run only once per initialization
 	docker compose exec -T vault vault write -f -field=secret_id auth/approle/role/django/secret-id > secrets/approle/secret_id
 
 loadsecrets: # 4. Load secrets in vault
-	$(COMPOSE) exec -T vault vault kv put r2r/django - < ../r2r-secrets.json
+	$(COMPOSE) exec -T vault vault kv put r2r/django - < ./r2r-secrets.json
 #	shred -u ./r2r-secrets.json
 
 setup:
@@ -86,7 +86,7 @@ save-media:
 restore-media: setup
 	@echo "Restoring MinIO media..."
 	@tar -xzvf media_backup.tar.gz -C /sgoinfre/$(USER)/ready2roll/minio_data
-	@rm -rf media_backup.tar.gz
+#	@rm -rf media_backup.tar.gz
 	@echo "Media restored successfully!"
 
 save-all: save-database save-media

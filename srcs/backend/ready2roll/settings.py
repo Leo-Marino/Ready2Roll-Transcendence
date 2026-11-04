@@ -190,7 +190,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.pubsub.RedisPubSubChannelLayer",
         "CONFIG": {
-            "hosts": [(os.getenv('REDIS_URL', 'redis://redis_cache:6379/0'))],
+            "hosts": [os.environ['REDIS_URL']],
             "capacity": 1500,
             "expiry": 10,
         },
