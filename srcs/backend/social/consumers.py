@@ -3,6 +3,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.contrib.auth import get_user_model
 from .models import DirectMessage
+from .realtime import GLOBAL_GROUP, user_group
 
 User = get_user_model()
 
@@ -48,11 +49,22 @@ class DMConsumer(AsyncWebsocketConsumer):
             }
         )
 
+        # 3. Tell the receiver (on any page) that a new message arrived -> dot on the chat icon
+        await self.channel_layer.group_send(
+            user_group(self.other_user_id),
+            {"type": "message_push", "target_id": self.other_user_id},
+        )
+
     async def chat_message(self, event):
         # This socket is open on this conversation, so a message coming from the
         # other user is seen right away -> mark it as read (no dot in the sidebar).
         if event["sender_id"] != self.user.id:
             await self.mark_read(event["id"])
+            # The receiver was already pinged on send: ping again so the dot goes away
+            await self.channel_layer.group_send(
+                user_group(self.user.id),
+                {"type": "message_push", "target_id": self.user.id},
+            )
 
         # Send the broadcasted message down the WebSocket to Vue
         await self.send(text_data=json.dumps({
@@ -75,3 +87,47 @@ class DMConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def mark_read(self, message_id):
         DirectMessage.objects.filter(pk=message_id, is_read=False).update(is_read=True)
+
+class SocialConsumer(AsyncWebsocketConsumer):
+    """One connection per browser tab. It receives live updates only
+    (likes, comments, reactions, follows, notification signals); it never
+    expects messages from the client."""
+
+    async def connect(self):
+        self.user = self.scope["user"]
+        if self.user.is_anonymous:
+            await self.close()
+            return
+
+        self.group_names = [GLOBAL_GROUP, user_group(self.user.id)]
+        for group in self.group_names:
+            await self.channel_layer.group_add(group, self.channel_name)
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        for group in getattr(self, "group_names", []):
+            await self.channel_layer.group_discard(group, self.channel_name)
+
+    # Called by group_send(..., {"type": "social_action", ...})
+    async def social_action(self, event):
+        await self.send(text_data=json.dumps({
+            "action": event["action"],
+            "target_id": event["target_id"],
+            "data": event.get("data", {}),
+        }))
+
+    # Called by group_send(..., {"type": "notification_push", ...})
+    async def notification_push(self, event):
+        await self.send(text_data=json.dumps({
+            "action": "notification",
+            "target_id": event["target_id"],
+            "data": {},
+        }))
+
+    # Called by group_send(..., {"type": "message_push", ...})
+    async def message_push(self, event):
+        await self.send(text_data=json.dumps({
+            "action": "message",
+            "target_id": event["target_id"],
+            "data": {},
+        }))

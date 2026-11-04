@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import SearchBar from './SearchBar.vue';
 import EventMediaGrid from './EventMediaGrid.vue';
 import NotificationBell from './NotificationBell.vue';
+import ChatNavLink from './ChatNavLink.vue';
 
 const API = '/api';
 const route = useRoute();
@@ -78,11 +79,11 @@ watch(() => route.query.q, (q) => runSearch(String(q || '').trim()), { immediate
           </router-link>
 
           <!-- Chat Icon -->
-          <router-link to="/chat" class="nav-icon-link" title="Chat">
+          <ChatNavLink title="Chat">
              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="nav-icon">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a.75.75 0 01-.81-.54 2.89 2.89 0 01.213-1.637 8.25 8.25 0 01-1.813-5.293C3 7.444 7.03 3.75 12 3.75s9 3.694 9 8.25z" />
              </svg>
-          </router-link>
+          </ChatNavLink>
 
           <!-- Profile Icon -->
           <router-link to="/profile" class="nav-icon-link" title="Profile">

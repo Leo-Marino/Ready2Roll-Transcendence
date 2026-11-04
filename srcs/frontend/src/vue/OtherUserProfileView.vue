@@ -3,6 +3,9 @@ import { ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import EventMediaGrid from './EventMediaGrid.vue';
 import SearchBar from './SearchBar.vue';
+import { useSocialSocket } from '../composables/useSocialSocket';
+import NotificationBell from './NotificationBell.vue';
+import ChatNavLink from './ChatNavLink.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -92,6 +95,31 @@ const fetchUserEvents = async (userId) => {
   }
 };
 
+// --- Live updates from other users (WebSocket) ---
+// isFollowing is personal state and is only changed by my own click;
+// here we only update the public counters.
+const handleSocialMessage = (message) => {
+  const { action, target_id: targetId, data } = message;
+
+  if (action === 'follow') {
+    if (targetId === Number(route.params.id)) {
+      userProfile.value.followers = data.followers_count;
+      userProfile.value.following = data.following_count;
+    }
+  } else if (action === 'like' || action === 'comment') {
+    userEvents.value.forEach((ev) => {
+      if (ev.id !== targetId) return;
+      if (action === 'like') ev.likes_count = data.likes_count;
+      else ev.comments_count = data.comments_count;
+    });
+  } else if (action === 'resync') {
+    fetchUserProfile(route.params.id);
+    fetchUserEvents(route.params.id);
+  }
+};
+
+useSocialSocket(handleSocialMessage);
+
 // Prima volta che la pagina si carica
 onMounted(() => {
   fetchUserProfile(route.params.id);
@@ -153,10 +181,11 @@ const toggleFollow = async () => {
       </div> -->
       <SearchBar />
       <div class="nav-icons">
-        <router-link to="/chat" class="nav-icon-link">
+        <ChatNavLink>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg>
-        </router-link>
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" /></svg>
+        </ChatNavLink>
+        <NotificationBell />
+        <!-- <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" /></svg> -->
         <router-link to="/profile" class="nav-icon-link">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
         </router-link>

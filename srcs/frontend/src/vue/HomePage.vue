@@ -3,6 +3,8 @@ import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } 
 import RChat from './RChat.vue';
 import SearchBar from './SearchBar.vue';
 import NotificationBell from './NotificationBell.vue';
+import ChatNavLink from './ChatNavLink.vue';
+import { useSocialSocket } from '../composables/useSocialSocket';
 
 //--------------------xh start----------------
 const props = defineProps({ mode: { type: String, default: 'for_you' } });
@@ -320,6 +322,44 @@ const fetchFeed = async () => {
 watch(() => props.mode, fetchFeed);   // passando da For you a Discover la pagina resta la stessa
 onMounted(fetchFeed);
 //-----------------------xh add part end----------------------------
+// --- Live updates from other users (WebSocket) ---
+// Only the PUBLIC numbers are overwritten here (counts). Personal state such as
+// is_liked or user_reaction is never touched: it depends on who is looking.
+const findCommentById = (commentId) => {
+  for (const comment of comments.value) {
+    if (comment.id === commentId) return comment;
+    const reply = (comment.replies || []).find((r) => r.id === commentId);
+    if (reply) return reply;
+  }
+  return null;
+};
+
+const handleSocialMessage = (message) => {
+  const { action, target_id: targetId, data } = message;
+
+  if (action === 'like') {
+    const ev = videos.value.find((v) => v.id === targetId);
+    if (ev) ev.likes_count = data.likes_count;
+  } else if (action === 'comment') {
+    const ev = videos.value.find((v) => v.id === targetId);
+    if (ev) ev.comments_count = data.comments_count;
+    // Reload the open comment list, unless the comment is already on screen
+    // (it is the one I just posted myself).
+    if (targetId === activeEventId.value && !findCommentById(data.comment_id)) {
+      fetchComments(targetId);
+    }
+  } else if (action === 'comment_reaction') {
+    if (data.event_id !== activeEventId.value) return;
+    const comment = findCommentById(targetId);
+    if (comment) comment.reactions_count = data.reactions_count;
+  } else if (action === 'resync') {
+    // The connection was down for a while: reload what is on screen
+    if (activeEventId.value) fetchComments(activeEventId.value);
+  }
+};
+
+useSocialSocket(handleSocialMessage);
+
 // Scrolled to another video -> load ITS comments
 watch(activeEventId, (id) => {
   comments.value = [];
@@ -353,11 +393,11 @@ onBeforeUnmount(() => {
       <SearchBar />
       <div class="nav-icons">
         <NotificationBell />
-        <router-link to="/chat" class="nav-icon-link">
+        <ChatNavLink>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
           </svg>
-        </router-link>
+        </ChatNavLink>
         <!-- <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
           <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
         </svg> -->

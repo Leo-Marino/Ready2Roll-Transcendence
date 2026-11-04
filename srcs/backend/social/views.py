@@ -16,6 +16,7 @@ from .models import Subscription, Comment, EventLike, Reaction
 from .serializers import CommentSerializer
 from events.serializers import FeedEventSerializer
 from notifications.services import notify, unnotify, short
+from .realtime import broadcast_social_action, push_message_signal
 
 User = get_user_model()
 
@@ -45,10 +46,21 @@ def toggle_follow_view(request, user_id):
         subscription.delete()
         unnotify(target, request.user, 'subscription')
 
+    followers_count = target.followers.count()
+    following_count = target.following.count()
+
+    # Live update for everybody looking at the target's profile
+    broadcast_social_action('follow', target.pk, {
+        'actor_id': request.user.pk,
+        'is_following': created,
+        'followers_count': followers_count,
+        'following_count': following_count,
+    })
+
     return Response({
         'is_following': created,
-        'followers_count': target.followers.count(),
-        'following_count': target.following.count(),
+        'followers_count': followers_count,
+        'following_count': following_count,
     })
 
 
@@ -64,7 +76,13 @@ def toggle_like_view(request, event_id):
     else:
         like.delete()
         unnotify(event.organizer, request.user, 'like', event=event)
-    return Response({'is_liked': created, 'likes_count': event.likes.count()})
+
+    likes_count = event.likes.count()
+    broadcast_social_action('like', event.pk, {
+        'actor_id': request.user.pk,
+        'likes_count': likes_count,
+    })
+    return Response({'is_liked': created, 'likes_count': likes_count})
 
 
 @api_view(['GET', 'POST'])
@@ -118,6 +136,14 @@ def event_comments_view(request, event_id):
                    f'commented on your event \u201c{event.title}\u201d: \u201c{short(content)}\u201d',
                    event=event, comment=comment)
 
+        # Same number the feed shows: comments + replies
+        broadcast_social_action('comment', event.pk, {
+            'actor_id': request.user.pk,
+            'comment_id': comment.pk,
+            'parent_comment_id': parent.pk if parent else None,
+            'comments_count': event.comments.count(),
+        })
+
         return Response(
             CommentSerializer(comment, context={'request': request}).data,
             status=status.HTTP_201_CREATED,
@@ -167,6 +193,12 @@ def toggle_comment_reaction_view(request, comment_id):
     counts = comment.reactions.values('reaction_type').annotate(count=Count('id'))
     reactions_count = {item['reaction_type']: item['count'] for item in counts}
 
+    broadcast_social_action('comment_reaction', comment.pk, {
+        'actor_id': request.user.pk,
+        'event_id': comment.event_id,
+        'reactions_count': reactions_count,
+    })
+
     return Response({
         'comment_id': comment.id,
         'user_reaction': user_reaction,
@@ -204,9 +236,11 @@ class ChatHistoryView(APIView):
         ).select_related('sender').order_by('created_at')
 
         # Opening the conversation = the messages received from this user are now read
-        DirectMessage.objects.filter(
+        marked = DirectMessage.objects.filter(
             sender_id=user_id, receiver=request.user, is_read=False
         ).update(is_read=True)
+        if marked:
+            push_message_signal(request.user.id)   # other tabs: refresh the chat dot
 
         data = [{
             "id": m.id,
@@ -217,6 +251,15 @@ class ChatHistoryView(APIView):
             "created_at": m.created_at.isoformat()
         } for m in messages]
         return Response(data)
+
+class UnreadMessagesCountView(APIView):
+    """How many direct messages I received and have not read yet.
+    Very light: used by the dot on the chat icon in the navbar."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        count = DirectMessage.objects.filter(receiver=request.user, is_read=False).count()
+        return Response({"count": count})
 
 class ContactsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
