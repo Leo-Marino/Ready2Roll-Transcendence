@@ -256,6 +256,8 @@ const showEditModal = ref(false);
 const fileInput = ref(null);
 const tempAvatar = ref('');
 const selectedFile = ref(null);
+const profileEditUsernameError = ref('');
+const usernamePattern = /^[A-Za-z0-9_.]+$/;
 
 const profileEditForm = ref({
   username: '',
@@ -265,6 +267,7 @@ const profileEditForm = ref({
 const openEditModal = () => {
   profileEditForm.value.username = userProfile.value.name;
   profileEditForm.value.bio = userProfile.value.description;
+  profileEditUsernameError.value = '';
   tempAvatar.value = userProfile.value.avatar;
   selectedFile.value = null;
   showEditModal.value = true;
@@ -287,6 +290,13 @@ const handleImageUpload = (event) => {
 };
 
 const saveProfile = async () => {
+  if (!usernamePattern.test(profileEditForm.value.username)) {
+    profileEditUsernameError.value =
+      'Usernames can only contain letters, numbers, underscores, and periods.';
+    return;
+  }
+  profileEditUsernameError.value = '';
+
   const formData = new FormData();
   formData.append('username', profileEditForm.value.username);
   formData.append('bio', profileEditForm.value.bio);
@@ -774,7 +784,12 @@ const saveProfile = async () => {
           <div class="input-group">
             <label>Username</label>
             <input type="text" v-model="profileEditForm.username" placeholder="Username" class="custom-input">
-            <p class="helper-text">Usernames can only contain letters, numbers, underscores, and periods.</p>
+            <p
+              class="helper-text"
+              :class="{ 'username-error-text': profileEditUsernameError }"
+            >
+              Usernames can only contain letters, numbers, underscores, and periods.
+            </p>
           </div>
 
           <div class="input-group">
@@ -1095,6 +1110,12 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 .input-area { flex-grow: 1; display: flex; flex-direction: column; gap: 5px; }
 .input-area input, .input-area textarea, .custom-select { width: 100%; background: #2a2a2a; border: 1px solid #444; color: white; padding: 10px; border-radius: 6px; font-family: inherit; }
 .helper-text { font-size: 0.75rem; color: #aaa; margin: 0; }
+.username-error-text {
+  color: #ff4d4d;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin: 0;
+}
 .hidden-file-input { display: none; }
 .modal-footer { padding: 15px 20px; border-top: 1px solid #333; display: flex; justify-content: flex-end; gap: 10px; }
 .modal-footer button { padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; }

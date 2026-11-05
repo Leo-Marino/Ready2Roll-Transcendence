@@ -56,7 +56,7 @@ class OwnerEventListView(generics.ListAPIView):
 #             .prefetch_related('media')
 #             .distinct()
 #             .order_by('-created_at')
-#         )
+#         )events/views.py
 
 class FeedView(generics.ListAPIView):
     """GET /api/feed/?mode=for_you|discover|following"""
