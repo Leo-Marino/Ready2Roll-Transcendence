@@ -1,8 +1,8 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, serializers
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from .recommender import build_feed
-from .models import Event
+from .models import Event, Tag
 from .serializers import EventSerializer, FeedEventSerializer
 from events.serializers import FeedEventSerializer
 
@@ -56,7 +56,7 @@ class OwnerEventListView(generics.ListAPIView):
 #             .prefetch_related('media')
 #             .distinct()
 #             .order_by('-created_at')
-#         )
+#         )events/views.py
 
 class FeedView(generics.ListAPIView):
     """GET /api/feed/?mode=for_you|discover|following"""
@@ -100,3 +100,14 @@ def event_ask_view(request, event_id):
         return Response({'error': 'The assistant is not available right now.'},
                         status=status.HTTP_503_SERVICE_UNAVAILABLE)
     return Response({'answer': answer})
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ['id', 'tag_name']
+
+class TagListView(generics.ListAPIView):
+    queryset = Tag.objects.order_by('tag_name')
+    serializer_class = TagSerializer
+    permission_classes = [permissions.AllowAny]
+    pagination_class = None

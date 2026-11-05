@@ -151,17 +151,15 @@ const submitSignup = async () => {
             if (data.token) {
                 localStorage.setItem('token', data.token);
             }
-            alert('Signup successful! Redirecting to the home page.');
-            router.push('/home');
+            alert('Signup successful! You may now login with your new account.');
+            router.push('/login');
         } else {
             console.error('Error message by the server:', data);
-            alert(data.error || 'Signup failed. Opening the home page for testing.');
-            router.push('/home');
+            alert(data.error || 'Signup failed. Please try again.');
         }
     } catch (error) {
         console.error('Network error: ', error);
-        alert('Unable to connect to the backend server. Opening the home page for testing.');
-        router.push('/home');
+        alert('Unable to connect to the backend server.');
     }
 };
 </script>
