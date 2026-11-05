@@ -151,6 +151,8 @@ services:
       target: development
     container_name: django_container
     image: django_backend
+    environment:
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,${PUBLIC_HOST_IP:-127.0.0.1},${PUBLIC_HOSTNAME:-localhost}"
     restart: unless-stopped
     expose:
       - "8000"

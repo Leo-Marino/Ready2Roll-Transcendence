@@ -152,11 +152,13 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Behind WAF -> nginx. TLS terminates at the WAF; nginx sets X-Forwarded-Proto.
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
-CSRF_TRUSTED_ORIGINS = ['https://localhost:8443']
+_hosts = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
+_port = os.environ.get("PUBLIC_PORT", "8443")
+
+ALLOWED_HOSTS = _hosts
+CSRF_TRUSTED_ORIGINS = [f"https://{h}:{_port}" for h in _hosts]
+CORS_ALLOWED_ORIGINS = CSRF_TRUSTED_ORIGINS
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-CORS_ALLOWED_ORIGINS = ['https://localhost:8443']
 
 # Custom User Model
 AUTH_USER_MODEL = 'users.User'

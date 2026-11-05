@@ -2,6 +2,9 @@ COMPOSE = docker compose
 
 DATA_DIR = /sgoinfre/$(USER)/ready2roll
 
+export PUBLIC_HOST_IP  := $(shell hostname -I | awk '{print $$1}')
+export PUBLIC_HOSTNAME := $(shell hostname -f 2>/dev/null || hostname)
+
 all: down up
 
 vault-status:
