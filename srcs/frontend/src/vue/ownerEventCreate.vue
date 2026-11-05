@@ -618,7 +618,7 @@ textarea::placeholder {
 }
 
 .logo-text {
-  font-family: 'Bruno Ace', cursive, sans-serif;
+  font-family: "Bruno Ace", sans-serif;
   font-weight: 400;
   font-size: 1.25rem;
   color: #ffffff;
