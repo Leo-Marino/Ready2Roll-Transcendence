@@ -137,6 +137,34 @@ const goToCreateEvent = () => {
   router.push('/CreateEvent');
 };
 
+// --- DELETE EVENT LOGIC ---
+const deleteEvent = async (event) => {
+  if (!confirm(`Are you sure you want to delete "${event.title}"?`)) return;
+
+  const token = getToken();
+  try {
+    const response = await fetch(`${API}/events/${event.id}/`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (response.ok) {
+      // Remove the event from the local list
+      myEvents.value = myEvents.value.filter(e => e.id !== event.id);
+      // Close the preview modal
+      closePreview();
+      alert("Event deleted successfully!");
+    } else {
+      const errData = await response.json();
+      console.error("Error deleting event:", errData);
+      alert("Failed to delete the event.");
+    }
+  } catch (error) {
+    console.error("Network error during delete:", error);
+    alert("Unable to connect to the backend server.");
+  }
+};
+
 const openPreview = (event) => {
   activePreviewEvent.value = event;
 };
