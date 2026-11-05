@@ -787,7 +787,7 @@ const saveProfile = async () => {
   <div v-if="showLogoutModal" class="modal-overlay" @click.self="closeLogoutModal">
     <div class="mini-modal-content">
       <div class="modal-header">
-        <h3 style="font-family: Huninn;">Confirm Logout</h3>
+        <h3 style="font-family: var(--font-main);">Confirm Logout</h3>
         <button class="close-modal-btn" @click="closeLogoutModal">✕</button>
       </div>
       <div class="modal-body" style="text-align: center; padding: 25px 20px;">
@@ -803,7 +803,7 @@ const saveProfile = async () => {
 
 <style scoped>
 #bgVideo { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; z-index: -1; object-fit: cover; }
-.app-container { display: flex; flex-direction: column; height: 100vh; color: #FFFFFF; font-family: sans-serif; padding: 10px 20px; box-sizing: border-box; }
+.app-container { display: flex; flex-direction: column; height: 100vh; color: #FFFFFF; font-family: var(--font-main); padding: 10px 20px; box-sizing: border-box; }
 .glass-panel { background: rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 15px; box-sizing: border-box; }
 .navbar { display: flex; justify-content: space-between; align-items: center; height: 60px; margin-bottom: 15px; flex-shrink: 0; border: 1px solid rgba(255, 255, 255, 0.15); }
 .logo { display: flex; align-items: center; gap: 10px; cursor: pointer; }

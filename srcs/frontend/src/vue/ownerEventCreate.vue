@@ -469,7 +469,6 @@ function currenttagsIncludes(arr, val) {
 </template>
 
 <style scoped>
-@import url('https://cdn.jsdelivr.net/gh/justfont/open-huninn-font@1.1/font/jf-openhuninn.css');
 
 html, body {
   margin: 0;
@@ -484,7 +483,7 @@ html, body {
   height: 100vh;
   width: 100vw;
   color: #ffffff;
-  font-family: 'jf-openhuninn', 'Huninn', sans-serif;
+  font-family: var(--font-main);
   box-sizing: border-box;
   overflow: hidden;
   display: flex;
@@ -492,7 +491,7 @@ html, body {
 }
 
 .page-title {
-  font-family: 'jf-openhuninn', 'Huninn', sans-serif !important;
+  font-family: var(--font-main) !important;
   letter-spacing: 3px;
   text-transform: uppercase;
 }
@@ -508,12 +507,12 @@ p, span, li, small,
 .action-btn-small,
 .publish-btn,
 .nav-visual-btn {
-  font-family: 'jf-openhuninn', 'Huninn', sans-serif !important;
+  font-family: var(--font-main) !important;
 }
 
 input::placeholder,
 textarea::placeholder {
-  font-family: 'jf-openhuninn', 'Huninn', sans-serif !important;
+  font-family: var(--font-main) !important;
 }
 
 .logo,

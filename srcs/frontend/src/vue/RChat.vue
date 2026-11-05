@@ -237,7 +237,7 @@ const showSuggestions = () => messages.value.length === 1 && !isTyping.value;
 </template>
 
 <style scoped>
-.rc-root { position: fixed; left: 24px; bottom: 24px; z-index: 50; display: flex; flex-direction: column; align-items: flex-start; gap: 14px; font-family: sans-serif; color: #fff; }
+.rc-root { position: fixed; left: 24px; bottom: 24px; z-index: 50; display: flex; flex-direction: column; align-items: flex-start; gap: 14px; font-family: var(--font-main); color: #fff; }
 
 /* ---------------- Launcher ---------------- */
 .rc-launcher-wrap { display: flex; flex-direction: row-reverse; align-items: center; gap: 10px; }

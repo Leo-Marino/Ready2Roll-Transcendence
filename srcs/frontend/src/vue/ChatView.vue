@@ -212,7 +212,7 @@ onBeforeUnmount(() => {
 }
 .app-container {
   display: flex; flex-direction: column; height: 100vh;
-  color: #FFFFFF; font-family: sans-serif;
+  color: #FFFFFF; font-family: var(--font-main);
   padding: 10px 20px; box-sizing: border-box;
 }
 .glass-panel {

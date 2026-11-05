@@ -73,14 +73,13 @@ const submitLogin = async () => {
 </template>
 
 <style scoped>
-@import url('https://cdn.jsdelivr.net/gh/justfont/open-huninn-font@1.1/font/jf-openhuninn.css');
 
     a
     {
         color: #FFFFFF;
         text-decoration: underline;
         text-decoration-color: #FFFFFF;
-        font-family: "Huninn", sans-serif;
+        font-family: var(--font-main);
     }
     .centred
     {
@@ -144,7 +143,7 @@ const submitLogin = async () => {
         border-radius: 16px;
         background: rgba(255, 255, 255, 0.1);
         color: #FFFFFF;
-        font-family: "Huninn", sans-serif;
+        font-family: var(--font-main);
         font-weight: 400;
         font-style: normal;
     }
@@ -164,7 +163,7 @@ const submitLogin = async () => {
         border: none;
         border-radius: 17px;
         cursor: pointer;
-        font-family: "Huninn", sans-serif;
+        font-family: var(--font-main);
         font-weight: 900;
         font-style: normal;
     }
@@ -194,14 +193,14 @@ const submitLogin = async () => {
     {
         padding: 0 15px;
         color: rgb(255, 255, 255);
-        font-family: "Huninn", sans-serif;
+        font-family: var(--font-main);
         font-style: normal;
         font-size: 14px;
     }
 
     #signupLink
     {
-        font-family: "Huninn", sans-serif;
+        font-family: var(--font-main);
         color: #FFFFFF;
         font-size: 14px;
     }

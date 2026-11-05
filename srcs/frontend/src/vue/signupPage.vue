@@ -232,13 +232,12 @@ const submitSignup = async () => {
 </template>
 
 <style scoped>
-@import url('https://cdn.jsdelivr.net/gh/justfont/open-huninn-font@1.1/font/jf-openhuninn.css');
 
 a {
 color: #FFFFFF;
 text-decoration: underline;
 text-decoration-color: #FFFFFF;
-font-family: "Huninn", sans-serif;
+font-family: var(--font-main);
 }
 
 .centred {
@@ -311,7 +310,7 @@ color: #999999;
 border: none;
 padding: 10px 0;
 border-radius: 21px;
-font-family: "Huninn", sans-serif;
+font-family: var(--font-main);
 font-size: 13px;
 cursor: pointer;
 transition: all 0.3s ease;
@@ -337,7 +336,7 @@ padding: 10px;
 border-radius: 17px;
 background: rgba(255, 255, 255, 0.1);
 color: #FFFFFF;
-font-family: "Huninn", sans-serif;
+font-family: var(--font-main);
 font-weight: 400;
 font-style: normal;
 border: 1px solid transparent;
@@ -351,7 +350,7 @@ opacity: 1;
 .error-text {
 color: #ff4d4d;
 font-size: 11px;
-font-family: "Huninn", sans-serif;
+font-family: var(--font-main);
 margin-top: 4px;
 margin-left: 8px;
 text-align: left;
@@ -365,7 +364,7 @@ height: 40px;
 border: none;
 border-radius: 17px;
 cursor: pointer;
-font-family: "Huninn", sans-serif;
+font-family: var(--font-main);
 font-weight: 900;
 font-style: normal;
 }
@@ -392,13 +391,13 @@ margin: 0;
 .or-text {
 padding: 0 15px;
 color: rgb(255, 255, 255);
-font-family: "Huninn", sans-serif;
+font-family: var(--font-main);
 font-style: normal;
 font-size: 14px;
 }
 
 #signupLink {
-font-family: "Huninn", sans-serif;
+font-family: var(--font-main);
 color: #FFFFFF;
 font-size: 14px;
 }
@@ -438,7 +437,7 @@ font-size: 14px;
 
 .password-box-title {
   font-size: 11px;
-  font-family: "Huninn", sans-serif;
+  font-family: var(--font-main);
   color: #333333;
   font-weight: bold;
   margin: 0 0 8px 0;
@@ -454,7 +453,7 @@ font-size: 14px;
 
 .password-checklist li {
   font-size: 11px;
-  font-family: "Huninn", sans-serif;
+  font-family: var(--font-main);
   margin-bottom: 5px;
   display: flex;
   align-items: center;
