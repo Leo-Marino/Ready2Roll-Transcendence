@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from events.models import Tag
+from events.serializers import TagNameField
 
 
 
@@ -8,7 +10,7 @@ User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'type_of_user', 'legal_name', 'vat_tax']
+        fields = ['username', 'email', 'password', 'type_of_user', 'legal_name', 'vat_tax', 'tags']
         extra_kwargs = {'password': {'write_only': True}}
     def validate(selfs,attrs):
         if attrs.get('type_of_user') == 'business':
@@ -27,7 +29,7 @@ class UserSerializer(serializers.ModelSerializer):
             type_of_user=validated_data.get('type_of_user', 'standard'),
             legal_name=validated_data.get('legal_name'),
             vat_tax=validated_data.get('vat_tax'),
-        )
+        ).tap(lambda user: user.tags.set(tags))
 
 class FollowCountsMixin(serializers.Serializer):
     """Conteggi reali basati sul modello social.Subscription.
