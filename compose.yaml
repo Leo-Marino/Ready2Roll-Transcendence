@@ -20,11 +20,11 @@
 #   ./secrets/approle/role_id
 #   ./secrets/approle/secret_id
 #=============================================================================
- 
+
 name: ready2roll
- 
+
 services:
- 
+
 #---------------------------------------------------------------------------
 # WAF — ModSecurity v3 + OWASP CRS on nginx. Only public entrypoint.
 #---------------------------------------------------------------------------
@@ -59,7 +59,7 @@ services:
       - app
     depends_on:
       - nginx
- 
+
 #---------------------------------------------------------------------------
 # Internal router: / -> vue, /api + /ws -> django, /media/ -> minio
 #---------------------------------------------------------------------------
@@ -75,7 +75,7 @@ services:
       - vuejs-prod
       - django_backend
       - minio_storage
- 
+
 #---------------------------------------------------------------------------
 # Vue.js — frontend (still the dev build)
 #---------------------------------------------------------------------------
@@ -95,7 +95,7 @@ services:
       - CHOKIDAR_USEPOLLING=true
     networks:
       - app
- 
+
 #---------------------------------------------------------------------------
 # Vault — server mode, Raft storage, TLS. NOT dev mode.
 #---------------------------------------------------------------------------
@@ -118,7 +118,7 @@ services:
       - secrets
       - vaultdb
     # No published port: docker compose exec vault vault ...
- 
+
 #---------------------------------------------------------------------------
 # Vault Agent — AppRole login, renders secrets to two separate tmpfs volumes
 #---------------------------------------------------------------------------
@@ -140,7 +140,7 @@ services:
       - secrets
     depends_on:
       - vault
- 
+
 #---------------------------------------------------------------------------
 # Django — backend. No env_file, no published port, no route to Vault.
 #---------------------------------------------------------------------------
@@ -170,7 +170,7 @@ services:
         condition: service_healthy
       redis_cache:
         condition: service_started
- 
+
 #---------------------------------------------------------------------------
 # PostgreSQL — data network only. Password from a file, not .env.
 #---------------------------------------------------------------------------
@@ -198,7 +198,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
- 
+
 #---------------------------------------------------------------------------
 # pgAdmin — debug only:  docker compose --profile debug up -d pgadmin
 #---------------------------------------------------------------------------
@@ -206,7 +206,7 @@ services:
     image: dpage/pgadmin4
     profiles: ["debug"]
     environment:
-      PGADMIN_DEFAULT_EMAIL: "admin@ready2roll.com"
+      PGADMIN_DEFAULT_EMAIL: "admin2@ready2roll.com"
       PGADMIN_DEFAULT_PASSWORD_FILE: /run/secrets/pgadmin_password
     secrets:
       - pgadmin_password
@@ -219,7 +219,7 @@ services:
     networks:
       - data
       - mgmt
- 
+
 #---------------------------------------------------------------------------
 # MinIO — Event posters. Built ONCE into an image (see srcs/minio/Dockerfile)
 # instead of compiling at every start, so it needs no internet at runtime.
@@ -250,7 +250,7 @@ services:
       - app
     depends_on:
       - vault-agent
- 
+
   minio_setup:
     build:
       context: ./srcs/minio
@@ -278,7 +278,7 @@ services:
       - app
     depends_on:
       - minio_storage
- 
+
 #---------------------------------------------------------------------------
 # Redis — data network only, password required
 #---------------------------------------------------------------------------
@@ -296,7 +296,7 @@ services:
       - redis_data:/data # <--- CHANGED THIS LINE
     networks:
       - data
- 
+
 secrets:
   pg_root_password:
     file: ./secrets/pg_root_password.txt
@@ -304,7 +304,7 @@ secrets:
     file: ./secrets/redis_password.txt
   pgadmin_password:
     file: ./secrets/pgadmin_password.txt
- 
+
 volumes:
 # minio_data:
   ready2roll_pg_data:
@@ -323,7 +323,7 @@ volumes:
       type: tmpfs
       device: tmpfs
       o: "size=1m,uid=100,gid=1000,mode=0755"
- 
+
 networks:
   edge:
     driver: bridge
@@ -341,4 +341,4 @@ networks:
   vaultdb:
     driver: bridge
     internal: true
- 
+
