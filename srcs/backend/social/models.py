@@ -12,16 +12,6 @@ class Subscription(models.Model):
             models.UniqueConstraint(fields=['follower', 'followed'], name='unique_subscription')
         ]
 
-class Like(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='likes')
-    event = models.ForeignKey('events.Event', on_delete=models.CASCADE, related_name='likes')
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        db_table = 'likes'
-        constraints = [
-            models.UniqueConstraint(fields=['user', 'event'], name = 'unique_user_liked_events')
-        ]
 
 class Comment(models.Model):
     CONTENT_TYPE_CHOICES = [
@@ -41,6 +31,45 @@ class Comment(models.Model):
     class Meta:
         db_table = 'comments'
 
+class EventLike(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='event_likes')
+    event = models.ForeignKey('events.Event', on_delete=models.CASCADE, related_name='likes')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'event_likes'
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'event'], name='unique_user_event_like')
+        ]
+
+
+class Reaction(models.Model):
+    REACTION_CHOICES = [
+        ('like', '❤️'),
+        ('laugh', '😂'),
+        ('wow', '😮'),
+        ('sad', '😢'),
+        ('angry', '😡'),
+        ('thumbs_up', '👍'),
+        ('thumbs_down', '👎'),
+    ]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reactions')
+    comment = models.ForeignKey('Comment', on_delete=models.CASCADE, related_name='reactions', null=True, blank=True)
+    direct_message = models.ForeignKey('DirectMessage', on_delete=models.CASCADE, related_name='reactions', null=True, blank=True)
+    reaction_type = models.CharField(max_length=20, choices=REACTION_CHOICES, default='like')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'reactions'
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'comment'], condition=models.Q(comment__isnull=False), name='unique_user_comment_reaction'),
+            models.UniqueConstraint(fields=['user', 'direct_message'], condition=models.Q(direct_message__isnull=False), name='unique_user_dm_reaction'),
+            models.CheckConstraint(check=(models.Q(comment__isnull=False, direct_message__isnull=True) | models.Q(comment__isnull=True, direct_message__isnull=False)),
+                name='reaction_either_comment_or_dm'
+            )
+        ]
+
 class DirectMessage(models.Model):
     CONTENT_TYPE_CHOICES = [
         ('text', 'Text'),
@@ -56,6 +85,8 @@ class DirectMessage(models.Model):
     content = models.TextField()
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    is_request = models.BooleanField(default=True)
 
     class Meta:
+        ordering = ['created_at']
         db_table = 'direct_messages'

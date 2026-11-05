@@ -7,64 +7,63 @@ import HomePage from '../vue/HomePage.vue'
 import ChatView from '../vue/ChatView.vue';
 import ProfileView from '../vue/ProfileView.vue';
 import SubscriptionsView from '../vue/SubscriptionsView.vue';
-import NotFound from '../vue/NotFound.vue';
+import OtherUserProfileView from '../vue/OtherUserProfileView.vue';
+import SearchView from '../vue/SearchView.vue'
 
 const routes = [
+  {
+    path: '/login',
+    name: 'Login',
+    component: LoginPage
+  },
+  {
+    path: '/signup',
+    name: 'Signup',
+    component: SignupPage
+  },
+  {
+    path: '/',
+    redirect: '/login'
+  },
+  // {
+  //   path: '/home',
+  //   name: 'home',
+  //   component: HomePage
+  // },
+  { path: '/home',          name: 'home',          component: HomePage, props: { mode: 'for_you' } },
+  { path: '/discover',      name: 'discover',      component: HomePage, props: { mode: 'discover' } },
+  { path: '/subscriptions', name: 'subscriptions', component: HomePage, props: { mode: 'following' } },
+  {
+    path: '/chat',
+    name: 'chat',
+    component: ChatView
+  },
+  {
+    path: '/profile',
+    name: '/profile',
+    component: ProfileView
+  },
+  // {
+  //   path: '/subscriptions',
+  //   name: 'subscriptions',
+  //   component: SubscriptionsView
+  // },
+  {
+    path: '/CreateEvent',
+    name: 'CreateEvent',
+    component: CreateEvent
+  },
+  {
+    path: '/user/:id',
+    name: 'UserProfile',
+    component: OtherUserProfileView
+  },
 {
-	path: '/login',
-	name: 'Login',
-	component: LoginPage
-},
-{
-	path: '/signup',
-	name: 'Signup',
-	component: SignupPage
-},
-{
-	path: '/',
-	redirect: '/login'
-},
-{
-	path: '/home',
-	name: 'home',
-	component: HomePage,
-	// meta: { requiresAuth: true }
-},
-{
-	path: '/chat',
-	name: 'chat',
-	component: ChatView,
-	// meta: { requiresAuth: true }
-},
-{
-	path: '/profile',
-	name: '/profile',
-	component: ProfileView,
-	// meta: { requiresAuth: true }
-},
-{
-	path: '/subscriptions',
-	name: 'subscriptions',
-	component: SubscriptionsView,
-	// meta: { requiresAuth: true }
-},
-{
-	path: '/CreateEvent',
-	name: 'CreateEvent',
-	component: CreateEvent,
-	// meta: { requiresAuth: true }
-},
-{
-	path: '/ViewEvent',
-	name: 'ViewEvent',
-	component: ViewEvent,
-	// meta: { requiresAuth: true }
-},
-{
-	path: '/:pathMatch(.*)*',
-	name: 'NotFound',
-	component: NotFound
-}
+    path: '/ViewEvent',
+    redirect: '/profile'
+  },
+
+  { path: '/search', name: 'search', component: SearchView },
 ]
 
 const router = createRouter({
@@ -72,15 +71,5 @@ const router = createRouter({
 	routes
 })
 
-// router.beforeEach((to, from, next) => {
-// 	const token = localStorage.getItem('access'); // check if the access token exists or not
-
-// 	if (to.meta.requiresAuth && !token)// if the page asks for authentication and the token does not exist, redirect to login page
-// 		next('/login');
-// 	else
-// 		next();
-// });
-
-// DECOMMENT ALL ABOVE TO ENABLE AUTHENTICATION CHECKING !! and to test ofc
 
 export default router

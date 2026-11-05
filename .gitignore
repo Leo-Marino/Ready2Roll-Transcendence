@@ -40,3 +40,8 @@ __screenshots__/
 
 # Vite
 *.timestamp-*-*.mjs
+
+# Local Redis Storage
+data/
+
+

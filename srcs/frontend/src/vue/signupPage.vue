@@ -1,8 +1,7 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { z } from 'zod';
-import { computed } from 'vue';
 
 const router = useRouter();
 
@@ -12,6 +11,7 @@ const email = ref('');
 const password = ref('');
 const legalName = ref('');
 const vatTax = ref('');
+const showPasswordBox = ref(false);
 
 const passwordRules = computed(() => [
 {
@@ -57,6 +57,13 @@ const getSignupSchema = () => {
         baseSchema.vatTax = z.string().min(1, 'Tax ID / VAT Number is required');
     }
     return z.object(baseSchema);
+};
+
+const handleFocusOut = (event) => {
+    // Hide the box only if focus moves outside of the password group
+    if (!event.currentTarget.contains(event.relatedTarget)) {
+        showPasswordBox.value = false;
+    }
 };
 
 const submitSignup = async () => {
@@ -115,15 +122,15 @@ const submitSignup = async () => {
             if (data.token) {
                 localStorage.setItem('token', data.token);
             }
-            alert('Registrazione completata con successo!');
+            alert('Signup successful! You may now login with your new account.');
             router.push('/login');
         } else {
-            console.error('Errore risposta dal server:', data);
-            alert(data.error || 'Errore durante la registrazione, controlla meglio i dati che hai inserito');
+            console.error('Error message by the server:', data);
+            alert(data.error || 'Signup failed. Please try again.');
         }
     } catch (error) {
-        console.error('Errore di rete:', error);
-        alert('Impossibile connettersi al server backend');
+        console.error('Network error: ', error);
+        alert('Unable to connect to the backend server');
     }
 };
 </script>
@@ -166,7 +173,12 @@ const submitSignup = async () => {
         <span v-if="errors.email" class="error-text">{{ errors.email }}</span>
         </div>
 
-        <div class="inputFieldDiv">
+        <div 
+            class="inputFieldDiv password-group" 
+            tabindex="-1"
+            @focusin="showPasswordBox = true"
+            @focusout="handleFocusOut"
+        >
             <input
                 type="password"
                 v-model="password"
@@ -174,16 +186,19 @@ const submitSignup = async () => {
                 @focus="showPasswordBox = true"
                 @blur="showPasswordBox = false"
             />
-            <ul class="password-checklist">
-            <li
-                v-for="rule in passwordRules"
-                :key="rule.id"
-                :class="rule.valid ? 'rule-valid' : 'rule-invalid'"
-            >
-                <span class="rule-icon">{{ rule.valid ? '✓' : '✖' }}</span>
-                <span>{{ rule.label }}</span>
-            </li>
-            </ul>
+            <div v-if="showPasswordBox" class="password-dropdown-box">
+                <p class="password-box-title">Password requirements:</p>
+                <ul class="password-checklist">
+                <li
+                    v-for="rule in passwordRules"
+                    :key="rule.id"
+                    :class="rule.valid ? 'rule-valid' : 'rule-invalid'"
+                >
+                    <span class="rule-icon">{{ rule.valid ? '✓' : '✖' }}</span>
+                    <span>{{ rule.label }}</span>
+                </li>
+                </ul>
+            </div>
         </div>
 
         <!-- Campi Extra per business -->
@@ -219,10 +234,13 @@ const submitSignup = async () => {
 </template>
 
 <style scoped>
+@import url('https://cdn.jsdelivr.net/gh/justfont/open-huninn-font@1.1/font/jf-openhuninn.css');
+
 a {
 color: #FFFFFF;
 text-decoration: underline;
 text-decoration-color: #FFFFFF;
+font-family: "Huninn", sans-serif;
 }
 
 .centred {
@@ -389,6 +407,7 @@ font-size: 14px;
 
 .password-group {
   position: relative;
+  outline: none;
 }
 
 .password-dropdown-box {
