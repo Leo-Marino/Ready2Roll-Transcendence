@@ -10,7 +10,7 @@ all: down up
 vault-status:
 	$(COMPOSE) exec vault vault status
 
-keygen: # 1. Inititialize vault and create token keys
+keygen: # 1. Initialize vault and create token keys
 	$(COMPOSE) exec vault vault operator init -key-shares=5 -key-threshold=2
 
 unseal: # 2. Unseal vault
