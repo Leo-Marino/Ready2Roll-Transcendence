@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
+import { useSocialSocket } from '../composables/useSocialSocket';
 
 // Campanellino con pallino rosso + pannello con le notifiche.
 // Ogni 20 secondi chiede al backend QUANTE notifiche non lette ci sono (chiamata leggerissima);
@@ -20,8 +21,10 @@ const items = ref([]);
 const loading = ref(false);
 let timer = null;
 
-const fetchUnread = async () => {
-  if (!getToken() || document.hidden) return;      // non disturbo il server se la scheda e' nascosta
+// force=true: used for live updates and when the tab becomes visible again.
+// Only the periodic polling skips hidden tabs, to spare the server.
+const fetchUnread = async (force = false) => {
+  if (!getToken() || (document.hidden && !force)) return;
   try {
     const res = await fetch(`${API}/notifications/unread-count/`, { headers: authHeaders() });
     if (res.ok) unread.value = (await res.json()).count;
@@ -77,14 +80,29 @@ const onDocClick = (e) => {
   if (open.value && root.value && !root.value.contains(e.target)) open.value = false;
 };
 
+// The server tells us instantly when a notification is created or removed.
+// The polling above stays as a safety net (e.g. if the socket is down).
+useSocialSocket((message) => {
+  if (message.action !== 'notification' && message.action !== 'resync') return;
+  if (open.value) loadList();   // panel open: refresh the list too
+  else fetchUnread(true);
+});
+
+// A hidden or covered tab may have missed updates: catch up as soon as it is visible
+const onVisibilityChange = () => {
+  if (!document.hidden) fetchUnread(true);
+};
+
 onMounted(() => {
   fetchUnread();
-  timer = setInterval(fetchUnread, POLL_MS);
+  timer = setInterval(() => fetchUnread(), POLL_MS);
   document.addEventListener('click', onDocClick);
+  document.addEventListener('visibilitychange', onVisibilityChange);
 });
 onBeforeUnmount(() => {
   clearInterval(timer);
   document.removeEventListener('click', onDocClick);
+  document.removeEventListener('visibilitychange', onVisibilityChange);
 });
 </script>
 

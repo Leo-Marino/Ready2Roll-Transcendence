@@ -44,15 +44,25 @@ const errors = ref({});
 
 const getSignupSchema = () => {
     const baseSchema = {
-    username: z.string().min(3, 'Username must be at least 3 characters'),
-    password: z
-        .string()
-        .min(8, 'Password must be at least 8 characters')
-        .regex(/[A-Z]/, 'Must contain at least one uppercase letter')
-        .regex(/[0-9]/, 'Must contain at least one number')
-        .regex(/[!@#$%^&*(),.?":{}|<>]/, 'Must contain at least one special character')
+        username: z
+            .string()
+            .min(3, 'Username must be at least 3 characters')
+            .regex(
+                /^[A-Za-z0-9_.]+$/,
+                'Usernames can only contain letters, numbers, underscores, and periods.'
+            ),
+        email: z
+            .string()
+            .min(1, 'E-mail is required')
+            .email('Invalid email address'),
+        password: z
+            .string()
+            .min(8, 'Password must be at least 8 characters')
+            .regex(/[A-Z]/, 'Must contain at least one uppercase letter')
+            .regex(/[0-9]/, 'Must contain at least one number')
+            .regex(/[!@#$%^&*(),.?|<>]/, 'Must contain at least one special character')
     };
-  if (type_of_user.value === 'business') {
+    if (type_of_user.value === 'business') {
         baseSchema.legalName = z.string().min(1, 'Business / Venue Name is required');
         baseSchema.vatTax = z.string().min(1, 'Tax ID / VAT Number is required');
     }
@@ -60,7 +70,6 @@ const getSignupSchema = () => {
 };
 
 const handleFocusOut = (event) => {
-    // Hide the box only if focus moves outside of the password group
     if (!event.currentTarget.contains(event.relatedTarget)) {
         showPasswordBox.value = false;
     }
@@ -130,7 +139,7 @@ const submitSignup = async () => {
         }
     } catch (error) {
         console.error('Network error: ', error);
-        alert('Unable to connect to the backend server');
+        alert('Unable to connect to the backend server.');
     }
 };
 </script>
@@ -148,6 +157,11 @@ const submitSignup = async () => {
     <div id="loginForm" class="centred">
     <form @submit.prevent="submitSignup" novalidate>
 
+        <!-- Banner di errore generale in cima -->
+        <div v-if="Object.keys(errors).length > 0" class="error-banner">
+            <span>Please fill in all required fields correctly.</span>
+        </div>
+
         <div class="role-toggle-container">
         <button
             type="button"
@@ -164,13 +178,21 @@ const submitSignup = async () => {
         </div>
 
         <div class="inputFieldDiv">
-        <input type="text" v-model="username" placeholder="Username">
-        <span v-if="errors.username" class="error-text">{{ errors.username }}</span>
+        <input 
+            type="text" 
+            v-model="username" 
+            placeholder="Username"
+            :class="{ 'input-error': errors.username }"
+        >
         </div>
 
         <div class="inputFieldDiv">
-        <input type="email" v-model="email" placeholder="E-mail">
-        <span v-if="errors.email" class="error-text">{{ errors.email }}</span>
+        <input 
+            type="email" 
+            v-model="email" 
+            placeholder="E-mail"
+            :class="{ 'input-error': errors.email }"
+        >
         </div>
 
         <div 
@@ -183,6 +205,9 @@ const submitSignup = async () => {
                 type="password"
                 v-model="password"
                 placeholder="Password"
+                :class="{ 'input-error': errors.password }"
+                @focus="showPasswordBox = true"
+                @blur="showPasswordBox = false"
             />
             <div v-if="showPasswordBox" class="password-dropdown-box">
                 <p class="password-box-title">Password requirements:</p>
@@ -202,12 +227,20 @@ const submitSignup = async () => {
         <!-- Campi Extra per business -->
         <div v-if="type_of_user === 'business'">
         <div class="inputFieldDiv">
-            <input type="text" v-model="legalName" placeholder="Club / Venue Name">
-            <span v-if="errors.legalName" class="error-text">{{ errors.legalName }}</span>
+            <input 
+                type="text" 
+                v-model="legalName" 
+                placeholder="Club / Venue Name"
+                :class="{ 'input-error': errors.legalName }"
+            >
         </div>
         <div class="inputFieldDiv">
-            <input type="text" v-model="vatTax" placeholder="Tax ID / VAT Number">
-            <span v-if="errors.vatTax" class="error-text">{{ errors.vatTax }}</span>
+            <input 
+                type="text" 
+                v-model="vatTax" 
+                placeholder="Tax ID / VAT Number"
+                :class="{ 'input-error': errors.vatTax }"
+            >
         </div>
         </div>
 
@@ -267,7 +300,7 @@ align-items: center;
 justify-content: center;
 width: 100%;
 max-width: 900px;
-margin: 200px auto;
+margin: 150px auto;
 gap: 50px;
 }
 
@@ -284,11 +317,11 @@ object-fit: contain;
 }
 
 #loginForm {
-width: 350px;
+width: 380px;
 height: auto;
 background: rgba(255, 255, 255, 0.1);
 border-radius: 15px;
-padding: 30px 20px;
+padding: 25px 20px;
 box-sizing: border-box;
 overflow: visible;
 }
@@ -297,7 +330,7 @@ overflow: visible;
 display: flex;
 background: rgba(20, 20, 40, 0.5);
 border-radius: 25px;
-margin-bottom: 20px;
+margin-bottom: 15px;
 padding: 4px;
 width: 100%;
 box-sizing: border-box;
@@ -323,7 +356,7 @@ font-weight: bold;
 }
 
 .inputFieldDiv {
-margin: 10px auto 10px auto;
+margin: 10px auto;
 width: 100%;
 display: flex;
 flex-direction: column;
@@ -332,14 +365,15 @@ flex-direction: column;
 .inputFieldDiv input {
 width: 100%;
 box-sizing: border-box;
-padding: 10px;
-border-radius: 17px;
+padding: 9px;
+border-radius: 15px;
 background: rgba(255, 255, 255, 0.1);
 color: #FFFFFF;
 font-family: var(--font-main);
 font-weight: 400;
 font-style: normal;
 border: 1px solid transparent;
+transition: all 0.3s ease;
 }
 
 .inputFieldDiv input::placeholder {
@@ -347,13 +381,24 @@ color: #FFFFFF;
 opacity: 1;
 }
 
-.error-text {
-color: #ff4d4d;
-font-size: 11px;
-font-family: var(--font-main);
-margin-top: 4px;
-margin-left: 8px;
-text-align: left;
+/* Stili per campi in errore (bordo rosso luminoso) */
+.inputFieldDiv input.input-error {
+border: 1px solid #ff4d4d !important;
+background: rgba(255, 77, 77, 0.15) !important;
+box-shadow: 0 0 8px rgba(255, 77, 77, 0.3);
+}
+
+.error-banner {
+background: rgba(255, 77, 77, 0.2);
+border: 1px solid #ff4d4d;
+color: #ffb3b3;
+padding: 10px 14px;
+border-radius: 12px;
+font-size: 12px;
+font-family: "Huninn", sans-serif;
+margin-bottom: 15px;
+text-align: center;
+backdrop-filter: blur(4px);
 }
 
 .inputFieldButton button {
@@ -378,7 +423,7 @@ display: flex;
 align-items: center;
 justify-content: center;
 width: 100%;
-margin: 20px 0;
+margin: 15px 0;
 }
 
 .dashedSeparator {
@@ -436,6 +481,7 @@ font-size: 14px;
 }
 
 .password-box-title {
+  print-color-adjust: exact;
   font-size: 11px;
   font-family: var(--font-main);
   color: #333333;

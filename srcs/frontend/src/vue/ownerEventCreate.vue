@@ -1,8 +1,11 @@
 <script>
 import { t as $t } from '../i18n';
+import NotificationBell from './NotificationBell.vue';
+import ChatNavLink from './ChatNavLink.vue';
 
 export default {
   name: 'CreateEvent',
+  components: { NotificationBell, ChatNavLink },
   emits: ['navigate-view', 'event-published'],
   data() {
     return {
@@ -17,8 +20,6 @@ export default {
       ticketPrice: '',
       startTime:'',
       endTime: '',
-      tags: '',
-      availableTags: ['Disco', 'Strip', 'DJ', 'Rave', 'Nostalgia', 'VIP', 'Cocktail', '420'],
       eventStatus: 'draft',
       uploadedMediaSrc: null,
       actualFile: null,
@@ -36,10 +37,6 @@ export default {
       }
       return this.eventDate;
     },
-    selectedTagsList() {
-      if (!this.tags) return [];
-      return this.tags.split(',').map(t => t.trim()).filter(Boolean);
-    }
   },
   mounted() {
     if (this.$route.query.edit === 'true') {
@@ -57,7 +54,6 @@ export default {
           this.endTime = ev.end_time ? String(ev.end_time).slice(0, 16) : '';
           this.maxCapacity = ev.max_capacity || '';
           this.ticketPrice = ev.ticket_price || '';
-          this.tags = Array.isArray(ev.tags) ? ev.tags.join(', ') : (ev.tags || '');
           this.eventStatus = ev.status ? ev.status.toLowerCase() : 'active';
           this.uploadedMediaSrc = ev.media_src || null;
           this.mediaType = ev.media_type || 'image';
@@ -78,18 +74,6 @@ export default {
     },
     toggleMapBox() {
       this.showMapBox = !this.showMapBox;
-    },
-    toggleTag(tagName) {
-      let currentTags = this.selectedTagsList;
-      if (currenttagsIncludes(currentTags, tagName)) {
-        currentTags = currentTags.filter(t => t.toLowerCase() !== tagName.toLowerCase());
-      } else {
-        currentTags.push(tagName);
-      }
-      this.tags = currentTags.join(', ');
-    },
-    isTagSelected(tagName) {
-      return this.selectedTagsList.some(t => t.toLowerCase() === tagName.toLowerCase());
     },
     handleFileUpload(event) {
       const file = event.target.files[0];
@@ -115,7 +99,6 @@ export default {
         return;
       }
 
-      // Controllo valori negativi per Max Capacity e Ticket Price
       if (this.maxCapacity !== '' && Number(this.maxCapacity) < 0) {
         alert($t('capacityNegative'));
         return;
@@ -137,18 +120,9 @@ export default {
       if (this.maxCapacity) formData.append('max_capacity', this.maxCapacity);
       if (this.ticketPrice) formData.append('ticket_price', this.ticketPrice);
       if (this.endTime) formData.append('end_time', this.endTime);
-      // start time = eventDAte
       if (this.eventDate) {
         formData.append('start_time', this.eventDate);
       }
-      //------------------------------------------
-      if (this.tags) {
-        const tagsArray = this.tags.split(',').map(tag => tag.trim()).filter(Boolean);
-        tagsArray.forEach(tag => {
-          formData.append('tags', tag);
-        });
-      }
-
       if (this.actualFile) {
         formData.append('media_file', this.actualFile);
         formData.append('media_type', this.mediaType);
@@ -203,11 +177,6 @@ export default {
     }
   }
 }
-
-// Helper interno per la ricerca dei tag selezionati
-function currenttagsIncludes(arr, val) {
-  return arr.some(t => t.toLowerCase() === val.toLowerCase());
-}
 </script>
 
 <template>
@@ -233,18 +202,17 @@ function currenttagsIncludes(arr, val) {
 
     <div class="nav-right">
       <div class="nav-icons">
-        <router-link to="/direct" class="nav-icon-link" title="Direct Messages">
-          <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+        <NotificationBell />
+        <ChatNavLink>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
           </svg>
-        </router-link>
-        <router-link to="/chat" class="nav-icon-link" title="Chat">
-          <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a.75.75 0 01-.81-.54 2.89 2.89 0 01.213-1.637 8.25 8.25 0 01-1.813-5.293C3 7.444 7.03 3.75 12 3.75s9 3.694 9 8.25z" />
-          </svg>
-        </router-link>
-        <router-link to="/profile" class="nav-icon-link" title="Profile">
-          <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+        </ChatNavLink>
+        <!-- <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+        </svg> -->
+        <router-link to="/profile" class="nav-icon-link">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
           </svg>
         </router-link>
@@ -428,7 +396,6 @@ function currenttagsIncludes(arr, val) {
               </div>
             </div>
 
-            <!-- STATUS POSTO PRIMA DEI TAGS -->
             <div class="detail-input-group">
               <label for="event-status">{{ $t('statusLabel') }}</label>
               <select id="event-status" v-model="eventStatus" class="custom-input custom-select" required>
@@ -981,57 +948,6 @@ textarea::placeholder {
   color: #000000;
   box-shadow: 0 0 25px rgba(0, 242, 254, 0.8);
   transform: translateY(-2px);
-}
-
-/* Tag Selector Box Styles */
-.tag-selector-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 2px;
-}
-
-.selectable-tag-pill {
-  cursor: pointer;
-  user-select: none;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.selectable-tag-pill:hover {
-  transform: translateY(-1px);
-}
-
-.business-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: rgba(0, 242, 254, 0.15);
-  border: 1px solid #00f2fe;
-  color: #00f2fe;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.65rem;
-  font-weight: bold;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  backdrop-filter: blur(4px);
-  box-shadow: 0 0 6px rgba(0, 242, 254, 0.2);
-}
-
-.standard-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: rgba(255, 255, 255, 0.85);
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.65rem;
-  font-weight: bold;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  backdrop-filter: blur(4px);
 }
 
 @media (max-width: 1200px) {
