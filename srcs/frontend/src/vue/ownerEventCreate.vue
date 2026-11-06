@@ -1,4 +1,6 @@
 <script>
+import { t as $t } from '../i18n';
+
 export default {
   name: 'CreateEvent',
   emits: ['navigate-view', 'event-published'],
@@ -105,21 +107,21 @@ export default {
     },
     async handlePublish() {
       if (!this.eventTitle || !this.descriptionText || !this.eventDate || !this.eventStatus) {
-        alert("All mandatory fields must be filled !");
+        alert($t('allFieldsMandatory'));
         return;
       }
       if (!this.isEditMode && !this.actualFile) {
-        alert("Please insert a photo or video before publishing the event!");
+        alert($t('insertMediaAlert'));
         return;
       }
 
       // Controllo valori negativi per Max Capacity e Ticket Price
       if (this.maxCapacity !== '' && Number(this.maxCapacity) < 0) {
-        alert("Max capacity cannot be less than 0!");
+        alert($t('capacityNegative'));
         return;
       }
       if (this.ticketPrice !== '' && Number(this.ticketPrice) < 0) {
-        alert("Ticket price cannot be less than 0!");
+        alert($t('priceNegative'));
         return;
       }
 
@@ -252,9 +254,9 @@ function currenttagsIncludes(arr, val) {
 
   <main class="main-content">
     <div class="page-title-row">
-      <h1 class="page-title">{{ isEditMode ? 'EDIT EVENT' : 'CREATE AN EVENT' }}</h1>
+      <h1 class="page-title">{{ isEditMode ? $t('editEventTitle') : $t('createEventTitle') }}</h1>
       <button class="action-btn nav-visual-btn" @click="goToVisualPage">
-        📂 MY EVENTS
+          {{ $t('myEvents') }}
       </button>
     </div>
 
@@ -263,7 +265,7 @@ function currenttagsIncludes(arr, val) {
 
         <!-- STEP 1: CONTENT MEDIA -->
         <div class="step-column" :class="{ 'step-active': activeStep === 1 }" @click="goToStep(1)">
-          <div class="step-header-label">1. CONTENT MEDIA</div>
+          <div class="step-header-label">{{ $t('contentMedia') }}</div>
           <div class="media-outer-wrapper">
             <div
               class="media-preview clickable"
@@ -271,7 +273,7 @@ function currenttagsIncludes(arr, val) {
             >
               <!-- Map Toggle Button -->
               <button type="button" class="media-map-toggle-btn" @click.stop="toggleMapBox">
-                {{ showMapBox ? '🗺️ Hide map' : '🗺️ View map' }}
+                {{ showMapBox ? $t('hideMap') : $t('viewMap') }}
               </button>
 
               <!-- Remove Media Button (Only shows when file is uploaded) -->
@@ -287,7 +289,7 @@ function currenttagsIncludes(arr, val) {
 
               <div @click="triggerFileInput" class="media-inner-click-area">
                 <template v-if="!uploadedMediaSrc">
-                  <span>Click here to insert photo/video</span>
+                  <span>{{ $t('insertMedia') }}</span>
                 </template>
                 <template v-else>
                   <video
@@ -313,7 +315,7 @@ function currenttagsIncludes(arr, val) {
         <!-- STEP 2: MAP LOCATION (Animated transition wrapper) -->
         <transition name="map-slide">
           <div class="step-column" v-if="showMapBox" :class="{ 'step-active': activeStep === 2 }" @click="goToStep(2)">
-            <div class="step-header-label">2. MAP LOCATION</div>
+            <div class="step-header-label">{{ $t('mapLocation') }}</div>
             <div class="map-container-inline">
               <div class="map-inner-wrapper">
                 <iframe
@@ -333,27 +335,27 @@ function currenttagsIncludes(arr, val) {
 
         <!-- STEP 3: EVENT DETAILS (RIGHT) -->
         <div class="step-column right-section" :class="{ 'step-active': activeStep === 3 }" @click="goToStep(3)">
-          <div class="step-header-label">3. EVENT DETAILS</div>
+          <div class="step-header-label">{{ $t('eventDetails') }}</div>
           <div class="event-details-bar-vertical">
 
             <div class="detail-input-group">
-              <label for="event-title">TITLE *</label>
+              <label for="event-title">{{ $t('titleLabel') }}</label>
               <input
                 id="event-title"
                 type="text"
                 v-model="eventTitle"
-                placeholder="E.g. Night Club Party"
+                :placeholder="$t('titlePlaceholder')"
                 class="custom-input"
                 required
               />
             </div>
 
             <div class="detail-input-group">
-              <label for="event-description">DESCRIPTION *</label>
+              <label for="event-description">{{ $t('descriptionLabel') }}</label>
               <textarea
                 id="event-description"
                 v-model="descriptionText"
-                placeholder="Describe your event..."
+                :placeholder="$t('descriptionPlaceholder')"
                 class="custom-input textarea-input"
                 rows="1"
                 required
@@ -361,18 +363,18 @@ function currenttagsIncludes(arr, val) {
             </div>
 
             <div class="detail-input-group">
-              <label for="event-location">LOCATION *</label>
+              <label for="event-location">{{ $t('locationLabel') }}</label>
               <input
                 id="event-location"
                 type="text"
-                placeholder="Find desired address or location"
+                :placeholder="$t('locationPlaceholder')"
                 class="custom-input map-input"
                 v-model="eventLocation"
               />
             </div>
 
             <div class="detail-input-group">
-              <label for="event-date">EVENT START & TIME *</label>
+              <label for="event-date">{{ $t('eventStart') }}</label>
               <input
                 id="event-date"
                 type="datetime-local"
@@ -390,7 +392,7 @@ function currenttagsIncludes(arr, val) {
             /> -->
             <div class="form-row">
               <div class="detail-input-group">
-                <label for="end-time">EVENT END & TIME</label>
+                <label for="end-time">{{ $t('eventEnd') }}</label>
                 <input
                   id="end-time"
                   type="datetime-local"
@@ -402,25 +404,25 @@ function currenttagsIncludes(arr, val) {
 
             <div class="form-row">
               <div class="detail-input-group">
-                <label for="max-capacity">MAX CAPACITY</label>
+                <label for="max-capacity">{{ $t('maxCapacityLabel') }}</label>
                 <input
                   id="max-capacity"
                   type="number"
                   min="0"
                   v-model="maxCapacity"
-                  placeholder="E.g. 500"
+                  :placeholder="$t('capacityPlaceholder')"
                   class="custom-input"
                 />
               </div>
               <div class="detail-input-group">
-                <label for="ticket-price">TICKET PRICE (€)</label>
+                <label for="ticket-price">{{ $t('ticketPriceLabel') }}</label>
                 <input
                   id="ticket-price"
                   type="number"
                   step="0.01"
                   min="0"
                   v-model="ticketPrice"
-                  placeholder="E.g. 15.00"
+                  :placeholder="$t('pricePlaceholder')"
                   class="custom-input"
                 />
               </div>
@@ -428,17 +430,17 @@ function currenttagsIncludes(arr, val) {
 
             <!-- STATUS POSTO PRIMA DEI TAGS -->
             <div class="detail-input-group">
-              <label for="event-status">STATUS *</label>
+              <label for="event-status">{{ $t('statusLabel') }}</label>
               <select id="event-status" v-model="eventStatus" class="custom-input custom-select" required>
-                <option value="active">Active</option>
-                <option value="draft">Draft</option>
-                <option value="scheduled">Scheduled</option>
+                <option value="active">{{ $t('statusActive') }}</option>
+                <option value="draft">{{ $t('statusDraft') }}</option>
+                <option value="scheduled">{{ $t('statusScheduled') }}</option>
               </select>
             </div>
 
             <!-- TAGS POSTI SOTTO ALLO STATUS -->
             <div class="detail-input-group">
-              <label>TAGS</label>
+              <label>{{ $t('tagsLabel') }}</label>
               <div class="tag-selector-container">
                 <div
                   v-for="t in availableTags"
@@ -459,9 +461,9 @@ function currenttagsIncludes(arr, val) {
       </div>
 
       <div class="publish-action-bar">
-        <button class="publish-btn" @click="handlePublish">
-          {{ isEditMode ? 'SAVE CHANGES' : (eventStatus === 'scheduled' ? 'SCHEDULE EVENT' : 'PUBLISH EVENT') }}
-        </button>
+      <button class="publish-btn" @click="handlePublish">
+        {{ isEditMode ? $t('saveChanges') : (eventStatus === 'scheduled' ? $t('scheduleEvent') : $t('publishEvent')) }}
+      </button>
       </div>
     </section>
   </main>
@@ -581,9 +583,9 @@ textarea::placeholder {
   align-items: center;
   justify-content: space-between;
   padding: 12px 30px;
-  width: calc(100% - 40px);
+  width: 100%; /* Badlna width: calc(100% - 40px) b 100% */
   max-width: 1550px;
-  margin: 15px auto 15px auto;
+  margin: 15px auto;
   box-sizing: border-box;
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(16px);
@@ -591,6 +593,11 @@ textarea::placeholder {
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 16px;
   flex-shrink: 0;
+}
+
+/* Zid had l'fix 3la wed RTL Navbar */
+[dir="rtl"] .navbar {
+  flex-direction: row-reverse;
 }
 
 .nav-left, .nav-right {
@@ -1045,4 +1052,36 @@ textarea::placeholder {
     height: 440px;
   }
 }
+
+/* RTL Fixes for Create Event Page */
+[dir="rtl"] .preview-box {
+  flex-direction: row-reverse; /* Hada kiy-qleb l'columns f RTL bach tb9a l'Media 3la l'iser w details 3la limn (aw l'3ekss kima bghiti) */
+  justify-content: space-between; /* Hada kiy-ferreqhom 3la b3diyathom */
+  gap: 30px; /* Zidna chwya f l'espace binathom f RTL */
+}
+
+/* Ila bghiti tfiy-fixer 7ta l'titles dyalhom bach ib9aw m9addin f RTL */
+[dir="rtl"] .step-header-label {
+  text-align: right;
+  padding-right: 5px;
+  padding-left: 0;
+}
+
+/* L'inputs dyal l'details khasshom ijiw mn l'imin l'isser f RTL */
+[dir="rtl"] .detail-input-group {
+  text-align: right;
+}
+
+[dir="rtl"] .custom-input {
+  text-align: right;
+}
+
+[dir="rtl"] .form-row {
+  flex-direction: row-reverse; /* Hada kiy-qleb "Max Capacity" w "Ticket Price" f RTL */
+}
+
+[dir="rtl"] .tag-selector-container {
+  justify-content: flex-end; /* Tags kiybano mn limin */
+}
+
 </style>

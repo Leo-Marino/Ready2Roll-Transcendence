@@ -29,6 +29,49 @@ body, html {
 }
 
 /* ================================================== */
+/* 🌐 RTL (ARABIC) SUPPORT (Ga3 les pages) 🌐 */
+/* ================================================== */
+
+/* Fix Navbar in RTL */
+[dir="rtl"] .navbar {
+  direction: ltr !important;
+  flex-direction: row !important;
+}
+
+/* Force alignment inside the navbar to avoid squishing in the center */
+[dir="rtl"] .navbar .nav-left,
+[dir="rtl"] .navbar .nav-right {
+  direction: ltr !important;
+}
+
+/* Fix Sidebar positioning in RTL (HomePage, Profile, etc.) */
+[dir="rtl"] .main-content {
+  flex-direction: row-reverse; /* Keep left sidebar on the left */
+}
+
+/* Fix text alignment in RTL */
+[dir="rtl"] .profile-info,
+[dir="rtl"] .stats-row,
+[dir="rtl"] .name-row {
+  text-align: right;
+  align-items: flex-end;
+}
+[dir="rtl"] .name-row h2 {
+  flex-direction: row-reverse; /* Badge on the left of the name */
+}
+
+[dir="rtl"] .left-sidebar .menu-item {
+   flex-direction: row-reverse;
+   justify-content: flex-end;
+}
+
+[dir="rtl"] .action-buttons-styled {
+   right: auto;
+   left: 20px; /* Move buttons to the left side */
+   flex-direction: row-reverse;
+}
+
+/* ================================================== */
 /* 📱 GLOBAL RESPONSIVE DESIGN (Ga3 les pages) 📱 */
 /* ================================================== */
 @media (max-width: 1024px) {
@@ -41,11 +84,12 @@ body, html {
   }
 
   /* 1. Navbar */
-  .navbar {
+  .navbar, [dir="rtl"] .navbar {
     width: 100% !important;
     padding: 8px 12px !important;
     gap: 10px !important;
     box-sizing: border-box !important;
+    flex-direction: row !important; /* Reset to row on mobile */
   }
 
   .logo-text {
@@ -57,7 +101,7 @@ body, html {
   }
 
   /* 2. Main Content & Sidebars (Home, Profile, Chat) */
-  .main-content {
+  .main-content, [dir="rtl"] .main-content {
     flex-direction: column !important;
     height: auto !important;
     overflow: visible !important;
@@ -81,7 +125,7 @@ body, html {
     width: 100% !important;
   }
 
-  .profile-header {
+  .profile-header, [dir="rtl"] .profile-header {
     flex-direction: column !important;
     align-items: center !important;
     text-align: center !important;
@@ -89,14 +133,18 @@ body, html {
     padding: 20px 15px !important;
   }
 
-  .profile-info {
+  .profile-info, [dir="rtl"] .profile-info {
     align-items: center !important;
     width: 100% !important;
+    text-align: center !important;
   }
 
   .name-row,
   .name-row h2,
-  .stats-row {
+  .stats-row,
+  [dir="rtl"] .name-row,
+  [dir="rtl"] .name-row h2,
+  [dir="rtl"] .stats-row {
     justify-content: center !important;
   }
 
@@ -107,10 +155,12 @@ body, html {
 
   /* 4. Buttons dyal ProfileView (.action-buttons-styled) o OtherUserProfileView (.action-buttons) */
   .action-buttons,
-  .action-buttons-styled {
+  .action-buttons-styled,
+  [dir="rtl"] .action-buttons-styled {
     position: static !important;
     bottom: auto !important;
     right: auto !important;
+    left: auto !important;
     margin-top: 10px !important;
     width: 100% !important;
     justify-content: center !important;

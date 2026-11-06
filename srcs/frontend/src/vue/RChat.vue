@@ -1,6 +1,6 @@
 <script setup>
 import { ref, nextTick, onBeforeUnmount } from 'vue';
-
+import { t as $t } from '../i18n';
 // =====================================================================
 //  R Chat: floating assistant for the home page (FRONTEND ONLY for now)
 //
@@ -164,7 +164,7 @@ const showSuggestions = () => messages.value.length === 1 && !isTyping.value;
           </div>
           <div class="rc-title-block">
             <h3 class="rc-title">Rolly</h3>
-            <p class="rc-status"><span class="rc-dot"></span>{{ isTyping ? 'typing...' : 'online' }}</p>
+            <p class="rc-status"><span class="rc-dot"></span>{{ isTyping ? $t('rollyStatusTyping') : $t('rollyStatusOnline') }}</p>
           </div>
           <button class="rc-close" @click="close" aria-label="Close Rolly">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="rc-close-icon">
@@ -207,6 +207,7 @@ const showSuggestions = () => messages.value.length === 1 && !isTyping.value;
             placeholder="Ask Rolly..."
             maxlength="500"
             autocomplete="off"
+            :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'"
           >
           <button type="submit" class="rc-send" :disabled="!input.trim() || isTyping" aria-label="Send">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="rc-send-icon">
@@ -369,4 +370,21 @@ const showSuggestions = () => messages.value.length === 1 && !isTyping.value;
   .rc-mini-busy, .rc-dot, .rc-typing i, .rc-chip { animation: none !important; }
   .rc-panel-enter-active, .rc-panel-leave-active, .rc-msg-enter-active { transition: none !important; }
 }
+
+[dir="rtl"] .rc-root {
+  left: auto !important;
+  right: 24px !important;
+  align-items: flex-end !important; /* L'fenêtre d'chat tweli m9adda m3a l'bouton f limin */
+}
+
+/* Modal dyal Chat khasso yt7el mn limin machi mn l'isser */
+[dir="rtl"] .rc-panel {
+  transform-origin: bottom right !important;
+}
+
+/* N9addo l'icone dyal l'input bach tji 3la l'isser f RTL */
+[dir="rtl"] .rc-send-icon {
+  transform: scaleX(-1); /* Kat-qleb l'icone d l'irsar (papie-plane) */
+}
+
 </style>

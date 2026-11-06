@@ -3,6 +3,8 @@ import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } 
 import RChat from './RChat.vue';
 import SearchBar from './SearchBar.vue';
 import NotificationBell from './NotificationBell.vue';
+import LanguageSwitcher from './LanguageSwitcher.vue';
+import { t as $t } from '../i18n';
 
 //--------------------xh start----------------
 const props = defineProps({ mode: { type: String, default: 'for_you' } });
@@ -352,6 +354,7 @@ onBeforeUnmount(() => {
       </div> -->
       <SearchBar />
       <div class="nav-icons">
+        <LanguageSwitcher />
         <NotificationBell />
         <router-link to="/chat" class="nav-icon-link">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
@@ -372,7 +375,7 @@ onBeforeUnmount(() => {
     <div class="main-content">
       <aside class="left-sidebar glass-panel">
         <nav class="main-menu">
-          <h3>Menu</h3>
+          <h3>{{ $t('menu') }}</h3>
           <ul>
             <li @click="$router.push('/home')" class="menu-item">
               <svg
@@ -390,7 +393,7 @@ onBeforeUnmount(() => {
                 <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/>
                 <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
               </svg>
-              <span>For you</span>
+              <span>{{ $t('forYou') }}</span>
             </li>
             <li @click="$router.push('/subscriptions')" class="menu-item">
               <svg
@@ -408,7 +411,7 @@ onBeforeUnmount(() => {
                 <path d="M16.051 12.616a1 1 0 0 1 1.909.024l.737 1.452a1 1 0 0 0 .737.535l1.634.256a1 1 0 0 1 .588 1.806l-1.172 1.168a1 1 0 0 0-.282.866l.259 1.613a1 1 0 0 1-1.541 1.134l-1.465-.75a1 1 0 0 0-.912 0l-1.465.75a1 1 0 0 1-1.539-1.133l.258-1.613a1 1 0 0 0-.282-.866l-1.156-1.153a1 1 0 0 1 .572-1.822l1.633-.256a1 1 0 0 0 .737-.535z"/>
                 <path d="M8 15H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/>
               </svg>
-              <span>subscriptions</span>
+              <span>{{ $t('subscriptions') }}</span>
             </li>
             <li @click="$router.push('/discover')" class="menu-item">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-svg-icon">
@@ -420,7 +423,7 @@ onBeforeUnmount(() => {
                   <path d="M3 12l2 0" />
                   <path d="M19 12l2 0" />
                 </svg>
-              <span>discover</span>
+              <span>{{ $t('discover') }}</span>
             </li>
           </ul>
         </nav>
@@ -493,13 +496,13 @@ onBeforeUnmount(() => {
                 class="subscribe-btn"
                 :class="{ subscribed: activeEvent.owner.is_following }"
                 @click="toggleSubscribe">
-                {{ activeEvent.owner.is_following ? 'Subscribed' : 'Subscribe' }}
+                {{ activeEvent.owner.is_following ? 'Followed' : 'Follow' }}
               </button>
             </div>
             <p class="description">{{ activeEvent.description }}</p>
           </div>
 
-<div class="action-buttons glass-panel" style="display: flex; justify-content: space-around; padding: 10px; gap: 10px;">
+          <div class="action-buttons glass-panel" style="display: flex; justify-content: space-around; padding: 10px; gap: 10px;">
             <!-- LIKES BUTTON -->
             <button :class="{ liked: activeEvent.is_liked }" @click="toggleLike" style="display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1;">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" :fill="activeEvent.is_liked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart">
@@ -526,7 +529,7 @@ onBeforeUnmount(() => {
           </div>
 
           <div class="comments-section glass-panel">
-            <h3>Comments</h3>
+            <h3>{{ $t('comments') }}</h3>
 
             <!-- Scrollable list: newest comment is at the bottom, right above the input -->
             <div class="comments-list" ref="commentsListRef">
@@ -539,7 +542,7 @@ onBeforeUnmount(() => {
                     <p class="comment-line"><strong>{{ comment.user_username }}</strong> {{ comment.content }}</p>
                     <div class="comment-meta">
                       <span>{{ timeAgo(comment.created_at) }}</span>
-                      <button class="reply-btn" @click="startReply(comment, comment)">Reply</button>
+                      <button class="reply-btn" @click="startReply(comment, comment)">{{ $t('reply') }}</button>
                       <!-- reaction -->
                       <div class="reaction-wrap" @mouseenter="showPicker(comment.id)" @mouseleave="hidePicker">
                         <button
@@ -580,13 +583,13 @@ onBeforeUnmount(() => {
                         </div>
                       </div>
                     </div>
-<!-- reaction -->
+                    <!-- reaction -->
                     <button
                       v-if="comment.reply_count > 0"
                       class="view-replies-btn"
                       @click="toggleReplies(comment.id)">
                       <span class="replies-line"></span>
-                      {{ expandedReplies[comment.id] ? 'Hide replies' : `View ${comment.reply_count} ${comment.reply_count === 1 ? 'reply' : 'replies'}` }}
+                      {{ expandedReplies[comment.id] ? $t('hideReplies') : `${$t('viewReplies')} ${comment.reply_count}` }}
                     </button>
 
                     <div v-if="expandedReplies[comment.id]" class="replies">
@@ -596,7 +599,7 @@ onBeforeUnmount(() => {
                           <p class="comment-line"><strong>{{ reply.user_username }}</strong> {{ reply.content }}</p>
                           <div class="comment-meta">
                             <span>{{ timeAgo(reply.created_at) }}</span>
-                            <button class="reply-btn" @click="startReply(reply, comment)">Reply</button>
+                            <button class="reply-btn" @click="startReply(reply, comment)">{{ $t('reply') }}</button>
                             <div class="reaction-wrap" @mouseenter="showPicker(reply.id)" @mouseleave="hidePicker">
                               <button
                                 type="button"
@@ -647,7 +650,7 @@ onBeforeUnmount(() => {
             <!-- Input pinned at the bottom -->
             <div class="comment-composer">
               <div v-if="replyingTo" class="replying-bar">
-                <span>Replying to <strong>@{{ replyingTo.username }}</strong></span>
+                <span>{{ $t('replyingTo') }} <strong>@{{ replyingTo.username }}</strong></span>
                 <button class="cancel-reply" @click="cancelReply" aria-label="Cancel reply">✕</button>
               </div>
               <div class="add-comment-area">
@@ -655,11 +658,12 @@ onBeforeUnmount(() => {
                   ref="commentInputRef"
                   type="text"
                   v-model="newCommentText"
-                  :placeholder="replyingTo ? 'Write a reply...' : 'Add a comment...'"
+                  :placeholder="replyingTo ? $t('reply') + '...' : $t('addComment')"
                   @keyup.enter="postComment"
                   class="comment-input"
+                  :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'"
                 />
-                <button @click="postComment" class="send-comment-btn" :disabled="isSending || !newCommentText.trim()">Post</button>
+                <button @click="postComment" class="send-comment-btn" :disabled="isSending || !newCommentText.trim()">{{ $t('post') }}</button>
               </div>
             </div>
           </div>
