@@ -533,7 +533,7 @@ onBeforeUnmount(() => {
                 class="subscribe-btn"
                 :class="{ subscribed: activeEvent.owner.is_following }"
                 @click="toggleSubscribe">
-                {{ activeEvent.owner.is_following ? 'Subscribed' : 'Subscribe' }}
+                {{ activeEvent.owner.is_following ? 'Followed' : 'Follow' }}
               </button>
             </div>
             <p class="description">{{ activeEvent.description }}</p>
