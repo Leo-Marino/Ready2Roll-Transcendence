@@ -2,7 +2,6 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from events.models import Tag
 
-
 User = get_user_model()
 
 ALLOWED_TAGS = ['Disco', 'Trap', 'Hip Hop', 'Rock', 'Jazz']

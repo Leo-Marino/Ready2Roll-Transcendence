@@ -21,12 +21,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-%98wn2yu^vx$i%g_(e_!x@wbc*qnav)%jd1mc(a*%*!h1ycj2w'
+SECRET_KEY = os.environ['SECRET_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
+DEBUG = os.environ.get('DJANGO_DEBUG', '0') == '1'
 
 
 # Application definition
@@ -154,15 +152,13 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-ALLOWED_HOSTS = ['*']
+_hosts = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
+_port = os.environ.get("PUBLIC_PORT", "8443")
 
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:5173",
-#     "http://127.0.0.1:5173",
-
-# ]
-
-CORS_ALLOW_ALL_ORIGINS = True
+ALLOWED_HOSTS = _hosts
+CSRF_TRUSTED_ORIGINS = [f"https://{h}:{_port}" for h in _hosts]
+CORS_ALLOWED_ORIGINS = CSRF_TRUSTED_ORIGINS
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Custom User Model
 AUTH_USER_MODEL = 'users.User'
@@ -196,7 +192,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.pubsub.RedisPubSubChannelLayer",
         "CONFIG": {
-            "hosts": [(os.getenv('REDIS_URL', 'redis://redis_cache:6379/0'))],
+            "hosts": [os.environ['REDIS_URL']],
             "capacity": 1500,
             "expiry": 10,
         },

@@ -71,6 +71,17 @@ class EventSerializer(serializers.ModelSerializer):
         media = Media.objects.filter(event=obj).first()
         return media.media_type if media else None
 
+    def get_media_src(self, obj):
+            media = Media.objects.filter(event=obj).first()
+            if media and media.media_url:
+                # Force a relative path so the frontend uses the current domain/port (e.g. localhost:8080)
+                return f"/media/{media.media_url.name}"
+            return None
+
+    def get_media_type(self, obj):
+        media = Media.objects.filter(event=obj).first()
+        return media.media_type if media else None
+
     def create(self, validated_data):
         media_file = validated_data.pop('media_file', None)
 
@@ -122,6 +133,12 @@ class FeedEventSerializer(serializers.ModelSerializer):
             request = self.context.get('request')
             url = media.media_url.url
             return request.build_absolute_uri(url) if request else url
+        return None
+
+    def get_media_src(self, obj):
+        media = self._media(obj)
+        if media and media.media_url:
+            return f"/media/{media.media_url.name}"
         return None
 
     def get_media_type(self, obj):

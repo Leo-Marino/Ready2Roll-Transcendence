@@ -1,5 +1,7 @@
 .env
 *Zone.Identifier
+vault-bootstrap.sh
+secrets/
 
 # Logs
 logs
@@ -41,6 +43,19 @@ __screenshots__/
 # Vite
 *.timestamp-*-*.mjs
 
+# Vault
+srcs/vault/tls/*
+srcs/vault/secrets/secrets/
+srcs/vault/tls/*.key
+
+# Waf
+srcs/waf/*
+
+r2r-secrets.json
+unseal_keys.txt
+
+# Migration
+*initial.py
 # Local Redis Storage
 data/
 
