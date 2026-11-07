@@ -192,6 +192,15 @@ const handleSocialMessage = (message) => {
         else ev.comments_count = data.comments_count;
       });
     });
+  } else if (action === 'update_profile') {
+    // ---> ADDED THIS BLOCK FOR LIVE PROFILE UPDATES <---
+    if (targetId === userProfile.value.id) {
+      userProfile.value.name = data.username;
+      userProfile.value.description = data.user_bio;
+      if (data.user_avatar) {
+         userProfile.value.avatar = data.user_avatar;
+      }
+    }
   } else if (action === 'resync') {
     fetchMyEvents();
     if (activeTab.value === 'likes') fetchLikedEvents();

@@ -37,7 +37,7 @@ def _group_send(group, payload):
 def broadcast_social_action(action, target_id, data=None):
     """Tell every connected client that something changed.
 
-    action:    "like" | "comment" | "comment_reaction" | "follow"
+    action:    "like" | "comment" | "comment_reaction" | "follow" | "update_profile"
     target_id: id of the object the action refers to (event, comment, user)
     data:      small dict with the NEW absolute values (counts, ids...)
     """

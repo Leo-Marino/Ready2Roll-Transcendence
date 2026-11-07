@@ -69,7 +69,7 @@ const fetchUserProfile = async (userId) => {
     const data = await response.json();
     userProfile.value.name = data.username || '';
     userProfile.value.description = data.bio || '';
-    userProfile.value.avatar = data.avatar_url || DEFAULT_AVATAR;   // URL gia' completo dal backend
+    userProfile.value.avatar = data.avatar_url || DEFAULT_AVATAR;
     userProfile.value.following = data.following_count || 0;
     userProfile.value.followers = data.followers_count || 0;
     isFollowing.value = !!data.is_following;
@@ -112,6 +112,21 @@ const handleSocialMessage = (message) => {
       if (action === 'like') ev.likes_count = data.likes_count;
       else ev.comments_count = data.comments_count;
     });
+} else if (action === 'update_profile') {
+    // ---> BULLETPROOF LIVE PROFILE UPDATES <---
+    if (targetId === Number(route.params.id)) {
+      // Check all possible backend key names, fallback to existing name if missing
+      userProfile.value.name = data.username || data['user.name'] || data.name || userProfile.value.name;
+
+      // Same for bio
+      userProfile.value.description = data.user_bio || data.bio || userProfile.value.description;
+
+      // Same for avatar
+      const newAvatar = data.user_avatar || data.avatar_url || data.avatar;
+      if (newAvatar) {
+         userProfile.value.avatar = newAvatar;
+      }
+    }
   } else if (action === 'resync') {
     fetchUserProfile(route.params.id);
     fetchUserEvents(route.params.id);

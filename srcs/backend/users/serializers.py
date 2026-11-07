@@ -81,7 +81,16 @@ class ViewerRelationMixin(serializers.Serializer):
         viewer = self._viewer()
         return viewer is not None and viewer.pk == obj.pk
 
-class PublicUserProfileSerializer(FollowCountsMixin, ViewerRelationMixin, serializers.ModelSerializer):
+class AvatarUrlMixin(serializers.Serializer):
+    avatar_url = serializers.SerializerMethodField()
+
+    def get_avatar_url(self, obj):
+        if obj.avatar_url and obj.avatar_url.name:
+            # Force a relative path so the frontend uses the correct domain/port
+            return f"/media/{obj.avatar_url.name}"
+        return None
+
+class PublicUserProfileSerializer(FollowCountsMixin, ViewerRelationMixin, AvatarUrlMixin, serializers.ModelSerializer):
     """Profilo visto da un ALTRO utente (GET /api/users/<id>/). Niente dati privati."""
 
     class Meta:
