@@ -13,7 +13,7 @@ from django.db.models import Q
 from django.contrib.auth import get_user_model
 
 from .models import Subscription, Comment, EventLike, Reaction
-from .serializers import CommentSerializer
+from .serializers import CommentSerializer, DEFAULT_AVATAR
 from events.serializers import FeedEventSerializer
 from notifications.services import notify, unnotify, short
 from .realtime import broadcast_social_action, push_message_signal
@@ -267,10 +267,9 @@ class ContactsView(APIView):
     def get(self, request):
         me = request.user
 
-        # Walk through all my DMs, newest first: the first message we meet
-        # for a given contact is the last message of that conversation.
-        last_msg = {}      # other_user_id -> DirectMessage
-        unread = {}        # other_user_id -> number of unread messages received
+        # 1. Gather all active DMs and count unread messages
+        last_msg = {}
+        unread = {}
         dms = (
             DirectMessage.objects
             .filter(Q(sender=me) | Q(receiver=me))
@@ -283,31 +282,30 @@ class ContactsView(APIView):
             if m.receiver_id == me.id and not m.is_read:
                 unread[other_id] = unread.get(other_id, 0) + 1
 
+
         data = []
-        for u in User.objects.exclude(id=me.id):
+        # 3. Only return users in this combined list
+        for u in User.objects.filter(id__in=last_msg).exclude(id=me.id):
             m = last_msg.get(u.id)
             if m:
                 prefix = "You: " if m.sender_id == me.id else ""
                 last_text = prefix + m.content
                 last_at = m.created_at.isoformat()
             else:
-                last_text = "Click to chat..."
+                last_text = "Click to start chatting"
                 last_at = None
+
+            # Send the REAL avatar_url so Vue can construct the MinIO link
             data.append({
                 "id": u.id,
-                "name": u.username,
-                # Fallback to a placeholder if they don't have an avatar setup yet
-                "img": "https://i.pravatar.cc/150?u=" + str(u.id),
+                "username": u.username,
+                "avatar_url": str(u.avatar_url) if u.avatar_url else DEFAULT_AVATAR,
                 "lastMsg": last_text,
                 "lastMsgAt": last_at,
                 "unread": unread.get(u.id, 0),
             })
 
-        return Response(data)
-        # Latest conversation first; users we never talked to go at the bottom (A-Z)
-        with_msgs = sorted((d for d in data if d["lastMsgAt"]), key=lambda d: d["lastMsgAt"], reverse=True)
-        without = sorted((d for d in data if not d["lastMsgAt"]), key=lambda d: d["name"].lower())
-        return Response(with_msgs + without)
+        return Response(data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

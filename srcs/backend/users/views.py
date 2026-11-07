@@ -16,6 +16,7 @@ from .serializers import (
 from rest_framework_simplejwt.tokens import RefreshToken
 from events.models import Event
 from events.serializers import EventSerializer
+from social.serializers import DEFAULT_AVATAR
 
 User = get_user_model()
 
@@ -107,18 +108,32 @@ def chat_contacts_view(request, user_id=None):
 def user_search_view(request):
     """
     Cerca tra tutti gli utenti registrati nel database per avviare una nuova chat.
-    Endpoint: GET /api/social/users/search/?q=...
+    Endpoint: GET /api/users/search/?q=...
     """
     query = request.GET.get('q', '').strip()
     user = request.user
+
     if not query:
         return Response([], status=status.HTTP_200_OK)
+
     users = User.objects.filter(
         Q(username__icontains=query) | Q(email__icontains=query),
-        is_active=True
     ).exclude(id=user.id).exclude(username__iexact='admin').exclude(email__iexact='admin')[:15]
-    
-    serializer = FollowUserSerializer(users, many=True, context={'request': request})
-    return Response(serializer.data, status=status.HTTP_200_OK)
 
+    serializer = FollowUserSerializer(users, many=True, context={'request': request})
+
+    # --- DEFAULT AVATAR LOGIC ---
+    # Define your default avatar URL here
+    DEFAULT_AVATAR = "https://i.pravatar.cc/150?u=6"
+
+    # serializer.data is immutable, so we create a new list to hold the modified data
+    response_data = []
+    for item in serializer.data:
+        user_dict = dict(item)
+        # If avatar_url is None or an empty string, set it to DEFAULT_AVATAR
+        if not user_dict.get('avatar_url'):
+            user_dict['avatar_url'] = DEFAULT_AVATAR
+        response_data.append(user_dict)
+
+    return Response(response_data, status=status.HTTP_200_OK)
 # WIP ALEK

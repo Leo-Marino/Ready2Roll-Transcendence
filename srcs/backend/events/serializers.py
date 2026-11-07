@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Event, Media, Tag
+from social.serializers import DEFAULT_AVATAR
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
@@ -89,7 +90,6 @@ class EventSerializer(serializers.ModelSerializer):
         return event
 
 
-DEFAULT_AVATAR = "https://i.pravatar.cc/150?u=6"
 
 
 class FeedEventSerializer(serializers.ModelSerializer):

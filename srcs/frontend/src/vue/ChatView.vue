@@ -19,18 +19,18 @@ watch(searchQuery, async (newQuery) => {
   }
   const token = getToken();
   try {
-    const res = await fetch(`/api/social/users/search/?q=${encodeURIComponent(newQuery.trim())}`, {
+    const res = await fetch(`/api/users/search/?q=${encodeURIComponent(newQuery.trim())}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     if (res.ok) {
       const data = await res.json();
       // Escludiamo l'admin dai risultati della ricerca
       const filteredData = data.filter(u => u.username?.toLowerCase() !== 'admin' && u.email?.toLowerCase() !== 'admin');
-      
+
       searchResults.value = filteredData.map(u => ({
         id: u.id,
         name: u.username,
-        img: u.avatar_url ? (u.avatar_url.startsWith('http') ? u.avatar_url : `http://localhost:9000/media/${u.avatar_url}`) : 'https://i.pravatar.cc/150?u=' + u.id,
+        img: u.avatar_url ? (u.avatar_url.startsWith('http') ? u.avatar_url : `http://localhost:9000/media/${u.avatar_url}`) : null,
         lastMsg: 'Click to start chatting',
         lastMsgAt: null,
         unread: 0
@@ -84,7 +84,9 @@ const fetchContacts = async () => {
       contacts.value = data.map(u => ({
         id: u.id,
         name: u.username,
-        img: u.avatar_url ? (u.avatar_url.startsWith('http') ? u.avatar_url : `http://localhost:9000/media/${u.avatar_url}`) : 'https://i.pravatar.cc/150?u=' + u.id,
+        img: u.avatar_url ? (u.avatar_url.startsWith('http') ? u.avatar_url : `http://localhost:9000/media/${u.avatar_url}`) : null,
+//        avatar: user.avatar_url ? (user.avatar_url.startsWith('http') ? user.avatar_url : `http://localhost:9000/media/${user.avatar_url}`) : 'https://i.pravatar.cc/150?u=6'
+
         lastMsg: u.lastMsg || '',
         lastMsgAt: u.lastMsgAt || null,
         unread: u.unread || 0
@@ -202,7 +204,7 @@ onBeforeUnmount(() => {
         <div class="sidebar-search-bar">
           <input type="text" v-model="searchQuery" placeholder="Search users to chat..." autocomplete="off">
         </div>
-        
+
         <h3>Messages</h3>
 
         <!-- Risultati della ricerca globale -->
