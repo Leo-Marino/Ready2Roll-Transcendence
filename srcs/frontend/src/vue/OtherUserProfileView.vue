@@ -105,6 +105,21 @@ const handleSocialMessage = (message) => {
       if (action === 'like') ev.likes_count = data.likes_count;
       else ev.comments_count = data.comments_count;
     });
+} else if (action === 'update_profile') {
+    // ---> BULLETPROOF LIVE PROFILE UPDATES <---
+    if (targetId === Number(route.params.id)) {
+      // Check all possible backend key names, fallback to existing name if missing
+      userProfile.value.name = data.username || data['user.name'] || data.name || userProfile.value.name;
+
+      // Same for bio
+      userProfile.value.description = data.user_bio || data.bio || userProfile.value.description;
+
+      // Same for avatar
+      const newAvatar = data.user_avatar || data.avatar_url || data.avatar;
+      if (newAvatar) {
+         userProfile.value.avatar = newAvatar;
+      }
+    }
   } else if (action === 'resync') {
     fetchUserProfile(route.params.id);
     fetchUserEvents(route.params.id);

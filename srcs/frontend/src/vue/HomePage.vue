@@ -354,6 +354,38 @@ const handleSocialMessage = (message) => {
     if (data.event_id !== activeEventId.value) return;
     const comment = findCommentById(targetId);
     if (comment) comment.reactions_count = data.reactions_count;
+
+  } else if (action === 'update_profile') {
+    // ---> BULLETPROOF LIVE PROFILE UPDATES FOR THE FEED <---
+    // 1. Update the owner of any video in the feed
+    videos.value.forEach((v) => {
+      if (v.owner && v.owner.id === targetId) {
+        v.owner.display_name = data.username || data['user.name'] || data.name || v.owner.display_name;
+        v.owner.username = data.username || data['user.name'] || data.name || v.owner.username;
+        const newAvatar = data.user_avatar || data.avatar_url || data.avatar;
+        if (newAvatar) v.owner.avatar = newAvatar;
+      }
+    });
+    // 2. Update the avatars/names in the active comments section
+    comments.value.forEach((c) => {
+      // Top-level comments
+      if (c.user_id === targetId || (c.user && c.user.id === targetId)) {
+        c.user_username = data.username || data['user.name'] || data.name || c.user_username;
+        const newAvatar = data.user_avatar || data.avatar_url || data.avatar;
+        if (newAvatar) c.user_avatar = newAvatar;
+      }
+      // Replies
+      if (c.replies) {
+        c.replies.forEach((r) => {
+          if (r.user_id === targetId || (r.user && r.user.id === targetId)) {
+            r.user_username = data.username || data['user.name'] || data.name || r.user_username;
+            const newAvatar = data.user_avatar || data.avatar_url || data.avatar;
+            if (newAvatar) r.user_avatar = newAvatar;
+          }
+        });
+      }
+    });
+
   } else if (action === 'resync') {
     // The connection was down for a while: reload what is on screen
     if (activeEventId.value) fetchComments(activeEventId.value);

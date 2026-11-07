@@ -15,4 +15,8 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  server: {
+    host: '0.0.0.0',        // listen on all interfaces so other containers can reach it
+    allowedHosts: true,     // dev only: accept Host headers like "nginx" or "localhost:8443"
+  },
 })

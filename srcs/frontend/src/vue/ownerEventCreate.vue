@@ -20,8 +20,6 @@ export default {
       ticketPrice: '',
       startTime:'',
       endTime: '',
-      tags: '',
-      availableTags: ['Disco', 'Strip', 'DJ', 'Rave', 'Nostalgia', 'VIP', 'Cocktail', '420'],
       eventStatus: 'draft',
       uploadedMediaSrc: null,
       actualFile: null,
@@ -39,10 +37,6 @@ export default {
       }
       return this.eventDate;
     },
-    selectedTagsList() {
-      if (!this.tags) return [];
-      return this.tags.split(',').map(t => t.trim()).filter(Boolean);
-    }
   },
   mounted() {
     if (this.$route.query.edit === 'true') {
@@ -60,7 +54,6 @@ export default {
           this.endTime = ev.end_time ? String(ev.end_time).slice(0, 16) : '';
           this.maxCapacity = ev.max_capacity || '';
           this.ticketPrice = ev.ticket_price || '';
-          this.tags = Array.isArray(ev.tags) ? ev.tags.join(', ') : (ev.tags || '');
           this.eventStatus = ev.status ? ev.status.toLowerCase() : 'active';
           this.uploadedMediaSrc = ev.media_src || null;
           this.mediaType = ev.media_type || 'image';
@@ -81,18 +74,6 @@ export default {
     },
     toggleMapBox() {
       this.showMapBox = !this.showMapBox;
-    },
-    toggleTag(tagName) {
-      let currentTags = this.selectedTagsList;
-      if (currenttagsIncludes(currentTags, tagName)) {
-        currentTags = currentTags.filter(t => t.toLowerCase() !== tagName.toLowerCase());
-      } else {
-        currentTags.push(tagName);
-      }
-      this.tags = currentTags.join(', ');
-    },
-    isTagSelected(tagName) {
-      return this.selectedTagsList.some(t => t.toLowerCase() === tagName.toLowerCase());
     },
     handleFileUpload(event) {
       const file = event.target.files[0];
@@ -118,7 +99,6 @@ export default {
         return;
       }
 
-      // Controllo valori negativi per Max Capacity e Ticket Price
       if (this.maxCapacity !== '' && Number(this.maxCapacity) < 0) {
         alert($t('capacityNegative'));
         return;
@@ -140,18 +120,9 @@ export default {
       if (this.maxCapacity) formData.append('max_capacity', this.maxCapacity);
       if (this.ticketPrice) formData.append('ticket_price', this.ticketPrice);
       if (this.endTime) formData.append('end_time', this.endTime);
-      // start time = eventDAte
       if (this.eventDate) {
         formData.append('start_time', this.eventDate);
       }
-      //------------------------------------------
-      if (this.tags) {
-        const tagsArray = this.tags.split(',').map(tag => tag.trim()).filter(Boolean);
-        tagsArray.forEach(tag => {
-          formData.append('tags', tag);
-        });
-      }
-
       if (this.actualFile) {
         formData.append('media_file', this.actualFile);
         formData.append('media_type', this.mediaType);
@@ -205,11 +176,6 @@ export default {
       this.$emit('navigate-view');
     }
   }
-}
-
-// Helper interno per la ricerca dei tag selezionati
-function currenttagsIncludes(arr, val) {
-  return arr.some(t => t.toLowerCase() === val.toLowerCase());
 }
 </script>
 
@@ -430,7 +396,6 @@ function currenttagsIncludes(arr, val) {
               </div>
             </div>
 
-            <!-- STATUS POSTO PRIMA DEI TAGS -->
             <div class="detail-input-group">
               <label for="event-status">{{ $t('statusLabel') }}</label>
               <select id="event-status" v-model="eventStatus" class="custom-input custom-select" required>
@@ -983,57 +948,6 @@ textarea::placeholder {
   color: #000000;
   box-shadow: 0 0 25px rgba(0, 242, 254, 0.8);
   transform: translateY(-2px);
-}
-
-/* Tag Selector Box Styles */
-.tag-selector-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 2px;
-}
-
-.selectable-tag-pill {
-  cursor: pointer;
-  user-select: none;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.selectable-tag-pill:hover {
-  transform: translateY(-1px);
-}
-
-.business-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: rgba(0, 242, 254, 0.15);
-  border: 1px solid #00f2fe;
-  color: #00f2fe;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.65rem;
-  font-weight: bold;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  backdrop-filter: blur(4px);
-  box-shadow: 0 0 6px rgba(0, 242, 254, 0.2);
-}
-
-.standard-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: rgba(255, 255, 255, 0.85);
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.65rem;
-  font-weight: bold;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  backdrop-filter: blur(4px);
 }
 
 @media (max-width: 1200px) {

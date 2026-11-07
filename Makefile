@@ -1,23 +1,56 @@
-COMPOSE = docker compose -f compose.yaml
+COMPOSE = docker compose
 
 DATA_DIR = /sgoinfre/$(USER)/ready2roll
 
-all: down up #setup
+export PUBLIC_HOST_IP  := $(shell hostname -I | awk '{print $$1}')
+export PUBLIC_HOSTNAME := $(shell hostname -f 2>/dev/null || hostname)
+
+all: down up
+
+vault-status:
+	$(COMPOSE) exec vault vault status
+
+keygen: # 1. Inititialize vault and create token keys
+	$(COMPOSE) exec vault vault operator init -key-shares=5 -key-threshold=2
+
+unseal: # 2. Unseal vault
+	$(COMPOSE) exec vault vault operator unseal
+	$(COMPOSE) exec vault vault operator unseal
+	$(COMPOSE) exec vault vault login
+	docker compose restart vault-agent
+
+enable:	# 3. Run only once per initialization
+	docker compose exec vault vault audit enable file file_path=/vault/logs/audit.log
+	docker compose exec vault vault secrets enable -path=r2r kv-v2
+	printf 'path "r2r/data/django" {\n  capabilities = ["read"]\n}\n' | \
+	    docker compose exec -T vault vault policy write django-read -
+	docker compose exec vault vault auth enable approle
+	docker compose exec vault vault write auth/approle/role/django token_policies=django-read token_ttl=1h token_max_ttl=4h
+	mkdir -p secrets/approle
+	docker compose exec -T vault vault read -field=role_id auth/approle/role/django/role-id > secrets/approle/role_id
+	docker compose exec -T vault vault write -f -field=secret_id auth/approle/role/django/secret-id > secrets/approle/secret_id
+
+loadsecrets: # 4. Load secrets in vault
+	$(COMPOSE) exec -T vault vault kv put r2r/django - < ./r2r-secrets.json
+#	shred -u ./r2r-secrets.json
 
 setup:
 	@mkdir -p /sgoinfre/$(USER)/ready2roll
 	@mkdir -p $(DATA_DIR)/pg_data
 	@mkdir -p $(DATA_DIR)/minio_data
+	@mkdir -p $(DATA_DIR)redis_data
+	@export UID GID=$(id -g)
 
 up: setup
 	$(COMPOSE) build --parallel
 	$(COMPOSE) up -d
-# 	@echo Access to https://"$(USER)".42.fr
-
+	@echo "login at https://localhost:8443/login"
 
 down:
 	$(COMPOSE) down
-# -v cancella volumi?
+
+restart:
+	$(COMPOSE) restart
 
 clear:
 	$(COMPOSE) down -v
@@ -34,8 +67,6 @@ migration-clean: clear
 	@find srcs/backend -name "__pycache__" -type d -exec rm -rf {} +
 	@echo "Database and migrations clean completed."
 
-stop:
-	docker stop vuejs_container
 
 start:
 	docker vuejs_container
@@ -46,7 +77,8 @@ save-database:
 	@echo "Database has been saved! You are ready to roll!"
 
 restore-database:
-	@docker compose exec django_backend python manage.py loaddata demo_data.json
+	@docker compose exec django_backend sh -c \
+    	'set -a; . /vault/secrets/django.env; set +a; python manage.py loaddata demo_data.json'
 	@echo "Database is restored. You are ready to roll!"
 
 save-media:
@@ -57,7 +89,7 @@ save-media:
 restore-media: setup
 	@echo "Restoring MinIO media..."
 	@tar -xzvf media_backup.tar.gz -C /sgoinfre/$(USER)/ready2roll/minio_data
-	@rm -rf media_backup.tar.gz
+#	@rm -rf media_backup.tar.gz
 	@echo "Media restored successfully!"
 
 save-all: save-database save-media
@@ -66,15 +98,16 @@ restore-all: restore-database restore-media
 
 reup: down up
 
-clean: down
+clean: 
+	$(COMPOSE) down -v
 
 fclean: clean
 	docker system prune --all --force
+	@rm -rf secrets/vault-init.json
 
 cleardatabase: fclean
 	docker volume rm ready2roll_pg_data
 
-enterdb:
-	@docker exec -it ready2roll-db psql -U r2r_admin -d ready2roll
-
 re: fclean up
+
+.PHONY: all up down restart clean fclean re keygen unseal enable loadsecrets

@@ -1,6 +1,7 @@
 <!-- file: ChatView.vue -->
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
+import { useSocialSocket } from '../composables/useSocialSocket';
 
 const contacts = ref([]);          // Contatti con chat attive
 const searchResults = ref([]);     // Risultati della ricerca globale
@@ -10,7 +11,6 @@ const newMessage = ref('');
 let socket = null;
 let pollTimer = null;
 const searchQuery = ref('');
-
 // Cerca nel database quando l'utente digita nella search bar
 watch(searchQuery, async (newQuery) => {
   if (!newQuery || !newQuery.trim()) {
@@ -27,14 +27,22 @@ watch(searchQuery, async (newQuery) => {
       // Escludiamo l'admin dai risultati della ricerca
       const filteredData = data.filter(u => u.username?.toLowerCase() !== 'admin' && u.email?.toLowerCase() !== 'admin');
 
-      searchResults.value = filteredData.map(u => ({
-        id: u.id,
-        name: u.username,
-        img: u.avatar_url ? (u.avatar_url.startsWith('http') ? u.avatar_url : `http://localhost:9000/media/${u.avatar_url}`) : null,
-        lastMsg: 'Click to start chatting',
-        lastMsgAt: null,
-        unread: 0
-      }));
+      searchResults.value = filteredData.map(u => {
+        // CLEAN NGINX PATH FORMATTING
+        let finalImg = null;
+        if (u.avatar_url) {
+           finalImg = u.avatar_url.startsWith('http') || u.avatar_url.startsWith('/media/') ? u.avatar_url : `/media/${u.avatar_url}`;
+        }
+
+        return {
+          id: u.id,
+          name: u.username,
+          img: finalImg,
+          lastMsg: 'Click to start chatting',
+          lastMsgAt: null,
+          unread: 0
+        };
+      });
     } else {
       searchResults.value = [];
     }
@@ -73,6 +81,7 @@ const getToken = () =>
   localStorage.getItem('access_token');
 
 // Fetch contacts attivi
+// Fetch contacts attivi
 const fetchContacts = async () => {
   const token = getToken();
   try {
@@ -81,16 +90,22 @@ const fetchContacts = async () => {
     });
     if (res.ok) {
       const data = await res.json();
-      contacts.value = data.map(u => ({
-        id: u.id,
-        name: u.username,
-        img: u.avatar_url ? (u.avatar_url.startsWith('http') ? u.avatar_url : `http://localhost:9000/media/${u.avatar_url}`) : null,
-//        avatar: user.avatar_url ? (user.avatar_url.startsWith('http') ? user.avatar_url : `http://localhost:9000/media/${user.avatar_url}`) : 'https://i.pravatar.cc/150?u=6'
+      contacts.value = data.map(u => {
+        // CLEAN NGINX PATH FORMATTING
+        let finalImg = null;
+        if (u.avatar_url) {
+           finalImg = u.avatar_url.startsWith('http') || u.avatar_url.startsWith('/media/') ? u.avatar_url : `/media/${u.avatar_url}`;
+        }
 
-        lastMsg: u.lastMsg || '',
-        lastMsgAt: u.lastMsgAt || null,
-        unread: u.unread || 0
-      }));
+        return {
+          id: u.id,
+          name: u.username,
+          img: finalImg,
+          lastMsg: u.lastMsg || '',
+          lastMsgAt: u.lastMsgAt || null,
+          unread: u.unread || 0
+        };
+      });
 
       const open = contacts.value.find(c => c.id === activeContact.value?.id);
       if (open) open.unread = 0;
@@ -167,6 +182,34 @@ const sendMessage = () => {
     setTimeout(fetchContacts, 500);
   }
 };
+
+// --- Live updates from other users (WebSocket) ---
+useSocialSocket((message) => {
+  const { action, target_id: targetId, data } = message;
+
+  if (action === 'update_profile') {
+    // 1. Update the contact in the sidebar list if they change their profile
+    const contact = contacts.value.find(c => c.id === targetId);
+    if (contact) {
+      // Map the new name (checks all possible backend keys)
+      contact.name = data.username || data['user.name'] || data.name || contact.name;
+
+      // Map the new avatar
+    const newAvatar = data.user_avatar || data.avatar_url || data.avatar;
+      if (newAvatar) {
+        // Nginx automatically routes /media/ to MinIO for everyone on the network!
+        contact.img = newAvatar.startsWith('http') || newAvatar.startsWith('/media/')
+            ? newAvatar
+            : `/media/${newAvatar}`;
+      }
+    }
+
+    // 2. Also update the chat header if you are currently talking to them!
+    if (activeContact.value && activeContact.value.id === targetId) {
+      activeContact.value.name = data.username || data['user.name'] || data.name || activeContact.value.name;
+    }
+  }
+});
 
 onMounted(() => {
   fetchContacts();

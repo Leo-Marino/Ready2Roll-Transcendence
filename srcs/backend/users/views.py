@@ -6,6 +6,9 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+from social.realtime import broadcast_social_action
+
+
 from .serializers import (
     UserSerializer,
     UserProfileUpdateSerializer,
@@ -48,6 +51,12 @@ def update_profile_view(request):
     serializer = UserProfileUpdateSerializer(user, data=request.data, partial=True) # WIP ALEK
     if serializer.is_valid():
         serializer.save()
+        avatar = f"/media/{user.avatar_url.name}" if user.avatar_url and user.avatar_url.name else None
+        broadcast_social_action("update_profile", user.pk, {
+            'user_avatar' : avatar,
+            'user_bio' : user.bio,
+            'user.name' : user.username,
+        })
         return Response({"messaggio": "Utente profile modificato con successo!"}, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

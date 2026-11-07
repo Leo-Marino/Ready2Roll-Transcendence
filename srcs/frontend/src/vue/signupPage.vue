@@ -13,6 +13,29 @@ const legalName = ref('');
 const vatTax = ref('');
 const showPasswordBox = ref(false);
 
+const tags = ref('');
+const availableTags = ref(['Disco', 'Pop', 'Rock', 'Hip-Hop', 'Jazz']);
+
+const selectedTagsList = computed(() => {
+    if (!tags.value) return [];
+    return tags.value.split(',').map(t => t.trim()).filter(Boolean);
+});
+
+const toggleTag = (tagName) => {
+    let currentTags = [...selectedTagsList.value];
+    const index = currentTags.findIndex(t => t.toLowerCase() === tagName.toLowerCase());
+    if (index > -1) {
+        currentTags.splice(index, 1);
+    } else {
+        currentTags.push(tagName);
+    }
+    tags.value = currentTags.join(', ');
+};
+
+const isTagSelected = (tagName) => {
+    return selectedTagsList.value.some(t => t.toLowerCase() === tagName.toLowerCase());
+};
+
 const passwordRules = computed(() => [
 {
     id: 'length',
@@ -108,7 +131,8 @@ const submitSignup = async () => {
         type_of_user: type_of_user.value,
         username: username.value,
         email: email.value,
-        password: password.value
+        password: password.value,
+        tags: selectedTagsList.value
     };
 
     if (type_of_user.value === 'business') {
@@ -244,6 +268,23 @@ const submitSignup = async () => {
         </div>
         </div>
 
+
+        <div v-if="type_of_user === 'standard'" class="inputFieldDiv">
+            <label class="tags-label">TAGS</label>
+            <div class="tag-selector-container">
+                <div
+                    v-for="t in availableTags"
+                    :key="t"
+                    @click="toggleTag(t)"
+                    :class="isTagSelected(t) ? 'business-badge' : 'standard-badge'"
+                    class="selectable-tag-pill"
+                >
+                    <span>{{ isTagSelected(t) ? '✓' : '+' }}</span>
+                    <span>{{ t }}</span>
+                </div>
+            </div>
+        </div>
+
         <br>
         <div class="inputFieldButton">
         <button type="submit">Submit</button>
@@ -362,6 +403,16 @@ display: flex;
 flex-direction: column;
 }
 
+.tags-label {
+font-size: 11px;
+font-family: "Huninn", sans-serif;
+color: rgba(255, 255, 255, 0.75);
+padding: 4px 0 4px 0;
+margin-bottom: 4px;
+text-align: left;
+margin-left: 4px;
+}
+
 .inputFieldDiv input {
 width: 100%;
 box-sizing: border-box;
@@ -445,6 +496,57 @@ font-size: 14px;
 font-family: var(--font-main);
 color: #FFFFFF;
 font-size: 14px;
+}
+
+/* Stili per i tag */
+.tag-selector-container {
+display: flex;
+flex-wrap: wrap;
+gap: 5px;
+margin-top: 2px;
+}
+
+.selectable-tag-pill {
+cursor: pointer;
+user-select: none;
+transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.selectable-tag-pill:hover {
+transform: translateY(-1px);
+}
+
+.business-badge {
+display: inline-flex;
+align-items: center;
+gap: 4px;
+background: rgba(0, 242, 254, 0.15);
+border: 1px solid #00f2fe;
+color: #00f2fe;
+padding: 3px 8px;
+border-radius: 12px;
+font-size: 0.65rem;
+font-weight: bold;
+letter-spacing: 0.5px;
+text-transform: uppercase;
+backdrop-filter: blur(4px);
+box-shadow: 0 0 6px rgba(0, 242, 254, 0.2);
+}
+
+.standard-badge {
+display: inline-flex;
+align-items: center;
+gap: 4px;
+background: rgba(255, 255, 255, 0.1);
+border: 1px solid rgba(255, 255, 255, 0.3);
+color: rgba(255, 255, 255, 0.85);
+padding: 3px 8px;
+border-radius: 12px;
+font-size: 0.65rem;
+font-weight: bold;
+letter-spacing: 0.5px;
+text-transform: uppercase;
+backdrop-filter: blur(4px);
 }
 
 .password-group {
