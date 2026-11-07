@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { useSocialSocket } from '../composables/useSocialSocket';
 
 const contacts = ref([]);
 const activeContact = ref(null);
@@ -119,6 +120,32 @@ const sendMessage = () => {
     newMessage.value = '';
   }
 };
+
+// --- Live updates from other users (WebSocket) ---
+useSocialSocket((message) => {
+  const { action, target_id: targetId, data } = message;
+
+  if (action === 'update_profile') {
+    // 1. Update the contact in the sidebar list if they change their profile
+    const contact = contacts.value.find(c => c.id === targetId);
+    if (contact) {
+      // Map the new name (checks all possible backend keys)
+      contact.name = data.username || data['user.name'] || data.name || contact.name;
+
+      // Map the new avatar
+      const newAvatar = data.user_avatar || data.avatar_url || data.avatar;
+      if (newAvatar) {
+        // Format it for the frontend
+        contact.img = newAvatar.startsWith('http') ? newAvatar : `http://localhost:9000/media/${newAvatar}`;
+      }
+    }
+
+    // 2. Also update the chat header if you are currently talking to them!
+    if (activeContact.value && activeContact.value.id === targetId) {
+      activeContact.value.name = data.username || data['user.name'] || data.name || activeContact.value.name;
+    }
+  }
+});
 
 onMounted(() => {
   fetchContacts(); // Fire the fetch on load!
