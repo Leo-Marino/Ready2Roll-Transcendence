@@ -94,7 +94,9 @@ export const messages = {
     allFieldsMandatory: 'All mandatory fields must be filled !',
     insertMediaAlert: 'Please insert a photo or video before publishing the event!',
     capacityNegative: 'Max capacity cannot be less than 0!',
-    priceNegative: 'Ticket price cannot be less than 0!'
+    priceNegative: 'Ticket price cannot be less than 0!',
+    "Follow": "Follow",
+    "Followed": "Followed"
   },
   fr: {
     menu: 'Menu',
@@ -187,7 +189,9 @@ export const messages = {
     allFieldsMandatory: 'Tous les champs obligatoires doivent être remplis !',
     insertMediaAlert: 'Veuillez insérer une photo ou une vidéo avant de publier l\'événement !',
     capacityNegative: 'La capacité maximale ne peut pas être inférieure à 0 !',
-    priceNegative: 'Le prix du billet ne peut pas être inférieur à 0 !'
+    priceNegative: 'Le prix du billet ne peut pas être inférieur à 0 !',
+    "Follow": "Suivre",
+    "Followed": "Abonné"
   },
   ar: {
     menu: 'القائمة',
@@ -280,7 +284,9 @@ export const messages = {
     allFieldsMandatory: 'يجب ملء جميع الحقول الإلزامية!',
     insertMediaAlert: 'يرجى إدراج صورة أو فيديو قبل نشر الحدث!',
     capacityNegative: 'لا يمكن أن تكون السعة القصوى أقل من 0!',
-    priceNegative: 'لا يمكن أن يكون سعر التذكرة أقل من 0!'
+    priceNegative: 'لا يمكن أن يكون سعر التذكرة أقل من 0!',
+    "Follow": "متابعة",
+    "Followed": "يتم متابعته"
   }
 };
 

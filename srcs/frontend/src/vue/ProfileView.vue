@@ -1,10 +1,14 @@
+<!-- file: ProfileView.vue -->
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import EventMediaGrid from './EventMediaGrid.vue';
 import SearchBar from './SearchBar.vue';
 import LanguageSwitcher from './LanguageSwitcher.vue';
 import { t as $t, setLanguage } from '../i18n';
+import { useSocialSocket } from '../composables/useSocialSocket';
+import NotificationBell from './NotificationBell.vue';
+import ChatNavLink from './ChatNavLink.vue';
 
 const router = useRouter();
 const API = '/api';
@@ -96,13 +100,40 @@ const userProfile = ref({
   followers: 0,
   description: '',
   avatar: 'https://i.pravatar.cc/150?u=6',
-  isBusiness: false
+  isBusiness: false,
+  tags: []
 });
 
 const myEvents = ref([]);
 const activeTab = ref('likes');
 const activePreviewEvent = ref(null);
 
+// --- TAGS LOGIC ---
+const tags = ref('');
+const availableTags = ref(['Disco', 'Pop', 'Rock', 'Hip-Hop', 'Jazz']);
+
+const selectedTagsList = computed(() => {
+    if (!tags.value) return [];
+    if (Array.isArray(tags.value)) return tags.value;
+    return tags.value.split(',').map(t => t.trim()).filter(Boolean);
+});
+
+const toggleTag = (tagName) => {
+    let currentTags = [...selectedTagsList.value];
+    const index = currentTags.findIndex(t => t.toLowerCase() === tagName.toLowerCase());
+    if (index > -1) {
+        currentTags.splice(index, 1);
+    } else {
+        currentTags.push(tagName);
+    }
+    tags.value = currentTags.join(', ');
+};
+
+const isTagSelected = (tagName) => {
+    return selectedTagsList.value.some(t => t.toLowerCase() === tagName.toLowerCase());
+};
+
+// --- FETCH EVENTS (For Business Users) ---
 const fetchMyEvents = async () => {
   try {
     const response = await fetch(`${API}/owner/events/`, {
@@ -119,6 +150,32 @@ const fetchMyEvents = async () => {
 const goToCreateEvent = () => {
   localStorage.removeItem('editingEvent');
   router.push('/CreateEvent');
+};
+
+// --- DELETE EVENT LOGIC ---
+const deleteEvent = async (event) => {
+  if (!confirm(`Are you sure you want to delete "${event.title}"?`)) return;
+
+  const token = getToken();
+  try {
+    const response = await fetch(`${API}/events/${event.id}/`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (response.ok) {
+      myEvents.value = myEvents.value.filter(e => e.id !== event.id);
+      closePreview();
+      alert("Event deleted successfully!");
+    } else {
+      const errData = await response.json();
+      console.error("Error deleting event:", errData);
+      alert("Failed to delete the event.");
+    }
+  } catch (error) {
+    console.error("Network error during delete:", error);
+    alert("Unable to connect to the backend server.");
+  }
 };
 
 const openPreview = (event) => {
@@ -144,14 +201,42 @@ const fetchLikedEvents = async () => {
       likedEvents.value = await response.json();
     }
   } catch (error) {
-    console.error('Impossibile caricare i video piaciuti', error);
+    console.error('Impossible to uplod the liked video', error);
   }
 };
 
 watch(activeTab, (tab) => {
   if (tab === 'likes') fetchLikedEvents();
 });
+//------xh event like end ---------
 
+// --- Live updates from other users (WebSocket) ---
+const handleSocialMessage = (message) => {
+  const { action, target_id: targetId, data } = message;
+
+  if (action === 'follow') {
+    if (targetId === userProfile.value.id) {
+      userProfile.value.followers = data.followers_count;
+    }
+  } else if (action === 'like' || action === 'comment') {
+    const lists = [myEvents.value, likedEvents.value];
+    if (activePreviewEvent.value) lists.push([activePreviewEvent.value]);
+    lists.forEach((list) => {
+      list.forEach((ev) => {
+        if (ev.id !== targetId) return;
+        if (action === 'like') ev.likes_count = data.likes_count;
+        else ev.comments_count = data.comments_count;
+      });
+    });
+  } else if (action === 'resync') {
+    fetchMyEvents();
+    if (activeTab.value === 'likes') fetchLikedEvents();
+  }
+};
+
+useSocialSocket(handleSocialMessage);
+
+// --- INITIAL LOAD ---
 onMounted(async () => {
   const token = getToken();
   if (!token) {
@@ -178,6 +263,7 @@ onMounted(async () => {
     userProfile.value.id = data.id;
     userProfile.value.name = data.username || '';
     userProfile.value.description = data.bio || '';
+    userProfile.value.tags = data.tags || [];
     if (data.avatar_url) {
       userProfile.value.avatar = data.avatar_url;
     }
@@ -201,6 +287,9 @@ const showEditModal = ref(false);
 const fileInput = ref(null);
 const tempAvatar = ref('');
 const selectedFile = ref(null);
+const profileEditUsernameError = ref('');
+const usernamePattern = /^[A-Za-z0-9_.]+$/;
+
 const profileEditForm = ref({
   username: '',
   bio: ''
@@ -209,6 +298,8 @@ const profileEditForm = ref({
 const openEditModal = () => {
   profileEditForm.value.username = userProfile.value.name;
   profileEditForm.value.bio = userProfile.value.description;
+  tags.value = Array.isArray(userProfile.value.tags) ? userProfile.value.tags.join(', ') : (userProfile.value.tags || '');
+  profileEditUsernameError.value = '';
   tempAvatar.value = userProfile.value.avatar;
   selectedFile.value = null;
   showEditModal.value = true;
@@ -231,9 +322,18 @@ const handleImageUpload = (event) => {
 };
 
 const saveProfile = async () => {
+  if (!usernamePattern.test(profileEditForm.value.username)) {
+    profileEditUsernameError.value =
+      'Usernames can only contain letters, numbers, underscores, and periods.';
+    return;
+  }
+  profileEditUsernameError.value = '';
+
   const formData = new FormData();
   formData.append('username', profileEditForm.value.username);
   formData.append('bio', profileEditForm.value.bio);
+  formData.append('tags', JSON.stringify(selectedTagsList.value));
+
   if (selectedFile.value) {
     formData.append('avatar_url', selectedFile.value);
   }
@@ -249,6 +349,8 @@ const saveProfile = async () => {
     if (response.ok) {
       userProfile.value.name = data.username ?? profileEditForm.value.username;
       userProfile.value.description = data.bio ?? profileEditForm.value.bio;
+      userProfile.value.tags = data.tags ?? selectedTagsList.value;
+
       if (data.avatar_url) {
         userProfile.value.avatar = data.avatar_url;
       }
@@ -268,23 +370,32 @@ const saveProfile = async () => {
     <source src="../assets/ready2roll_wave_background.mp4" type="video/mp4">
   </video>
 
-  <div class="app-container">
+<div class="app-container">
     <header class="navbar glass-panel">
       <div class="logo" @click="$router.push('/home')">
         <img src="../assets/logo_temp.png" alt="Ready2Roll Logo" class="nav-logo-img">
         <span class="logo-text">Ready2Roll</span>
       </div>
+
       <SearchBar />
+
       <div class="nav-icons">
         <LanguageSwitcher />
-        <router-link to="/direct" class="nav-icon-link" title="Direct Messages">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg>
+
+        <router-link to="/chat" class="nav-icon-link">
+          <ChatNavLink>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+            </svg>
+          </ChatNavLink>
         </router-link>
-        <router-link to="/chat" class="nav-icon-link" title="Chat">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" /></svg>
-        </router-link>
-        <router-link to="/profile" class="nav-icon-link" title="Profile">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+
+        <NotificationBell />
+
+        <router-link to="/profile" class="nav-icon-link">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+          </svg>
         </router-link>
       </div>
     </header>
@@ -326,15 +437,14 @@ const saveProfile = async () => {
           <img :src="userProfile.avatar" alt="Avatar" class="profile-avatar">
           <div class="profile-info">
             <div class="name-row">
-              <h2>
-                {{ userProfile.name }}
-                <svg v-if="userProfile.isBusiness" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="#00f2fe" stroke="#00f2fe" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="verified-badge" title="Business Account">
-                  <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/>
-                  <path d="m16 9-5.5 5.5L8 12" stroke="#ffffff" stroke-width="2.5"/>
-                </svg>
-              </h2>
-            </div>
-
+                <h2>
+                  {{ userProfile.name }}
+                 <svg v-if="userProfile.isBusiness" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="#00f2fe" stroke="#00f2fe" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="verified-badge" title="Business Account">
+                   <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/>
+                   <path d="m16 9-5.5 5.5L8 12" stroke="#ffffff" stroke-width="2.5"/>
+                 </svg>
+               </h2>
+             </div>
             <div class="stats-row">
               <span class="clickable-stat" @click="openFollowModal('following')">
                 <strong>{{ userProfile.following }}</strong> {{ $t('following') }}
@@ -593,6 +703,23 @@ const saveProfile = async () => {
             <label>{{ $t('bio') }}</label>
             <textarea v-model="profileEditForm.bio" :placeholder="$t('bioPlaceholder')" rows="4" class="custom-input textarea-input"></textarea>
           </div>
+
+          <!-- TAGS (Visibile solo per account standard) -->
+          <div class="input-group" v-if="!userProfile.isBusiness">
+            <label>{{ $t('tagsLabel') }}</label>
+            <div class="tag-selector-container">
+              <div
+                  v-for="t in availableTags"
+                  :key="t"
+                  @click="toggleTag(t)"
+                  :class="isTagSelected(t) ? 'business-badge' : 'standard-badge'"
+                  class="selectable-tag-pill"
+              >
+                  <span>{{ isTagSelected(t) ? '✓' : '+' }}</span>
+                  <span>{{ t }}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       <div class="modal-footer profile-edit-footer">
@@ -715,10 +842,10 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 .close-modal-btn { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; }
 .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 20px; max-height: 60vh; overflow-y: auto; }
 .helper-text { font-size: 0.75rem; color: #aaa; margin: 0; }
+.username-error-text { color: #ff4d4d; font-size: 0.9rem; line-height: 1.4; margin: 0; }
 .hidden-file-input { display: none; }
 .modal-footer { padding: 15px 20px; border-top: 1px solid #333; display: flex; justify-content: flex-end; gap: 10px; }
-.modal-footer button { padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; }
-.cancel-btn { background: #333; color: white; }
+.cancel-btn { background: #333; color: white; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; }
 .cancel-btn:hover { background: #444; }
 .save-btn { background: white; color: black; }
 .clickable-stat { cursor: pointer; transition: color 0.2s; }

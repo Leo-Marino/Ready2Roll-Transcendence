@@ -1,14 +1,19 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-
+from events.models import Tag
 
 
 User = get_user_model()
 
+ALLOWED_TAGS = ['Disco', 'Trap', 'Hip Hop', 'Rock', 'Jazz']
+
 class UserSerializer(serializers.ModelSerializer):
+    tags = serializers.ListField(
+        child=serializers.ChoiceField(choices=ALLOWED_TAGS), required=False
+    )
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'type_of_user', 'legal_name', 'vat_tax']
+        fields = ['username', 'email', 'password', 'type_of_user', 'legal_name', 'tags','vat_tax']
         extra_kwargs = {'password': {'write_only': True}}
     def validate(selfs,attrs):
         if attrs.get('type_of_user') == 'business':
@@ -20,7 +25,8 @@ class UserSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-         return User.objects.create_user(
+        tag_names = validated_data.pop('tags', [])
+        user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data.get('email', ''),
             password=validated_data['password'],
@@ -28,6 +34,9 @@ class UserSerializer(serializers.ModelSerializer):
             legal_name=validated_data.get('legal_name'),
             vat_tax=validated_data.get('vat_tax'),
         )
+        tags = [Tag.objects.get_or_create(tag_name=n)[0] for n in tag_names]
+        user.tags.set(tags)
+        return user
 
 class FollowCountsMixin(serializers.Serializer):
     """Conteggi reali basati sul modello social.Subscription.

@@ -1,6 +1,8 @@
 """Funzioni per creare/togliere notifiche. Le chiamano le view di social."""
 import logging
 
+from social.realtime import push_notification_signal
+
 from .models import Notification
 
 logger = logging.getLogger(__name__)
@@ -29,11 +31,14 @@ def notify(recipient, sender, notification_type, text, event=None, comment=None,
                 event=event, comment=comment,
                 defaults={'notification_txt': text, 'is_read': False},
             )
+            push_notification_signal(recipient.pk)
             return obj
-        return Notification.objects.create(
+        obj = Notification.objects.create(
             recipient=recipient, sender=sender, notification_type=notification_type,
             event=event, comment=comment, notification_txt=text,
         )
+        push_notification_signal(recipient.pk)
+        return obj
     except Exception:
         logger.exception('Could not create notification')
         return None
@@ -48,5 +53,7 @@ def unnotify(recipient, sender, notification_type, event=None, comment=None):
             recipient=recipient, sender=sender, notification_type=notification_type,
             event=event, comment=comment,
         ).delete()
+        push_notification_signal(recipient.pk)
     except Exception:
         logger.exception('Could not remove notification')
+
