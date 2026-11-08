@@ -1,12 +1,5 @@
-import uuid
-import os
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
-
-def get_unique_avatar_path(instance, filename):
-    ext = filename.split('.')[-1]
-    # e.g., returns "avatars/123e4567-e89b-12d3.jpg"
-    return f"avatars/{uuid.uuid4()}.{ext}"
 
 class UserManager(BaseUserManager):
     def create_user(self, username, email, password=None, **extra_fields):
@@ -35,7 +28,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=50, unique=True)
     email = models.EmailField(max_length=255, unique=True)
     type_of_user = models.CharField(max_length=20, choices=USER_TYPE_CHOICES, default='standard')
-    avatar_url = models.ImageField(upload_to=get_unique_avatar_path, null=True, blank=True)
+    avatar_url = models.ImageField(upload_to='avatars/', blank=True, null=True)
     instagram_handle = models.CharField(max_length=55, unique=True, blank=True, null=True)
     phone_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
     legal_name = models.CharField(max_length=255, blank=True, null=True)

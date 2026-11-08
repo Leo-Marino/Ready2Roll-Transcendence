@@ -1,11 +1,5 @@
-import uuid
-import os
 from django.db import models
 from django.conf import settings
-
-def get_unique_event_media_path(instance, filename):
-    ext = filename.split('.')[-1]
-    return f"events/{uuid.uuid4()}.{ext}"
 
 class Tag(models.Model):
     tag_name = models.CharField(max_length=55, unique=True)
@@ -48,7 +42,7 @@ class Media(models.Model):
         ('gif', 'GIF'),
     ]
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='media')
-    media_url = models.FileField(upload_to=get_unique_event_media_path)
+    media_url =  models.FileField(upload_to='event_media/', null=True, blank=True)
     media_type = models.CharField(max_length=10, choices=MEDIA_TYPE_CHOICES, default='image')
     created_at = models.DateTimeField(auto_now_add=True)
 
