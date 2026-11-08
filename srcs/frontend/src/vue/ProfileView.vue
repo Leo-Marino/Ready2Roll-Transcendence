@@ -110,7 +110,7 @@ const activePreviewEvent = ref(null);
 
 // --- TAGS LOGIC ---
 const tags = ref('');
-const availableTags = ref(['Disco', 'Pop', 'Rock', 'Hip-Hop', 'Jazz']);
+const availableTags = ref(['Disco', 'Trap', 'Hip Hop', 'Rock', 'Jazz']);
 
 const selectedTagsList = computed(() => {
     if (!tags.value) return [];
@@ -342,7 +342,9 @@ const saveProfile = async () => {
   const formData = new FormData();
   formData.append('username', profileEditForm.value.username);
   formData.append('bio', profileEditForm.value.bio);
-  formData.append('tags', JSON.stringify(selectedTagsList.value));
+  selectedTagsList.value.forEach(tag => {
+      formData.append('tags', tag);
+  });
 
   if (selectedFile.value) {
     formData.append('avatar_url', selectedFile.value);
@@ -920,6 +922,57 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 .meta-item { display: inline-flex; align-items: center; gap: 6px; }
 .ui-icon { color: #00f2fe; flex-shrink: 0; }
 .metric-icon-wrap { display: flex; align-items: center; justify-content: center; color: #00f2fe; }
+
+/* --- Stili per i tag --- */
+.tag-selector-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.selectable-tag-pill {
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.selectable-tag-pill:hover {
+  transform: translateY(-1px);
+}
+
+.business-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 242, 254, 0.15);
+  border: 1px solid #00f2fe;
+  color: #00f2fe;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.65rem;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 0 6px rgba(0, 242, 254, 0.2);
+}
+
+.standard-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.85);
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.65rem;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  backdrop-filter: blur(4px);
+}
 
 /* RTL Fixes for Profile Buttons */
 [dir="rtl"] .profile-header {

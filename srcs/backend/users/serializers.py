@@ -25,7 +25,6 @@ class UserSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        tag_names = validated_data.pop('tags', [])
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data.get('email', ''),
@@ -34,8 +33,6 @@ class UserSerializer(serializers.ModelSerializer):
             legal_name=validated_data.get('legal_name'),
             vat_tax=validated_data.get('vat_tax'),
         )
-        tags = [Tag.objects.get_or_create(tag_name=n)[0] for n in tag_names]
-        user.tags.set(tags)
         return user
 
 class FollowCountsMixin(serializers.Serializer):
@@ -61,8 +58,10 @@ class UserProfileSerializer(FollowCountsMixin, serializers.ModelSerializer):
 
              'id', 'username', 'email', 'first_name', 'last_name', 'bio',
             'avatar_url', 'instagram_handle', 'bs_website',
-            'following_count', 'followers_count', 'type_of_user',
+            'following_count', 'followers_count', 'type_of_user', 'tags',
         ]
+    def get_tags(self, obj):
+        return [tag.tag_name for tag in obj.tags.all()]
 
 class ViewerRelationMixin(serializers.Serializer):
     is_following = serializers.SerializerMethodField()
@@ -105,6 +104,7 @@ class PublicUserProfileSerializer(FollowCountsMixin, ViewerRelationMixin, Avatar
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):
     avatar_url = serializers.ImageField(required=False, allow_null=True)
+    tags = serializers.CharField(required=False, allow_blank=True)
     class Meta:
         model = User
         fields = [
@@ -118,7 +118,26 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
             'legal_name',
             'date_of_birth',
             'bs_website',
+            'tags',
         ]
+
+    def update(self, instance, validated_data):
+        tags_json = validated_data.pop('tags', None)
+        user = super().update(instance, validated_data)
+
+        if tags_json is not None:
+            try:
+                # Convert '["Disco", "Jazz"]' back into a Python list
+                tag_names = json.loads(tags_json)
+                # Filter out any bad tags just to be safe
+                valid_tags = [n for n in tag_names if n in ALLOWED_TAGS]
+                # Save to database
+                tags_objs = [Tag.objects.get_or_create(tag_name=n)[0] for n in valid_tags]
+                user.tags.set(tags_objs)
+            except Exception:
+                pass
+
+        return user
 
 class FollowUserSerializer(ViewerRelationMixin, AvatarUrlMixin, serializers.ModelSerializer):
     class Meta:
