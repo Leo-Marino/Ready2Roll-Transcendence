@@ -163,6 +163,7 @@ services:
     networks:
       - app
       - data
+      - egress
     depends_on:
       vault-agent:
         condition: service_started
@@ -341,4 +342,5 @@ networks:
   vaultdb:
     driver: bridge
     internal: true
-
+  egress:
+    driver: bridge

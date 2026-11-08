@@ -120,8 +120,7 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
             'bs_website',
         ]
 
-class FollowUserSerializer(ViewerRelationMixin, serializers.ModelSerializer):
-
+class FollowUserSerializer(ViewerRelationMixin, AvatarUrlMixin, serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [

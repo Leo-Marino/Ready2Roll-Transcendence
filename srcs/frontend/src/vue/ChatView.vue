@@ -32,6 +32,7 @@ watch(searchQuery, async (newQuery) => {
         let finalImg = null;
         if (u.avatar_url) {
            finalImg = u.avatar_url.startsWith('http') || u.avatar_url.startsWith('/media/') ? u.avatar_url : `/media/${u.avatar_url}`;
+//           finalImg = u.avatar_url.startsWith('http') || u.avatar_url.startsWith('/media/') ? u.avatar_url : `/media/${u.avatar_url}`;
         }
 
         return {
