@@ -19,6 +19,12 @@ const activeEvent = computed(() => videos.value[activeIndex.value] || null);
 const activeEventId = computed(() => (activeEvent.value ? activeEvent.value.id : null));
 const wrapperRefs = [];                            // one DOM element per video
 
+
+// Variable bach t7ell/t-sdd l-pop-up dyal l-informations
+const showInfoModal = ref(false);
+const openInfoModal = () => { showInfoModal.value = true; };
+const closeInfoModal = () => { showInfoModal.value = false; };
+
 const comments = ref([]);
 const newCommentText = ref('');
 
@@ -574,30 +580,29 @@ onBeforeUnmount(() => {
             <p class="description">{{ activeEvent.description }}</p>
           </div>
 
-          <div class="action-buttons glass-panel" style="display: flex; justify-content: space-around; padding: 10px; gap: 10px;">
+<div class="action-buttons glass-panel" style="display: flex; justify-content: space-between; padding: 10px; gap: 8px;">
             <!-- LIKES BUTTON -->
-            <button :class="{ liked: activeEvent.is_liked }" @click="toggleLike" style="display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1;">
+            <button :class="{ liked: activeEvent.is_liked }" @click="toggleLike" style="display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1; padding: 8px 0;">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" :fill="activeEvent.is_liked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart">
                 <path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/>
               </svg>
               {{ formatCount(activeEvent.likes_count) }}
             </button>
 
+            <!-- SHOW INFORMATIONS BUTTON (B7alhom f size) -->
+            <button class="show-info-btn" @click="openInfoModal" style="display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1; padding: 8px 0; border: none; background: rgba(0, 242, 254, 0.15); color: #00f2fe; border-radius: 10px; cursor: pointer;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+              <span style="font-size: 0.75rem; font-weight: bold;">Info</span>
+            </button>
+
             <!-- COMMENTS BUTTON -->
-            <button style="display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1;">
+            <button style="display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1; padding: 8px 0;">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle-more">
                 <path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/>
                 <path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/>
               </svg>
               {{ formatCount(activeEvent.comments_count) }}
             </button>
-
-            <!-- MORE/OPTIONS BUTTON -->
-            <!-- <button style="display: flex; align-items: center; justify-content: center; width: 40px; flex-shrink: 0;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-more-horizontal">
-                <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
-              </svg>
-            </button> -->
           </div>
 
           <div class="comments-section glass-panel">
@@ -744,6 +749,52 @@ onBeforeUnmount(() => {
     </div>
   </div>
 
+  <!-- MODAL DYAL SHOW INFORMATIONS -->
+  <div v-if="showInfoModal && activeEvent" class="modal-overlay" @click.self="closeInfoModal">
+    <div class="info-modal-card glass-panel">
+      <div class="modal-header">
+        <h3 style="margin: 0;">Event Informations</h3>
+        <button class="close-modal-btn" @click="closeInfoModal">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <div class="modal-body info-modal-body">
+
+        <div class="info-row">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin ui-icon"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+          <div class="info-text-block">
+            <strong>{{ $t('location') }}</strong>
+            <span>{{ activeEvent.location || $t('locationTBD') }}</span>
+          </div>
+        </div>
+
+        <div class="info-row">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-days ui-icon"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M8 13h.01"/><path d="M12 13h.01"/><path d="M16 13h.01"/><path d="M8 17h.01"/><path d="M12 17h.01"/><path d="M16 17h.01"/></svg>
+          <div class="info-text-block">
+            <strong>{{ $t('date') }}</strong>
+            <span>{{ activeEvent.event_date ? activeEvent.event_date.slice(0, 16).replace('T', ' ') : 'TBD' }}</span>
+          </div>
+        </div>
+
+        <div class="info-row">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ticket ui-icon"><path d="M15 5v2"/><path d="M15 11v2"/><path d="M15 17v2"/><path d="M5 5h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 0 0-4v-3a2 2 0 0 1 2-2z"/></svg>
+          <div class="info-text-block">
+            <strong>{{ $t('ticketPrice') }}</strong>
+            <span>{{ activeEvent.ticket_price ? '€' + activeEvent.ticket_price : $t('free') }}</span>
+          </div>
+        </div>
+
+        <div class="info-row">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users ui-icon"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg>
+          <div class="info-text-block">
+            <strong>{{ $t('maxCapacity') }}</strong>
+            <span>{{ activeEvent.max_capacity || '∞' }}</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
 <RChat :event-id="activeEvent ? activeEvent.id : null" />
 </template>
 
@@ -965,4 +1016,133 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   color: #00f2fe;
   transform: scale(1.1);
 }
+
+.event-quick-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 10px;
+  flex-shrink: 0;
+}
+
+.quick-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px 4px;
+  transition: all 0.2s ease;
+  cursor: default;
+}
+
+.quick-stat:hover {
+  background: rgba(0, 242, 254, 0.12);
+  border-color: rgba(0, 242, 254, 0.4);
+  transform: translateY(-2px);
+}
+
+.stat-text {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  font-weight: bold;
+}
+
+.quick-stat .ui-icon {
+  color: #00f2fe;
+}
+
+/* --- Info Modal Styling (Fixed Position) --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.15); /* khellitha khfifa bach matdlemsh */
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+}
+
+.info-modal-card {
+  position: fixed;
+  top: 50%;
+  right: 350px;
+  transform: translateY(-50%);
+  width: 320px;
+  /* Khalfia glass bhal dyal l-comments */
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 15px; /* bhal dyal glass-panel */
+  box-sizing: border-box;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15); /* border khfif byed */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  color: #fff;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15); /* line khfif byed */
+}
+
+.info-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  /* Chwya dyal contraste khfif 3la background dyal card */
+  background: rgba(255, 255, 255, 0.05);
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.info-row:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.info-text-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Fix l-Arabiya (RTL) */
+[dir="rtl"] .info-modal-card {
+  right: auto;
+  left: 350px;
+}
+
+@media (max-width: 1200px) {
+  .info-modal-card {
+    right: 50%;
+    transform: translate(50%, -50%);
+  }
+  [dir="rtl"] .info-modal-card {
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+}
+
 </style>

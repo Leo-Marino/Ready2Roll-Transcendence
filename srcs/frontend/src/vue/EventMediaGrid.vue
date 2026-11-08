@@ -64,9 +64,27 @@ const formatDate = (iso) => {
       <div class="viewer-info">
         <h3>{{ selected.title }}</h3>
         <p class="viewer-meta">
-          <span v-if="selected.event_date">📅 {{ formatDate(selected.event_date) }}</span>
-          <span v-if="selected.location">📍 {{ selected.location }}</span>
-          <span v-if="selected.ticket_price">🎟️ €{{ selected.ticket_price }}</span>
+          <span v-if="selected.event_date" class="meta-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ui-icon lucide lucide-calendar-days">
+              <path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/>
+              <path d="M3 9h18"/><path d="M8 13h.01"/><path d="M12 13h.01"/><path d="M16 13h.01"/>
+              <path d="M8 17h.01"/><path d="M12 17h.01"/><path d="M16 17h.01"/>
+            </svg>
+            {{ formatDate(selected.event_date) }}
+          </span>
+          <span v-if="selected.location" class="meta-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ui-icon lucide lucide-map-pin">
+              <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+            {{ selected.location }}
+          </span>
+          <span v-if="selected.ticket_price" class="meta-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ui-icon lucide lucide-ticket">
+              <path d="M15 5v2"/><path d="M15 11v2"/><path d="M15 17v2"/><path d="M5 5h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 0 0-4v-3a2 2 0 0 1 2-2z"/>
+            </svg>
+            €{{ selected.ticket_price }}
+          </span>
         </p>
         <p class="viewer-desc">{{ selected.description }}</p>
       </div>
@@ -98,4 +116,14 @@ const formatDate = (iso) => {
 .viewer-meta { display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: rgba(255,255,255,0.8); }
 .viewer-desc { white-space: pre-wrap; word-break: break-word; line-height: 1.4; }
 @media (max-width: 700px) { .viewer { flex-direction: column; overflow-y: auto; } .viewer-info { width: auto; } }
+
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.ui-icon {
+  color: #00f2fe;
+  flex-shrink: 0;
+}
 </style>

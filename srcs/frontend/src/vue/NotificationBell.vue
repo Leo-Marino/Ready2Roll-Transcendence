@@ -2,6 +2,7 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSocialSocket } from '../composables/useSocialSocket';
+import { t as $t } from '../i18n';
 
 // Campanellino con pallino rosso + pannello con le notifiche.
 // Ogni 20 secondi chiede al backend QUANTE notifiche non lette ci sono (chiamata leggerissima);
@@ -29,6 +30,18 @@ const fetchUnread = async (force = false) => {
     const res = await fetch(`${API}/notifications/unread-count/`, { headers: authHeaders() });
     if (res.ok) unread.value = (await res.json()).count;
   } catch (e) { /* rete assente: riprovo al prossimo giro */ }
+};
+
+const translateNotification = (text) => {
+  if (!text) return '';
+  const lowerText = text.toLowerCase();
+
+  if (lowerText.includes('following')) return $t('notifFollow');
+  if (lowerText.includes('liked')) return $t('notifLike');
+  if (lowerText.includes('commented')) return $t('notifComment');
+  if (lowerText.includes('replied')) return $t('notifReply');
+
+  return text; // Ila kant chi notif khra, tl3 kima hya
 };
 
 const loadList = async () => {
@@ -114,17 +127,17 @@ onBeforeUnmount(() => {
     </button>
 
     <div v-if="open" class="panel">
-      <div class="panel-head">Notifications</div>
+      <div class="panel-head">{{ $t('notificationsTitle') }}</div>
 
       <p v-if="loading && !items.length" class="empty">Loading...</p>
-      <p v-else-if="!items.length" class="empty">No notifications yet.</p>
+      <p v-else-if="!items.length" class="empty">{{ $t('noNotificationsYet') }}</p>
 
       <ul v-else class="list">
         <li v-for="n in items" :key="n.id" :class="{ unread: !n.is_read }" @click="openNotification(n)">
           <img v-if="n.sender" :src="n.sender.avatar" alt="" class="avatar">
           <span v-else class="avatar avatar-system">🔔</span>
           <div class="txt">
-            <span><strong>{{ n.sender ? n.sender.username : 'Ready2Roll' }}</strong> {{ n.text }}</span>
+            <span><strong>{{ n.sender ? n.sender.username : 'Ready2Roll' }}</strong> {{ translateNotification(n.text) }} </span>
             <small>{{ timeAgo(n.created_at) }}</small>
           </div>
         </li>

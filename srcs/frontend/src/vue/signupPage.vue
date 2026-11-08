@@ -269,7 +269,7 @@ const submitSignup = async () => {
         </div>
 
 
-        <div v-if="type_of_user === 'standard'" class="inputFieldDiv">
+        <!-- <div v-if="type_of_user === 'standard'" class="inputFieldDiv">
             <label class="tags-label">TAGS</label>
             <div class="tag-selector-container">
                 <div
@@ -283,7 +283,7 @@ const submitSignup = async () => {
                     <span>{{ t }}</span>
                 </div>
             </div>
-        </div>
+        </div> -->
 
         <br>
         <div class="inputFieldButton">
@@ -403,7 +403,7 @@ display: flex;
 flex-direction: column;
 }
 
-.tags-label {
+/* .tags-label {
 font-size: 11px;
 font-family: "Huninn", sans-serif;
 color: rgba(255, 255, 255, 0.75);
@@ -411,7 +411,7 @@ padding: 4px 0 4px 0;
 margin-bottom: 4px;
 text-align: left;
 margin-left: 4px;
-}
+} */
 
 .inputFieldDiv input {
 width: 100%;

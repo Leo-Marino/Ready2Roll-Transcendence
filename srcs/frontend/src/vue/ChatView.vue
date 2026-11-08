@@ -2,6 +2,7 @@
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useSocialSocket } from '../composables/useSocialSocket';
+import { t as $t } from '../i18n';
 
 const contacts = ref([]);          // Contatti con chat attive
 const searchResults = ref([]);     // Risultati della ricerca globale
@@ -39,7 +40,7 @@ watch(searchQuery, async (newQuery) => {
           id: u.id,
           name: u.username,
           img: finalImg,
-          lastMsg: 'Click to start chatting',
+          lastMsg: $t('clickToMessage'),
           lastMsgAt: null,
           unread: 0
         };
@@ -245,25 +246,25 @@ onBeforeUnmount(() => {
 
     <div class="main-content">
       <aside class="left-sidebar glass-panel">
-        <div class="sidebar-search-bar">
-          <input type="text" v-model="searchQuery" placeholder="Search users to chat..." autocomplete="off">
-        </div>
+      <div class="sidebar-search-bar">
+        <input type="text" v-model="searchQuery" :placeholder="$t('chatSearchPlaceholder')" :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'">
+      </div>
 
-        <h3>Messages</h3>
+        <h3>{{ $t('chatMessagesTitle') }}</h3>
 
         <!-- Risultati della ricerca globale -->
         <ul v-if="searchQuery.trim()">
-          <p class="search-label">Global Search:</p>
+          <p class="search-label">{{ $t('globalSearch') }}</p>
           <li v-for="contact in searchResults" :key="contact.id" class="contact-item"
             :class="{ active: activeContact?.id === contact.id }"
             @click="selectContact(contact)">
             <img :src="contact.img" alt="avatar" class="avatar">
             <div class="contact-info">
               <span class="contact-name">{{ contact.name }}</span>
-              <span class="contact-last-msg">Click to message</span>
+              <span class="contact-last-msg">{{ $t('clickToMessage') }}</span>
             </div>
           </li>
-          <li v-if="searchResults.length === 0" class="no-results">No users found.</li>
+          <li v-if="searchResults.length === 0" class="no-results">{{ $t('chatNoUsersFound') }}</li>
         </ul>
 
         <!-- Lista dei contatti attivi -->
@@ -281,14 +282,14 @@ onBeforeUnmount(() => {
               <span v-if="contact.unread > 0 && activeContact?.id !== contact.id" class="unread-dot"></span>
             </div>
           </li>
-          <li v-if="contacts.length === 0" class="no-results">No active chats yet. Use search above!</li>
+          <li v-if="contacts.length === 0" class="no-results">{{ $t ('chatNoActiveChats') }}</li>
         </ul>
       </aside>
 
       <main class="chat-container glass-panel">
         <div class="chat-header">
           <h2 v-if="activeContact">{{ activeContact.name }}</h2>
-          <h2 v-else>Select a contact</h2>
+          <h2 v-else>{{ $t('chatSelectContact') }}</h2>
         </div>
 
         <div class="chat-messages">
@@ -301,8 +302,8 @@ onBeforeUnmount(() => {
         </div>
 
         <form class="chat-input-area" @submit.prevent="sendMessage">
-          <input type="text" v-model="newMessage" placeholder="Type a message..." required>
-          <button type="submit">Send</button>
+          <input type="text" v-model="newMessage" :placeholder="$t('chatTypeMessage')" required :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'">
+          <button type="submit">{{ $t('chatSendButton') }}</button>
         </form>
       </main>
     </div>
