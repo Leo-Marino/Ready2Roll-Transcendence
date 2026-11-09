@@ -316,9 +316,15 @@ const saveProfile = async () => {
         <nav class="main-menu">
           <h3>Menu</h3>
           <ul>
-            <li @click="$router.push('/home')">🏠 For you</li>
-            <li>👤 subscription</li>
-            <li>🧭 discover</li>
+            <li>
+              <router-link to="/home" class="menu-item">🏠 For you</router-link>
+            </li>
+            <li>
+              <router-link to="/subscriptions" class="menu-item">👤 Subscription</router-link>
+            </li>
+            <li>
+              <router-link to="/discover" class="menu-item">🧭 Discover</router-link>
+            </li>
           </ul>
         </nav>
       </aside>
@@ -396,9 +402,23 @@ const saveProfile = async () => {
               <!-- Content Overlay on top of Media -->
               <div class="reel-overlay-content">
                 <h3 class="event-title">{{ event.title }}</h3>
-                <div class="event-info-row">
-                  <span>📍 {{ event.location }}</span>
-                  <span>📅 {{ event.event_date }}</span>
+              <div class="event-info-row">
+                  <span class="meta-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ui-icon lucide lucide-map-pin">
+                      <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/>
+                      <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    {{ event.location || 'Location TBD' }}
+                  </span>
+
+                  <span class="meta-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ui-icon lucide lucide-calendar-days">
+                      <path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/>
+                      <path d="M3 9h18"/><path d="M8 13h.01"/><path d="M12 13h.01"/><path d="M16 13h.01"/>
+                      <path d="M8 17h.01"/><path d="M12 17h.01"/><path d="M16 17h.01"/>
+                    </svg>
+                    {{ event.event_date ? event.event_date.slice(0, 10) : '' }}
+                  </span>
                 </div>
                 <p class="event-description-truncated">
                   {{ event.description || 'No description was inserted' }}
@@ -460,9 +480,22 @@ const saveProfile = async () => {
             </div>
             <h2 class="preview-title">{{ event.title }}</h2>
             <p class="preview-desc">{{ event.description || 'No description provided.' }}</p>
-            <div class="preview-meta">
-              <span>📍 {{ event.location }}</span>
-              <span>📅 {{ event.event_date }}</span>
+<div class="preview-meta">
+              <span class="meta-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ui-icon lucide lucide-map-pin">
+                  <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+                {{ event.location }}
+              </span>
+              <span class="meta-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ui-icon lucide lucide-calendar-days">
+                  <path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <path d="M3 9h18"/><path d="M8 13h.01"/><path d="M12 13h.01"/><path d="M16 13h.01"/>
+                  <path d="M8 17h.01"/><path d="M12 17h.01"/><path d="M16 17h.01"/>
+                </svg>
+                {{ event.event_date ? event.event_date.slice(0, 10) : '' }}
+              </span>
             </div>
           </div>
         </div>
@@ -581,7 +614,7 @@ const saveProfile = async () => {
 
 <style scoped>
 #bgVideo { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; z-index: -1; object-fit: cover; }
-.app-container { display: flex; flex-direction: column; height: 100vh; color: #FFFFFF; font-family: sans-serif; padding: 10px 20px; box-sizing: border-box; }
+.app-container { display: flex; flex-direction: column; height: 100vh; color: #FFFFFF; font-family: var(--font-main); padding: 10px 20px; box-sizing: border-box; }
 .glass-panel { background: rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 15px; box-sizing: border-box; }
 .navbar { display: flex; justify-content: space-between; align-items: center; height: 60px; margin-bottom: 15px; flex-shrink: 0; border: 1px solid rgba(255, 255, 255, 0.15); }
 .logo { display: flex; align-items: center; gap: 10px; cursor: pointer; }
@@ -888,4 +921,8 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   color: #00f2fe;
   margin-top: 4px;
 }
+
+.meta-item { display: inline-flex; align-items: center; gap: 6px; }
+.ui-icon { color: #00f2fe; flex-shrink: 0; }
+
 </style>

@@ -1,13 +1,20 @@
+import json
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from events.models import Tag
 
 
 User = get_user_model()
 
+ALLOWED_TAGS = ['Disco', 'Trap', 'Hip Hop', 'Rock', 'Jazz']
+
 class UserSerializer(serializers.ModelSerializer):
+    tags = serializers.ListField(
+        child=serializers.ChoiceField(choices=ALLOWED_TAGS), required=False
+    )
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'type_of_user', 'legal_name', 'vat_tax']
+        fields = ['username', 'email', 'password', 'type_of_user', 'legal_name', 'tags','vat_tax']
         extra_kwargs = {'password': {'write_only': True}}
     def validate(selfs,attrs):
         if attrs.get('type_of_user') == 'business':
@@ -19,7 +26,7 @@ class UserSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-         return User.objects.create_user(
+        user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data.get('email', ''),
             password=validated_data['password'],
@@ -27,6 +34,7 @@ class UserSerializer(serializers.ModelSerializer):
             legal_name=validated_data.get('legal_name'),
             vat_tax=validated_data.get('vat_tax'),
         )
+        return user
 
 class FollowCountsMixin(serializers.Serializer):
     """Conteggi reali basati sul modello social.Subscription.
@@ -51,8 +59,10 @@ class UserProfileSerializer(FollowCountsMixin, serializers.ModelSerializer):
 
              'id', 'username', 'email', 'first_name', 'last_name', 'bio',
             'avatar_url', 'instagram_handle', 'bs_website',
-            'following_count', 'followers_count', 'type_of_user',
+            'following_count', 'followers_count', 'type_of_user', 'tags',
         ]
+    def get_tags(self, obj):
+        return [tag.tag_name for tag in obj.tags.all()]
 
 class ViewerRelationMixin(serializers.Serializer):
     is_following = serializers.SerializerMethodField()
@@ -72,7 +82,16 @@ class ViewerRelationMixin(serializers.Serializer):
         viewer = self._viewer()
         return viewer is not None and viewer.pk == obj.pk
 
-class PublicUserProfileSerializer(FollowCountsMixin, ViewerRelationMixin, serializers.ModelSerializer):
+class AvatarUrlMixin(serializers.Serializer):
+    avatar_url = serializers.SerializerMethodField()
+
+    def get_avatar_url(self, obj):
+        if obj.avatar_url and obj.avatar_url.name:
+            # Force a relative path so the frontend uses the correct domain/port
+            return f"/media/{obj.avatar_url.name}"
+        return None
+
+class PublicUserProfileSerializer(FollowCountsMixin, ViewerRelationMixin, AvatarUrlMixin, serializers.ModelSerializer):
     """Profilo visto da un ALTRO utente (GET /api/users/<id>/). Niente dati privati."""
 
     class Meta:
@@ -86,6 +105,7 @@ class PublicUserProfileSerializer(FollowCountsMixin, ViewerRelationMixin, serial
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):
     avatar_url = serializers.ImageField(required=False, allow_null=True)
+    tags = serializers.CharField(required=False, allow_blank=True)
     class Meta:
         model = User
         fields = [
@@ -99,10 +119,25 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
             'legal_name',
             'date_of_birth',
             'bs_website',
+            'tags',
         ]
 
-class FollowUserSerializer(ViewerRelationMixin, serializers.ModelSerializer):
+    def update(self, instance, validated_data):
+        raw_tags = validated_data.pop('tags', None)
+        user = super().update(instance, validated_data)
 
+        if raw_tags is not None:
+            # Strip out any leftover brackets or quotes just in case, then split by comma
+            clean_string = raw_tags.replace('[', '').replace(']', '').replace('"', '')
+            tag_names = [t.strip() for t in clean_string.split(',') if t.strip()]
+
+            # Blindly create whatever tags were sent and save the relation
+            tags_objs = [Tag.objects.get_or_create(tag_name=n)[0] for n in tag_names]
+            user.tags.set(tags_objs)
+
+        return user
+
+class FollowUserSerializer(ViewerRelationMixin, AvatarUrlMixin, serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [

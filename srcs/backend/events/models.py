@@ -29,6 +29,8 @@ class Event(models.Model):
     tags = models.ManyToManyField(Tag, related_name='events', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='Draft')
+    # for ai
+    # lineup = models.TextField(blank=True, null=True)
 
     class Meta:
         db_table = 'events'

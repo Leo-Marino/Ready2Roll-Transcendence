@@ -1,6 +1,11 @@
 <script>
+import { t as $t } from '../i18n';
+import NotificationBell from './NotificationBell.vue';
+import ChatNavLink from './ChatNavLink.vue';
+
 export default {
   name: 'CreateEvent',
+  components: { NotificationBell, ChatNavLink },
   emits: ['navigate-view', 'event-published'],
   data() {
     return {
@@ -13,8 +18,8 @@ export default {
       eventDate: '',
       maxCapacity: '',
       ticketPrice: '',
+      startTime:'',
       endTime: '',
-      tags: '',
       eventStatus: 'draft',
       uploadedMediaSrc: null,
       actualFile: null,
@@ -28,13 +33,12 @@ export default {
       const parts = this.eventDate.split('T')[0].split('-');
       if (parts.length === 3) {
         const [year, month, day] = parts;
-        return `${day}/${month}/${day}`;
+        return `${day}/${month}/${year}`;
       }
       return this.eventDate;
-    }
+    },
   },
   mounted() {
-    // Nchoufo wach dkhla l'page 3la wd Edit
     if (this.$route.query.edit === 'true') {
       const savedEvent = localStorage.getItem('editingEvent');
       if (savedEvent) {
@@ -45,12 +49,11 @@ export default {
           this.eventTitle = ev.title || '';
           this.descriptionText = ev.description || '';
           this.eventLocation = ev.location || 'YAB Club, Florence';
-          // Format dyal datetime-local khasso ykon YYYY-MM-DDTHH:mm
           this.eventDate = ev.event_date ? String(ev.event_date).slice(0, 16) : '';
+          this.startTime = this.eventDate;
           this.endTime = ev.end_time ? String(ev.end_time).slice(0, 16) : '';
           this.maxCapacity = ev.max_capacity || '';
           this.ticketPrice = ev.ticket_price || '';
-          this.tags = Array.isArray(ev.tags) ? ev.tags.join(', ') : (ev.tags || '');
           this.eventStatus = ev.status ? ev.status.toLowerCase() : 'active';
           this.uploadedMediaSrc = ev.media_src || null;
           this.mediaType = ev.media_type || 'image';
@@ -59,7 +62,6 @@ export default {
         }
       }
     } else {
-      // Ila dkhl 3adi bach ysayb event jdid, nms7o ay data qdima
       localStorage.removeItem('editingEvent');
     }
   },
@@ -89,7 +91,20 @@ export default {
     },
     async handlePublish() {
       if (!this.eventTitle || !this.descriptionText || !this.eventDate || !this.eventStatus) {
-        alert("All mandatory fields must be filled !");
+        alert($t('allFieldsMandatory'));
+        return;
+      }
+      if (!this.isEditMode && !this.actualFile) {
+        alert($t('insertMediaAlert'));
+        return;
+      }
+
+      if (this.maxCapacity !== '' && Number(this.maxCapacity) < 0) {
+        alert($t('capacityNegative'));
+        return;
+      }
+      if (this.ticketPrice !== '' && Number(this.ticketPrice) < 0) {
+        alert($t('priceNegative'));
         return;
       }
 
@@ -105,15 +120,9 @@ export default {
       if (this.maxCapacity) formData.append('max_capacity', this.maxCapacity);
       if (this.ticketPrice) formData.append('ticket_price', this.ticketPrice);
       if (this.endTime) formData.append('end_time', this.endTime);
-
-      if (this.tags) {
-        const tagsArray = this.tags.split(',').map(tag => tag.trim()).filter(Boolean);
-        tagsArray.forEach(tag => {
-          formData.append('tags', tag);
-        });
+      if (this.eventDate) {
+        formData.append('start_time', this.eventDate);
       }
-
-      // Ila bddel l'video wla tswira, nsifto l'fichier jdid
       if (this.actualFile) {
         formData.append('media_file', this.actualFile);
         formData.append('media_type', this.mediaType);
@@ -121,7 +130,6 @@ export default {
         formData.append('media_type', this.mediaType);
       }
 
-      // Ila kna f Edit Mode, nsifto PUT l /api/events/<id>/, sinon POST l /api/events/
       const url = this.isEditMode ? `/api/events/${this.editingEventId}/` : '/api/events/';
       const method = this.isEditMode ? 'PUT' : 'POST';
 
@@ -137,7 +145,7 @@ export default {
         if (response.ok) {
           const savedEvent = await response.json();
           localStorage.removeItem('editingEvent');
-          alert(this.isEditMode ? "Event updated successfully!" : "Event created successfully!");
+          alert(this.isEditMode ? "Event updated successfully!" : (this.eventStatus === 'scheduled' ? "Event scheduled successfully!" : "Event created successfully!"));
           this.$emit('event-published', savedEvent);
           this.goToVisualPage();
         }
@@ -194,18 +202,17 @@ export default {
 
     <div class="nav-right">
       <div class="nav-icons">
-        <router-link to="/direct" class="nav-icon-link" title="Direct Messages">
-          <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+        <NotificationBell />
+        <ChatNavLink>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
           </svg>
-        </router-link>
-        <router-link to="/chat" class="nav-icon-link" title="Chat">
-          <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a.75.75 0 01-.81-.54 2.89 2.89 0 01.213-1.637 8.25 8.25 0 01-1.813-5.293C3 7.444 7.03 3.75 12 3.75s9 3.694 9 8.25z" />
-          </svg>
-        </router-link>
-        <router-link to="/profile" class="nav-icon-link" title="Profile">
-          <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+        </ChatNavLink>
+        <!-- <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+        </svg> -->
+        <router-link to="/profile" class="nav-icon-link">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
           </svg>
         </router-link>
@@ -215,9 +222,9 @@ export default {
 
   <main class="main-content">
     <div class="page-title-row">
-      <h1 class="page-title">{{ isEditMode ? 'EDIT EVENT' : 'CREATE AN EVENT' }}</h1>
+      <h1 class="page-title">{{ isEditMode ? $t('editEventTitle') : $t('createEventTitle') }}</h1>
       <button class="action-btn nav-visual-btn" @click="goToVisualPage">
-        📂 MY EVENTS
+          {{ $t('myEvents') }}
       </button>
     </div>
 
@@ -226,7 +233,7 @@ export default {
 
         <!-- STEP 1: CONTENT MEDIA -->
         <div class="step-column" :class="{ 'step-active': activeStep === 1 }" @click="goToStep(1)">
-          <div class="step-header-label">1. CONTENT MEDIA</div>
+          <div class="step-header-label">{{ $t('contentMedia') }}</div>
           <div class="media-outer-wrapper">
             <div
               class="media-preview clickable"
@@ -234,7 +241,7 @@ export default {
             >
               <!-- Map Toggle Button -->
               <button type="button" class="media-map-toggle-btn" @click.stop="toggleMapBox">
-                {{ showMapBox ? '🗺️ Hide map' : '🗺️ View map' }}
+                {{ showMapBox ? $t('hideMap') : $t('viewMap') }}
               </button>
 
               <!-- Remove Media Button (Only shows when file is uploaded) -->
@@ -250,7 +257,7 @@ export default {
 
               <div @click="triggerFileInput" class="media-inner-click-area">
                 <template v-if="!uploadedMediaSrc">
-                  <span>Click here to insert photo/video</span>
+                  <span>{{ $t('insertMedia') }}</span>
                 </template>
                 <template v-else>
                   <video
@@ -276,7 +283,7 @@ export default {
         <!-- STEP 2: MAP LOCATION (Animated transition wrapper) -->
         <transition name="map-slide">
           <div class="step-column" v-if="showMapBox" :class="{ 'step-active': activeStep === 2 }" @click="goToStep(2)">
-            <div class="step-header-label">2. MAP LOCATION</div>
+            <div class="step-header-label">{{ $t('mapLocation') }}</div>
             <div class="map-container-inline">
               <div class="map-inner-wrapper">
                 <iframe
@@ -296,46 +303,46 @@ export default {
 
         <!-- STEP 3: EVENT DETAILS (RIGHT) -->
         <div class="step-column right-section" :class="{ 'step-active': activeStep === 3 }" @click="goToStep(3)">
-          <div class="step-header-label">3. EVENT DETAILS</div>
+          <div class="step-header-label">{{ $t('eventDetails') }}</div>
           <div class="event-details-bar-vertical">
 
             <div class="detail-input-group">
-              <label for="event-title">TITLE *</label>
+              <label for="event-title">{{ $t('titleLabel') }}</label>
               <input
                 id="event-title"
                 type="text"
                 v-model="eventTitle"
-                placeholder="E.g. Night Club Party"
+                :placeholder="$t('titlePlaceholder')"
                 class="custom-input"
                 required
               />
             </div>
 
             <div class="detail-input-group">
-              <label for="event-description">DESCRIPTION *</label>
+              <label for="event-description">{{ $t('descriptionLabel') }}</label>
               <textarea
                 id="event-description"
                 v-model="descriptionText"
-                placeholder="Describe your event..."
+                :placeholder="$t('descriptionPlaceholder')"
                 class="custom-input textarea-input"
-                rows="2"
+                rows="1"
                 required
               ></textarea>
             </div>
 
             <div class="detail-input-group">
-              <label for="event-location">LOCATION *</label>
+              <label for="event-location">{{ $t('locationLabel') }}</label>
               <input
                 id="event-location"
                 type="text"
-                placeholder="Find desired address or location"
+                :placeholder="$t('locationPlaceholder')"
                 class="custom-input map-input"
                 v-model="eventLocation"
               />
             </div>
 
             <div class="detail-input-group">
-              <label for="event-date">EVENT START & TIME *</label>
+              <label for="event-date">{{ $t('eventStart') }}</label>
               <input
                 id="event-date"
                 type="datetime-local"
@@ -344,10 +351,16 @@ export default {
                 required
               />
             </div>
-
+            <!-- <input
+              id="event-date"
+              type="datetime-local"
+              v-model="eventDate"
+              class="custom-input date-picker"
+              required
+            /> -->
             <div class="form-row">
               <div class="detail-input-group">
-                <label for="end-time">EVENT END & TIME</label>
+                <label for="end-time">{{ $t('eventEnd') }}</label>
                 <input
                   id="end-time"
                   type="datetime-local"
@@ -359,46 +372,54 @@ export default {
 
             <div class="form-row">
               <div class="detail-input-group">
-                <label for="max-capacity">MAX CAPACITY</label>
+                <label for="max-capacity">{{ $t('maxCapacityLabel') }}</label>
                 <input
                   id="max-capacity"
                   type="number"
+                  min="0"
                   v-model="maxCapacity"
-                  placeholder="E.g. 500"
+                  :placeholder="$t('capacityPlaceholder')"
                   class="custom-input"
                 />
               </div>
               <div class="detail-input-group">
-                <label for="ticket-price">TICKET PRICE (€)</label>
+                <label for="ticket-price">{{ $t('ticketPriceLabel') }}</label>
                 <input
                   id="ticket-price"
                   type="number"
                   step="0.01"
+                  min="0"
                   v-model="ticketPrice"
-                  placeholder="E.g. 15.00"
+                  :placeholder="$t('pricePlaceholder')"
                   class="custom-input"
                 />
               </div>
             </div>
 
             <div class="detail-input-group">
-              <label for="tags">TAGS</label>
-              <input
-                id="tags"
-                type="text"
-                v-model="tags"
-                placeholder="E.g. party, club, dj"
-                class="custom-input"
-              />
+              <label for="event-status">{{ $t('statusLabel') }}</label>
+              <select id="event-status" v-model="eventStatus" class="custom-input custom-select" required>
+                <option value="active">{{ $t('statusActive') }}</option>
+                <option value="draft">{{ $t('statusDraft') }}</option>
+                <option value="scheduled">{{ $t('statusScheduled') }}</option>
+              </select>
             </div>
 
+            <!-- TAGS POSTI SOTTO ALLO STATUS -->
             <div class="detail-input-group">
-              <label for="event-status">STATUS *</label>
-              <select id="event-status" v-model="eventStatus" class="custom-input custom-select" required>
-                <option value="active">Active</option>
-                <option value="draft">Draft</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
+              <label>{{ $t('tagsLabel') }}</label>
+              <div class="tag-selector-container">
+                <div
+                  v-for="t in availableTags"
+                  :key="t"
+                  @click="toggleTag(t)"
+                  :class="isTagSelected(t) ? 'business-badge' : 'standard-badge'"
+                  class="selectable-tag-pill"
+                >
+                  <span>{{ isTagSelected(t) ? '✓' : '+' }}</span>
+                  <span>{{ t }}</span>
+                </div>
+              </div>
             </div>
 
           </div>
@@ -407,9 +428,9 @@ export default {
       </div>
 
       <div class="publish-action-bar">
-        <button class="publish-btn" @click="handlePublish">
-          {{ isEditMode ? 'SAVE CHANGES' : 'PUBLISH EVENT' }}
-        </button>
+      <button class="publish-btn" @click="handlePublish">
+        {{ isEditMode ? $t('saveChanges') : (eventStatus === 'scheduled' ? $t('scheduleEvent') : $t('publishEvent')) }}
+      </button>
       </div>
     </section>
   </main>
@@ -417,20 +438,29 @@ export default {
 </template>
 
 <style scoped>
-@import url('https://cdn.jsdelivr.net/gh/justfont/open-huninn-font@1.1/font/jf-openhuninn.css');
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
 
 .owner-visual-wrapper {
   position: relative;
-  min-height: 100vh;
-  width: 100%;
+  height: 100vh;
+  width: 100vw;
   color: #ffffff;
-  font-family: 'jf-openhuninn', 'Huninn', sans-serif;
+  font-family: var(--font-main);
   box-sizing: border-box;
-  padding-bottom: 50px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .page-title {
-  font-family: 'jf-openhuninn', 'Huninn', sans-serif !important;
+  font-family: var(--font-main) !important;
   letter-spacing: 3px;
   text-transform: uppercase;
 }
@@ -446,12 +476,12 @@ p, span, li, small,
 .action-btn-small,
 .publish-btn,
 .nav-visual-btn {
-  font-family: 'jf-openhuninn', 'Huninn', sans-serif !important;
+  font-family: var(--font-main) !important;
 }
 
 input::placeholder,
 textarea::placeholder {
-  font-family: 'jf-openhuninn', 'Huninn', sans-serif !important;
+  font-family: var(--font-main) !important;
 }
 
 .logo,
@@ -480,6 +510,7 @@ textarea::placeholder {
   margin: 0 auto;
   padding: 10px 20px;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .page-title-row {
@@ -487,7 +518,7 @@ textarea::placeholder {
   justify-content: space-between;
   align-items: center;
   max-width: 1550px;
-  margin: 0 auto 20px auto;
+  margin: 0 auto 15px auto;
   flex-wrap: wrap;
   gap: 15px;
 }
@@ -519,18 +550,21 @@ textarea::placeholder {
   align-items: center;
   justify-content: space-between;
   padding: 12px 30px;
-  width: calc(100% - 40px);
+  width: 100%; /* Badlna width: calc(100% - 40px) b 100% */
   max-width: 1550px;
-  margin: 15px auto 0 auto;
+  margin: 15px auto;
   box-sizing: border-box;
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 16px;
-  position: sticky;
-  top: 15px;
-  z-index: 1000;
+  flex-shrink: 0;
+}
+
+/* Zid had l'fix 3la wed RTL Navbar */
+[dir="rtl"] .navbar {
+  flex-direction: row-reverse;
 }
 
 .nav-left, .nav-right {
@@ -557,7 +591,7 @@ textarea::placeholder {
 }
 
 .logo-text {
-  font-family: 'Bruno Ace', cursive, sans-serif;
+  font-family: "Bruno Ace", sans-serif;
   font-weight: 400;
   font-size: 1.25rem;
   color: #ffffff;
@@ -596,7 +630,6 @@ textarea::placeholder {
   box-sizing: border-box;
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  transition: all 0.5s ease;
   max-width: 1550px;
   margin: 0 auto;
 }
@@ -646,7 +679,7 @@ textarea::placeholder {
 }
 
 .right-section {
-  width: 420px;
+  width: 380px;
   flex-shrink: 0;
 }
 
@@ -670,24 +703,27 @@ textarea::placeholder {
   padding-right: 0;
 }
 
-/* Transparent Glass Content Boxes Restored */
+/* Event Details Box - Spaziatura aumentata e field ingranditi */
 .event-details-bar-vertical {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background: rgba(0, 0, 0, 0.3);
-  padding: 20px;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  max-height: 680px;
-  overflow-y: auto;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 18px 16px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(12px);
+  width: 380px;
+  height: 525px;
+  box-sizing: border-box;
+  overflow: hidden;
   cursor: default;
   transition: border 0.3s ease, box-shadow 0.3s ease;
 }
 
 .form-row {
   display: flex;
-  gap: 10px;
+  gap: 12px;
 }
 
 .form-row .detail-input-group {
@@ -702,7 +738,7 @@ textarea::placeholder {
 }
 
 .detail-input-group label {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: rgba(255, 255, 255, 0.75);
   letter-spacing: 0.5px;
 }
@@ -720,7 +756,9 @@ textarea::placeholder {
 }
 
 .textarea-input {
-  resize: vertical;
+  resize: none;
+  min-height: 36px;
+  max-height: 36px;
 }
 
 .date-picker {
@@ -737,6 +775,7 @@ textarea::placeholder {
   color: #ffffff;
 }
 
+/* Media Outer Wrapper - Altezza perfettamente identica a event details (525px) */
 .media-outer-wrapper {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -748,7 +787,7 @@ textarea::placeholder {
   justify-content: center;
   align-items: center;
   width: 380px;
-  height: 535px;
+  height: 525px;
   flex-shrink: 0;
   cursor: default;
   transition: border 0.3s ease, box-shadow 0.3s ease;
@@ -785,19 +824,20 @@ textarea::placeholder {
   align-items: center;
   justify-content: center;
   position: relative;
+  font-size: 0.8rem;
 }
 
 .media-map-toggle-btn {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 10px;
+  right: 10px;
   z-index: 10;
   background: rgba(0, 0, 0, 0.7);
   border: 1px solid #00f2fe;
   color: #00f2fe;
-  padding: 6px 12px;
-  border-radius: 10px;
-  font-size: 0.75rem;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 0.7rem;
   font-weight: bold;
   cursor: pointer;
   backdrop-filter: blur(4px);
@@ -811,16 +851,16 @@ textarea::placeholder {
 
 .media-remove-btn {
   position: absolute;
-  top: 12px;
-  left: 12px;
+  top: 10px;
+  left: 10px;
   z-index: 10;
   background: rgba(214, 48, 49, 0.8);
   border: 1px solid #ff7675;
   color: #ffffff;
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   font-weight: bold;
   display: flex;
   align-items: center;
@@ -849,7 +889,7 @@ textarea::placeholder {
 
 .map-container-inline {
   width: 380px;
-  height: 535px;
+  height: 525px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 24px;
@@ -885,7 +925,7 @@ textarea::placeholder {
 }
 
 .publish-action-bar {
-  margin-top: 25px;
+  margin-top: 20px;
   display: flex;
   justify-content: center;
 }
@@ -894,10 +934,10 @@ textarea::placeholder {
   background: rgba(0, 242, 254, 0.2);
   border: 1px solid #00f2fe;
   color: #00f2fe;
-  padding: 14px 40px;
-  font-size: 0.95rem;
+  padding: 12px 35px;
+  font-size: 0.9rem;
   font-weight: bold;
-  border-radius: 14px;
+  border-radius: 12px;
   cursor: pointer;
   box-shadow: 0 0 15px rgba(0, 242, 254, 0.3);
   transition: all 0.3s ease;
@@ -915,13 +955,49 @@ textarea::placeholder {
     flex-direction: column;
     align-items: center;
   }
-  .right-section {
+  .right-section,
+  .event-details-bar-vertical {
     width: 100%;
+    max-width: 480px;
+    height: auto;
   }
   .map-container-inline,
   .media-outer-wrapper {
     width: 100%;
     max-width: 480px;
+    height: 440px;
   }
 }
+
+/* RTL Fixes for Create Event Page */
+[dir="rtl"] .preview-box {
+  flex-direction: row-reverse; /* Hada kiy-qleb l'columns f RTL bach tb9a l'Media 3la l'iser w details 3la limn (aw l'3ekss kima bghiti) */
+  justify-content: space-between; /* Hada kiy-ferreqhom 3la b3diyathom */
+  gap: 30px; /* Zidna chwya f l'espace binathom f RTL */
+}
+
+/* Ila bghiti tfiy-fixer 7ta l'titles dyalhom bach ib9aw m9addin f RTL */
+[dir="rtl"] .step-header-label {
+  text-align: right;
+  padding-right: 5px;
+  padding-left: 0;
+}
+
+/* L'inputs dyal l'details khasshom ijiw mn l'imin l'isser f RTL */
+[dir="rtl"] .detail-input-group {
+  text-align: right;
+}
+
+[dir="rtl"] .custom-input {
+  text-align: right;
+}
+
+[dir="rtl"] .form-row {
+  flex-direction: row-reverse; /* Hada kiy-qleb "Max Capacity" w "Ticket Price" f RTL */
+}
+
+[dir="rtl"] .tag-selector-container {
+  justify-content: flex-end; /* Tags kiybano mn limin */
+}
+
 </style>

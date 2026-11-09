@@ -1,6 +1,12 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import RChat from './RChat.vue';
+import SearchBar from './SearchBar.vue';
+import NotificationBell from './NotificationBell.vue';
+import LanguageSwitcher from './LanguageSwitcher.vue';
+import { t as $t } from '../i18n';
+import ChatNavLink from './ChatNavLink.vue';
+import { useSocialSocket } from '../composables/useSocialSocket';
 
 //--------------------xh start----------------
 const props = defineProps({ mode: { type: String, default: 'for_you' } });
@@ -12,6 +18,12 @@ const activeIndex = ref(0);                        // which video is on screen
 const activeEvent = computed(() => videos.value[activeIndex.value] || null);
 const activeEventId = computed(() => (activeEvent.value ? activeEvent.value.id : null));
 const wrapperRefs = [];                            // one DOM element per video
+
+
+// Variable bach t7ell/t-sdd l-pop-up dyal l-informations
+const showInfoModal = ref(false);
+const openInfoModal = () => { showInfoModal.value = true; };
+const closeInfoModal = () => { showInfoModal.value = false; };
 
 const comments = ref([]);
 const newCommentText = ref('');
@@ -182,6 +194,17 @@ const hidePicker = () => {
 // Emoji for a type; no reaction (null) -> empty heart
 const emojiOf = (type) => (REACTIONS.find(r => r.type === type) || {}).emoji || '🤍';
 
+// Reactions that really exist on a comment, most used first: [{ type, emoji, n }]
+const reactionList = (counts) =>
+  Object.entries(counts || {})
+    .filter(([, n]) => n > 0)
+    .map(([type, n]) => ({ type, emoji: emojiOf(type), n }))
+    .sort((a, b) => b.n - a.n);
+
+// Total number of reactions on a comment
+const reactionTotal = (counts) =>
+  Object.values(counts || {}).reduce((sum, n) => sum + (n || 0), 0);
+
 // POST react toggle: same type removes it, a different type replaces it.
 // Works for top-level comments AND replies (both have the same fields).
 const reactToComment = async (comment, type) => {
@@ -307,6 +330,76 @@ const fetchFeed = async () => {
 watch(() => props.mode, fetchFeed);   // passando da For you a Discover la pagina resta la stessa
 onMounted(fetchFeed);
 //-----------------------xh add part end----------------------------
+// --- Live updates from other users (WebSocket) ---
+// Only the PUBLIC numbers are overwritten here (counts). Personal state such as
+// is_liked or user_reaction is never touched: it depends on who is looking.
+const findCommentById = (commentId) => {
+  for (const comment of comments.value) {
+    if (comment.id === commentId) return comment;
+    const reply = (comment.replies || []).find((r) => r.id === commentId);
+    if (reply) return reply;
+  }
+  return null;
+};
+
+const handleSocialMessage = (message) => {
+  const { action, target_id: targetId, data } = message;
+
+  if (action === 'like') {
+    const ev = videos.value.find((v) => v.id === targetId);
+    if (ev) ev.likes_count = data.likes_count;
+  } else if (action === 'comment') {
+    const ev = videos.value.find((v) => v.id === targetId);
+    if (ev) ev.comments_count = data.comments_count;
+    // Reload the open comment list, unless the comment is already on screen
+    // (it is the one I just posted myself).
+    if (targetId === activeEventId.value && !findCommentById(data.comment_id)) {
+      fetchComments(targetId);
+    }
+  } else if (action === 'comment_reaction') {
+    if (data.event_id !== activeEventId.value) return;
+    const comment = findCommentById(targetId);
+    if (comment) comment.reactions_count = data.reactions_count;
+
+  } else if (action === 'update_profile') {
+    // ---> BULLETPROOF LIVE PROFILE UPDATES FOR THE FEED <---
+    // 1. Update the owner of any video in the feed
+    videos.value.forEach((v) => {
+      if (v.owner && v.owner.id === targetId) {
+        v.owner.display_name = data.username || data['user.name'] || data.name || v.owner.display_name;
+        v.owner.username = data.username || data['user.name'] || data.name || v.owner.username;
+        const newAvatar = data.user_avatar || data.avatar_url || data.avatar;
+        if (newAvatar) v.owner.avatar = newAvatar;
+      }
+    });
+    // 2. Update the avatars/names in the active comments section
+    comments.value.forEach((c) => {
+      // Top-level comments
+      if (c.user_id === targetId || (c.user && c.user.id === targetId)) {
+        c.user_username = data.username || data['user.name'] || data.name || c.user_username;
+        const newAvatar = data.user_avatar || data.avatar_url || data.avatar;
+        if (newAvatar) c.user_avatar = newAvatar;
+      }
+      // Replies
+      if (c.replies) {
+        c.replies.forEach((r) => {
+          if (r.user_id === targetId || (r.user && r.user.id === targetId)) {
+            r.user_username = data.username || data['user.name'] || data.name || r.user_username;
+            const newAvatar = data.user_avatar || data.avatar_url || data.avatar;
+            if (newAvatar) r.user_avatar = newAvatar;
+          }
+        });
+      }
+    });
+
+  } else if (action === 'resync') {
+    // The connection was down for a while: reload what is on screen
+    if (activeEventId.value) fetchComments(activeEventId.value);
+  }
+};
+
+useSocialSocket(handleSocialMessage);
+
 // Scrolled to another video -> load ITS comments
 watch(activeEventId, (id) => {
   comments.value = [];
@@ -334,18 +427,21 @@ onBeforeUnmount(() => {
         <img src="../assets/logo_temp.png" alt="Ready2Roll Logo" class="nav-logo-img">
         <span class="logo-text">Ready2Roll</span>
       </div>
-      <div class="search-bar">
+      <!-- <div class="search-bar">
         <input type="text" placeholder="Search...">
-      </div>
+      </div> -->
+      <SearchBar />
       <div class="nav-icons">
-        <router-link to="/chat" class="nav-icon-link">
+        <LanguageSwitcher />
+        <NotificationBell />
+        <ChatNavLink>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
           </svg>
-        </router-link>
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+        </ChatNavLink>
+        <!-- <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
           <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
-        </svg>
+        </svg> -->
         <router-link to="/profile" class="nav-icon-link">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
@@ -357,16 +453,55 @@ onBeforeUnmount(() => {
     <div class="main-content">
       <aside class="left-sidebar glass-panel">
         <nav class="main-menu">
-          <h3>Menu</h3>
+          <h3>{{ $t('menu') }}</h3>
           <ul>
-            <li>
-              <router-link to="/home" class="menu-item">🏠 For you</router-link>
+            <li @click="$router.push('/home')" class="menu-item">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="menu-svg-icon"
+              >
+                <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/>
+                <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              </svg>
+              <span>{{ $t('forYou') }}</span>
             </li>
-            <li>
-              <router-link to="/subscriptions" class="menu-item">👤 Subscription</router-link>
+            <li @click="$router.push('/subscriptions')" class="menu-item">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="menu-svg-icon"
+              >
+                <path d="M16.051 12.616a1 1 0 0 1 1.909.024l.737 1.452a1 1 0 0 0 .737.535l1.634.256a1 1 0 0 1 .588 1.806l-1.172 1.168a1 1 0 0 0-.282.866l.259 1.613a1 1 0 0 1-1.541 1.134l-1.465-.75a1 1 0 0 0-.912 0l-1.465.75a1 1 0 0 1-1.539-1.133l.258-1.613a1 1 0 0 0-.282-.866l-1.156-1.153a1 1 0 0 1 .572-1.822l1.633-.256a1 1 0 0 0 .737-.535z"/>
+                <path d="M8 15H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/>
+              </svg>
+              <span>{{ $t('subscriptions') }}</span>
             </li>
-            <li>
-              <router-link to="/discover" class="menu-item">🧭 Discover</router-link>
+            <li @click="$router.push('/discover')" class="menu-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-svg-icon">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M8 16l2 -6l6 -2l-2 6l-6 2" />
+                  <path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                  <path d="M12 3l0 2" />
+                  <path d="M12 19l0 2" />
+                  <path d="M3 12l2 0" />
+                  <path d="M19 12l2 0" />
+                </svg>
+              <span>{{ $t('discover') }}</span>
             </li>
           </ul>
         </nav>
@@ -439,22 +574,39 @@ onBeforeUnmount(() => {
                 class="subscribe-btn"
                 :class="{ subscribed: activeEvent.owner.is_following }"
                 @click="toggleSubscribe">
-                {{ activeEvent.owner.is_following ? 'Subscribed' : 'Subscribe' }}
+                {{ activeEvent.owner.is_following ? $t('Followed') :  $t('Follow') }}
               </button>
             </div>
             <p class="description">{{ activeEvent.description }}</p>
           </div>
 
-          <div class="action-buttons glass-panel">
-            <button :class="{ liked: activeEvent.is_liked }" @click="toggleLike">
-              {{ activeEvent.is_liked ? '❤️' : '🤍' }} {{ formatCount(activeEvent.likes_count) }}
+<div class="action-buttons glass-panel" style="display: flex; justify-content: space-between; padding: 10px; gap: 8px;">
+            <!-- LIKES BUTTON -->
+            <button :class="{ liked: activeEvent.is_liked }" @click="toggleLike" style="display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1; padding: 8px 0;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" :fill="activeEvent.is_liked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart">
+                <path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/>
+              </svg>
+              {{ formatCount(activeEvent.likes_count) }}
             </button>
-            <button>💬 {{ formatCount(activeEvent.comments_count) }}</button>
-            <button>•••</button>
+
+            <!-- SHOW INFORMATIONS BUTTON (B7alhom f size) -->
+            <button class="show-info-btn" @click="openInfoModal" style="display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1; padding: 8px 0; border: none; background: rgba(0, 242, 254, 0.15); color: #00f2fe; border-radius: 10px; cursor: pointer;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+              <span style="font-size: 0.75rem; font-weight: bold;">Info</span>
+            </button>
+
+            <!-- COMMENTS BUTTON -->
+            <button style="display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1; padding: 8px 0;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle-more">
+                <path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/>
+                <path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/>
+              </svg>
+              {{ formatCount(activeEvent.comments_count) }}
+            </button>
           </div>
 
           <div class="comments-section glass-panel">
-            <h3>Comments</h3>
+            <h3>{{ $t('comments') }}</h3>
 
             <!-- Scrollable list: newest comment is at the bottom, right above the input -->
             <div class="comments-list" ref="commentsListRef">
@@ -467,7 +619,7 @@ onBeforeUnmount(() => {
                     <p class="comment-line"><strong>{{ comment.user_username }}</strong> {{ comment.content }}</p>
                     <div class="comment-meta">
                       <span>{{ timeAgo(comment.created_at) }}</span>
-                      <button class="reply-btn" @click="startReply(comment, comment)">Reply</button>
+                      <button class="reply-btn" @click="startReply(comment, comment)">{{ $t('reply') }}</button>
                       <!-- reaction -->
                       <div class="reaction-wrap" @mouseenter="showPicker(comment.id)" @mouseleave="hidePicker">
                         <button
@@ -478,9 +630,6 @@ onBeforeUnmount(() => {
                         >
                           {{ emojiOf(comment.user_reaction) }}
                         </button>
-                        <span class="reaction-summary" v-for="(n, type) in comment.reactions_count" :key="type">
-                          {{ emojiOf(type) }}{{ n }}
-                        </span>
                         <div
                           class="reaction-picker"
                           v-if="openPicker === comment.id"
@@ -497,14 +646,27 @@ onBeforeUnmount(() => {
                           </button>
                         </div>
                       </div>
+                      <!-- all reactions in one chip; hover = every emoji with its count -->
+                      <div class="reaction-stats" v-if="reactionTotal(comment.reactions_count) > 0" tabindex="0">
+                        <span class="stats-emojis">
+                          <span v-for="r in reactionList(comment.reactions_count).slice(0, 3)" :key="r.type">{{ r.emoji }}</span>
+                        </span>
+                        <span class="stats-total">{{ formatCount(reactionTotal(comment.reactions_count)) }}</span>
+                        <div class="stats-pop">
+                          <div v-for="r in reactionList(comment.reactions_count)" :key="r.type" class="stats-item" :class="{ mine: comment.user_reaction === r.type }">
+                            <span class="stats-emoji">{{ r.emoji }}</span>
+                            <span class="stats-n">{{ formatCount(r.n) }}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-<!-- reaction -->
+                    <!-- reaction -->
                     <button
                       v-if="comment.reply_count > 0"
                       class="view-replies-btn"
                       @click="toggleReplies(comment.id)">
                       <span class="replies-line"></span>
-                      {{ expandedReplies[comment.id] ? 'Hide replies' : `View ${comment.reply_count} ${comment.reply_count === 1 ? 'reply' : 'replies'}` }}
+                      {{ expandedReplies[comment.id] ? $t('hideReplies') : `${$t('viewReplies')} ${comment.reply_count}` }}
                     </button>
 
                     <div v-if="expandedReplies[comment.id]" class="replies">
@@ -514,7 +676,7 @@ onBeforeUnmount(() => {
                           <p class="comment-line"><strong>{{ reply.user_username }}</strong> {{ reply.content }}</p>
                           <div class="comment-meta">
                             <span>{{ timeAgo(reply.created_at) }}</span>
-                            <button class="reply-btn" @click="startReply(reply, comment)">Reply</button>
+                            <button class="reply-btn" @click="startReply(reply, comment)">{{ $t('reply') }}</button>
                             <div class="reaction-wrap" @mouseenter="showPicker(reply.id)" @mouseleave="hidePicker">
                               <button
                                 type="button"
@@ -524,9 +686,6 @@ onBeforeUnmount(() => {
                               >
                                 {{ emojiOf(reply.user_reaction) }}
                               </button>
-                              <span class="reaction-summary" v-for="(n, type) in reply.reactions_count" :key="type">
-                                {{ emojiOf(type) }}{{ n }}
-                              </span>
                               <div
                                 class="reaction-picker"
                                 v-if="openPicker === reply.id"
@@ -542,6 +701,19 @@ onBeforeUnmount(() => {
                                   {{ r.emoji }}
                                 </button>
                               </div>
+                              </div>
+                              <!-- all reactions in one chip; hover = every emoji with its count -->
+                              <div class="reaction-stats" v-if="reactionTotal(reply.reactions_count) > 0" tabindex="0">
+                                <span class="stats-emojis">
+                                  <span v-for="r in reactionList(reply.reactions_count).slice(0, 3)" :key="r.type">{{ r.emoji }}</span>
+                                </span>
+                                <span class="stats-total">{{ formatCount(reactionTotal(reply.reactions_count)) }}</span>
+                                <div class="stats-pop">
+                                  <div v-for="r in reactionList(reply.reactions_count)" :key="r.type" class="stats-item" :class="{ mine: reply.user_reaction === r.type }">
+                                    <span class="stats-emoji">{{ r.emoji }}</span>
+                                    <span class="stats-n">{{ formatCount(r.n) }}</span>
+                                  </div>
+                                </div>
                             </div>
                           </div>
                         </div>
@@ -555,7 +727,7 @@ onBeforeUnmount(() => {
             <!-- Input pinned at the bottom -->
             <div class="comment-composer">
               <div v-if="replyingTo" class="replying-bar">
-                <span>Replying to <strong>@{{ replyingTo.username }}</strong></span>
+                <span>{{ $t('replyingTo') }} <strong>@{{ replyingTo.username }}</strong></span>
                 <button class="cancel-reply" @click="cancelReply" aria-label="Cancel reply">✕</button>
               </div>
               <div class="add-comment-area">
@@ -563,11 +735,12 @@ onBeforeUnmount(() => {
                   ref="commentInputRef"
                   type="text"
                   v-model="newCommentText"
-                  :placeholder="replyingTo ? 'Write a reply...' : 'Add a comment...'"
+                  :placeholder="replyingTo ? $t('reply') + '...' : $t('addComment')"
                   @keyup.enter="postComment"
                   class="comment-input"
+                  :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'"
                 />
-                <button @click="postComment" class="send-comment-btn" :disabled="isSending || !newCommentText.trim()">Post</button>
+                <button @click="postComment" class="send-comment-btn" :disabled="isSending || !newCommentText.trim()">{{ $t('post') }}</button>
               </div>
             </div>
           </div>
@@ -576,8 +749,53 @@ onBeforeUnmount(() => {
     </div>
   </div>
 
-  <!-- R Chat: floating assistant (frontend only for now) -->
-  <RChat />
+  <!-- MODAL DYAL SHOW INFORMATIONS -->
+  <div v-if="showInfoModal && activeEvent" class="modal-overlay" @click.self="closeInfoModal">
+    <div class="info-modal-card glass-panel">
+      <div class="modal-header">
+        <h3 style="margin: 0;">Event Informations</h3>
+        <button class="close-modal-btn" @click="closeInfoModal">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <div class="modal-body info-modal-body">
+
+        <div class="info-row">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin ui-icon"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+          <div class="info-text-block">
+            <strong>{{ $t('location') }}</strong>
+            <span>{{ activeEvent.location || $t('locationTBD') }}</span>
+          </div>
+        </div>
+
+        <div class="info-row">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-days ui-icon"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M8 13h.01"/><path d="M12 13h.01"/><path d="M16 13h.01"/><path d="M8 17h.01"/><path d="M12 17h.01"/><path d="M16 17h.01"/></svg>
+          <div class="info-text-block">
+            <strong>{{ $t('date') }}</strong>
+            <span>{{ activeEvent.event_date ? activeEvent.event_date.slice(0, 16).replace('T', ' ') : 'TBD' }}</span>
+          </div>
+        </div>
+
+        <div class="info-row">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ticket ui-icon"><path d="M15 5v2"/><path d="M15 11v2"/><path d="M15 17v2"/><path d="M5 5h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 0 0-4v-3a2 2 0 0 1 2-2z"/></svg>
+          <div class="info-text-block">
+            <strong>{{ $t('ticketPrice') }}</strong>
+            <span>{{ activeEvent.ticket_price ? '€' + activeEvent.ticket_price : $t('free') }}</span>
+          </div>
+        </div>
+
+        <div class="info-row">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users ui-icon"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg>
+          <div class="info-text-block">
+            <strong>{{ $t('maxCapacity') }}</strong>
+            <span>{{ activeEvent.max_capacity || '∞' }}</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+<RChat :event-id="activeEvent ? activeEvent.id : null" />
 </template>
 
 <style scoped>
@@ -585,7 +803,7 @@ onBeforeUnmount(() => {
 .video-overlay, .video-controls { position: relative; z-index: 1; }
 .video-overlay { position: absolute; bottom: 30px; left: 20px; color: white; text-shadow: 1px 1px 4px rgba(0,0,0,0.8); }
 #bgVideo { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; z-index: -1; object-fit: cover; }
-.app-container { display: flex; flex-direction: column; height: 100vh; color: #FFFFFF; font-family: sans-serif; padding: 10px 20px; box-sizing: border-box; }
+.app-container { display: flex; flex-direction: column; height: 100vh; color: #FFFFFF; font-family: var(--font-main); padding: 10px 20px; box-sizing: border-box; }
 .glass-panel { background: rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 15px; box-sizing: border-box; }
 .navbar { display: flex; justify-content: space-between; align-items: center; height: 60px; margin-bottom: 15px; flex-shrink: 0; border: 1px solid rgba(255, 255, 255, 0.15); }
 .search-bar input { background: rgba(255, 255, 255, 0.1); border: none; border-radius: 17px; padding: 10px 20px; color: white; width: 300px; }
@@ -639,7 +857,7 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 .reply-avatar { width: 24px; height: 24px; flex-shrink: 0; object-fit: cover; }
 .comment-body { min-width: 0; flex: 1; }
 .comment-line { margin: 0; line-height: 1.35; word-break: break-word; }
-.comment-meta { position: relative; display: flex; gap: 12px; align-items: center; margin-top: 3px; font-size: 12px; color: rgba(255,255,255,0.6); }
+.comment-meta { position: relative; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin-top: 3px; font-size: 12px; color: rgba(255,255,255,0.6); }
 .reply-btn, .view-replies-btn, .cancel-reply { background: none; border: none; color: rgba(255,255,255,0.6); cursor: pointer; font-size: 12px; font-weight: bold; padding: 0; }
 .reply-btn:hover, .view-replies-btn:hover { color: #00f2fe; }
 .view-replies-btn { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
@@ -654,14 +872,33 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 }
 .reaction-btn { background: none; border: none; cursor: pointer; font-size: 14px; padding: 0; opacity: 0.7; }
 .reaction-btn:hover, .reaction-btn.active { opacity: 1; }
-.reaction-summary { font-size: 12px; color: rgba(255,255,255,0.8); }
+/* One compact chip: top 3 emojis + total. Hover = popover with every emoji and its count */
+.reaction-stats { position: relative; display: inline-flex; align-items: center; gap: 5px; padding: 1px 7px; border-radius: 10px; background: rgba(255,255,255,0.08); cursor: default; outline: none; transition: background 0.15s ease; }
+.reaction-stats:hover, .reaction-stats:focus-visible { background: rgba(255,255,255,0.18); }
+.stats-emojis { display: inline-flex; font-size: 12px; }
+.stats-emojis span + span { margin-left: -4px; }
+.stats-total { font-size: 12px; font-weight: bold; color: rgba(255,255,255,0.9); }
+.stats-pop {
+  position: absolute; left: 0; top: calc(100% + 6px); z-index: 20;
+  display: flex; flex-wrap: wrap; gap: 4px; width: max-content; max-width: 200px; padding: 6px 8px;
+  background: rgba(25, 25, 25, 0.97); border: 1px solid rgba(255,255,255,0.15); border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transform: translateY(-4px) scale(0.96); transform-origin: top left;
+  transition: opacity 0.15s ease, transform 0.18s ease, visibility 0.15s;
+}
+.reaction-stats:hover .stats-pop, .reaction-stats:focus-visible .stats-pop { opacity: 1; visibility: visible; transform: none; }
+.stats-item { display: flex; flex-direction: column; align-items: center; min-width: 32px; padding: 3px 4px; border-radius: 10px; }
+.stats-emoji { font-size: 18px; line-height: 1.15; }
+.stats-n { font-size: 11px; font-weight: bold; color: rgba(255,255,255,0.85); }
+.stats-item.mine { background: rgba(0,242,254,0.18); box-shadow: inset 0 0 0 1px rgba(0,242,254,0.6); }
 /* Aggiungi padding-bottom: 35px a .comments-list già esistente */
 .comments-list {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
-  padding-bottom: 35px; /* Spazio extra per non tagliare il menu sull'ultimo commento */
+  padding-bottom: 80px; /* Spazio extra per non tagliare il menu/popover sull'ultimo commento */
   scrollbar-width: thin;
   scrollbar-color: rgba(255,255,255,0.3) transparent;
 }
@@ -759,4 +996,153 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 @media (prefers-reduced-motion: reduce) {
   .r-pop, .r-float, .r-shine, .r-glow, .r-ring, .r-orbit, .r-orbit i, .empty-title, .empty-sub { animation: none !important; }
 }
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.menu-svg-icon {
+  width: 20px;
+  height: 20px;
+  color: rgba(255, 255, 255, 0.7);
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.menu-item:hover .menu-svg-icon {
+  color: #00f2fe;
+  transform: scale(1.1);
+}
+
+.event-quick-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 10px;
+  flex-shrink: 0;
+}
+
+.quick-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px 4px;
+  transition: all 0.2s ease;
+  cursor: default;
+}
+
+.quick-stat:hover {
+  background: rgba(0, 242, 254, 0.12);
+  border-color: rgba(0, 242, 254, 0.4);
+  transform: translateY(-2px);
+}
+
+.stat-text {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  font-weight: bold;
+}
+
+.quick-stat .ui-icon {
+  color: #00f2fe;
+}
+
+/* --- Info Modal Styling (Fixed Position) --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.15); /* khellitha khfifa bach matdlemsh */
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+}
+
+.info-modal-card {
+  position: fixed;
+  top: 50%;
+  right: 350px;
+  transform: translateY(-50%);
+  width: 320px;
+  /* Khalfia glass bhal dyal l-comments */
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 15px; /* bhal dyal glass-panel */
+  box-sizing: border-box;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15); /* border khfif byed */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  color: #fff;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15); /* line khfif byed */
+}
+
+.info-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  /* Chwya dyal contraste khfif 3la background dyal card */
+  background: rgba(255, 255, 255, 0.05);
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.info-row:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.info-text-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Fix l-Arabiya (RTL) */
+[dir="rtl"] .info-modal-card {
+  right: auto;
+  left: 350px;
+}
+
+@media (max-width: 1200px) {
+  .info-modal-card {
+    right: 50%;
+    transform: translate(50%, -50%);
+  }
+  [dir="rtl"] .info-modal-card {
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+}
+
 </style>

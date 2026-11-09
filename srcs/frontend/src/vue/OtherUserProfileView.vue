@@ -2,6 +2,12 @@
 import { ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import EventMediaGrid from './EventMediaGrid.vue';
+import SearchBar from './SearchBar.vue';
+import LanguageSwitcher from './LanguageSwitcher.vue';
+import { t as $t } from '../i18n';
+import { useSocialSocket } from '../composables/useSocialSocket';
+import NotificationBell from './NotificationBell.vue';
+import ChatNavLink from './ChatNavLink.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -11,12 +17,6 @@ const getToken = () =>
   localStorage.getItem('token') ||
   localStorage.getItem('access') ||
   localStorage.getItem('access_token');
-
-
-const likedVideos = ref([
-  { id: 1, title: 'Video 1', thumbnail: '' },
-  { id: 2, title: 'Video 2', thumbnail: '' },
-]);
 
 const DEFAULT_AVATAR = 'https://i.pravatar.cc/150?u=6';
 
@@ -35,7 +35,6 @@ const isSelf = ref(false);
 const followLoading = ref(false);
 const errorMessage = ref('');
 
-// GET /api/users/<id>/
 const fetchUserProfile = async (userId) => {
   const token = getToken();
   if (!token) {
@@ -65,7 +64,7 @@ const fetchUserProfile = async (userId) => {
     const data = await response.json();
     userProfile.value.name = data.username || '';
     userProfile.value.description = data.bio || '';
-    userProfile.value.avatar = data.avatar_url || DEFAULT_AVATAR;   // URL gia' completo dal backend
+    userProfile.value.avatar = data.avatar_url || DEFAULT_AVATAR;
     userProfile.value.following = data.following_count || 0;
     userProfile.value.followers = data.followers_count || 0;
     isFollowing.value = !!data.is_following;
@@ -73,12 +72,10 @@ const fetchUserProfile = async (userId) => {
     isBusiness.value = data.type_of_user === 'business';
     fetchUserEvents(userId);
   } catch (error) {
-    console.error('Error loading profile:', error);
     errorMessage.value = 'Could not load this profile.';
   }
 };
 
-// GET /api/users/<id>/events/  -> videos created by this owner
 const fetchUserEvents = async (userId) => {
   userEvents.value = [];
   try {
@@ -91,19 +88,57 @@ const fetchUserEvents = async (userId) => {
   }
 };
 
+// --- Live updates from other users (WebSocket) ---
+// isFollowing is personal state and is only changed by my own click;
+// here we only update the public counters.
+const handleSocialMessage = (message) => {
+  const { action, target_id: targetId, data } = message;
+
+  if (action === 'follow') {
+    if (targetId === Number(route.params.id)) {
+      userProfile.value.followers = data.followers_count;
+      userProfile.value.following = data.following_count;
+    }
+  } else if (action === 'like' || action === 'comment') {
+    userEvents.value.forEach((ev) => {
+      if (ev.id !== targetId) return;
+      if (action === 'like') ev.likes_count = data.likes_count;
+      else ev.comments_count = data.comments_count;
+    });
+} else if (action === 'update_profile') {
+    // ---> BULLETPROOF LIVE PROFILE UPDATES <---
+    if (targetId === Number(route.params.id)) {
+      // Check all possible backend key names, fallback to existing name if missing
+      userProfile.value.name = data.username || data['user.name'] || data.name || userProfile.value.name;
+
+      // Same for bio
+      userProfile.value.description = data.user_bio || data.bio || userProfile.value.description;
+
+      // Same for avatar
+      const newAvatar = data.user_avatar || data.avatar_url || data.avatar;
+      if (newAvatar) {
+         userProfile.value.avatar = newAvatar;
+      }
+    }
+  } else if (action === 'resync') {
+    fetchUserProfile(route.params.id);
+    fetchUserEvents(route.params.id);
+  }
+};
+
+useSocialSocket(handleSocialMessage);
+
 // Prima volta che la pagina si carica
 onMounted(() => {
   fetchUserProfile(route.params.id);
 });
 
-// Se cambia l'ID nell'URL (stesso componente riutilizzato), ricarica i dati
 watch(() => route.params.id, (newId) => {
   if (newId) {
     fetchUserProfile(newId);
   }
 });
 
-// POST /api/social/follow/<id>/  (toggle follow / unfollow)
 const toggleFollow = async () => {
   const token = getToken();
   if (!token) {
@@ -123,13 +158,11 @@ const toggleFollow = async () => {
       throw new Error(`HTTP ${response.status}`);
     }
 
-    // Il backend e' la fonte di verita': uso lo stato che mi ritorna
     const data = await response.json();
     isFollowing.value = data.is_following;
     userProfile.value.followers = data.followers_count;
   } catch (error) {
-    console.error('Error toggling follow:', error);
-    alert('Could not update follow status. Please try again.');
+    alert('Could not update follow status.');
   } finally {
     followLoading.value = false;
   }
@@ -138,37 +171,67 @@ const toggleFollow = async () => {
 
 <template>
   <video autoplay muted loop playsinline id="bgVideo">
-      <source src="../assets/ready2roll_wave_background.mp4" type="video/mp4">
+    <source src="../assets/ready2roll_wave_background.mp4" type="video/mp4">
   </video>
 
-  <div class="app-container">
-    <header class="navbar glass-panel">
-      <div class="logo" @click="$router.push('/home')">
-        <img src="../assets/logo_temp.png" alt="Ready2Roll Logo" class="nav-logo-img">
-        <span class="logo-text">Ready2Roll</span>
-      </div>
-      <div class="search-bar">
-        <input type="text" placeholder="search">
-      </div>
-      <div class="nav-icons">
-        <router-link to="/chat" class="nav-icon-link">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg>
-        </router-link>
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" /></svg>
-        <router-link to="/profile" class="nav-icon-link">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
-        </router-link>
-      </div>
-    </header>
+    <div class="app-container">
+        <header class="navbar glass-panel">
+          <div class="logo" @click="$router.push('/home')">
+            <img src="../assets/logo_temp.png" alt="Ready2Roll Logo" class="nav-logo-img">
+            <span class="logo-text">Ready2Roll</span>
+          </div>
+
+          <SearchBar />
+
+          <div class="nav-icons">
+            <LanguageSwitcher />
+
+            <router-link to="/chat" class="nav-icon-link">
+              <ChatNavLink>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                </svg>
+              </ChatNavLink>
+            </router-link>
+
+            <NotificationBell />
+
+            <router-link to="/profile" class="nav-icon-link">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+              </svg>
+            </router-link>
+          </div>
+        </header>
 
     <div class="main-content">
       <aside class="left-sidebar glass-panel">
         <nav class="main-menu">
-          <h3>Menu</h3>
+          <h3>{{ $t('menu') }}</h3>
           <ul>
-            <li @click="$router.push('/home')">🏠 For you</li>
-            <li @click="$router.push('/subscriptions')">👤 subscription</li>
-            <li>🧭 discover</li>
+            <li @click="$router.push('/home')" class="menu-item">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-svg-icon">
+                <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/>
+                <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              </svg>
+              <span>{{ $t('forYou') }}</span>
+            </li>
+            <li @click="$router.push('/subscriptions')" class="menu-item">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-svg-icon">
+                <path d="M16.051 12.616a1 1 0 0 1 1.909.024l.737 1.452a1 1 0 0 0 .737.535l1.634.256a1 1 0 0 1 .588 1.806l-1.172 1.168a1 1 0 0 0-.282.866l.259 1.613a1 1 0 0 1-1.541 1.134l-1.465-.75a1 1 0 0 0-.912 0l-1.465.75a1 1 0 0 1-1.539-1.133l.258-1.613a1 1 0 0 0-.282-.866l-1.156-1.153a1 1 0 0 1 .572-1.822l1.633-.256a1 1 0 0 0 .737-.535z"/>
+                <path d="M8 15H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/>
+              </svg>
+              <span>{{ $t('subscriptions') }}</span>
+            </li>
+            <li @click="$router.push('/discover')" class="menu-item">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-svg-icon">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M8 16l2 -6l6 -2l-2 6l-6 2" />
+                <path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                <path d="M12 3l0 2" /><path d="M12 19l0 2" /><path d="M3 12l2 0" /><path d="M19 12l2 0" />
+              </svg>
+              <span>{{ $t('discover') }}</span>
+            </li>
           </ul>
         </nav>
       </aside>
@@ -179,45 +242,47 @@ const toggleFollow = async () => {
           <img :src="userProfile.avatar" alt="Profile Avatar" class="profile-avatar">
           <div class="profile-info">
             <div class="name-row">
-              <h2>{{ userProfile.name }}</h2>
+              <h2>
+                {{ userProfile.name }}
+                <svg v-if="isBusiness" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="#00f2fe" stroke="#00f2fe" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="verified-badge" title="Business Account">
+                  <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/>
+                  <path d="m16 9-5.5 5.5L8 12" stroke="#ffffff" stroke-width="2.5"/>
+                </svg>
+              </h2>
             </div>
             <div class="stats-row">
               <span class="clickable-stat">
-                <strong>{{ userProfile.following }}</strong> following
+                <strong>{{ userProfile.following }}</strong> {{ $t('following') }}
               </span>
               <span class="clickable-stat">
-                <strong>{{ userProfile.followers }}</strong> followers
+                <strong>{{ userProfile.followers }}</strong> {{ $t('followers') }}
               </span>
             </div>
             <div class="description-box">
-              <p>{{ userProfile.description }}</p>
+              <p>{{ userProfile.description || $t('noBio') }}</p>
             </div>
           </div>
 
           <div class="action-buttons">
-            <button
-                v-if="isSelf"
-                class="follow-btn"
-                @click="$router.push('/profile')"
-            >
-                Edit profile
+            <button v-if="isSelf" class="follow-btn" @click="$router.push('/profile')">
+              {{ $t('editProfile') }}
             </button>
             <button
-                v-else
-                :class="isFollowing ? 'unfollow-btn' : 'follow-btn'"
-                :disabled="followLoading"
-                @click="toggleFollow"
+              v-else
+              :class="isFollowing ? 'unfollow-btn' : 'follow-btn'"
+              :disabled="followLoading"
+              @click="toggleFollow"
             >
-                {{ isFollowing ? 'Unfollow' : 'Follow' }}
+              {{ isFollowing ? $t('unfollow') : $t('follow') }}
             </button>
           </div>
         </div>
 
         <template v-if="!errorMessage && isBusiness">
           <div class="profile-tabs glass-panel">
-            <div class="tab active"><span>🎬 Videos</span></div>
+            <div class="tab active"><span>{{ $t('videos') }}</span></div>
           </div>
-          <EventMediaGrid :events="userEvents" empty-text="This business hasn't posted any videos yet." />
+          <EventMediaGrid :events="userEvents" :empty-text="$t('noBusinessVideos')" />
         </template>
       </main>
     </div>
@@ -225,95 +290,71 @@ const toggleFollow = async () => {
 </template>
 
 <style scoped>
-/* Core layout styles */
 #bgVideo { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; z-index: -1; object-fit: cover; }
-.app-container { display: flex; flex-direction: column; height: 100vh; color: #FFFFFF; font-family: sans-serif; padding: 10px 20px; box-sizing: border-box; }
+.app-container { display: flex; flex-direction: column; height: 100vh; color: #FFFFFF; font-family: var(--font-main); padding: 10px 20px; box-sizing: border-box; }
 .glass-panel { background: rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 15px; box-sizing: border-box; }
 .navbar { display: flex; justify-content: space-between; align-items: center; height: 60px; margin-bottom: 15px; flex-shrink: 0; }
 .logo { display: flex; align-items: center; gap: 10px; cursor: pointer; }
 .nav-logo-img { height: 35px; width: auto; object-fit: contain; }
 .logo-text { font-family: "Bruno Ace", sans-serif; font-weight: bold; font-size: 1.2rem; }
-.search-bar input { background: rgba(255, 255, 255, 0.1); border: none; border-radius: 17px; padding: 10px 20px; color: white; width: 300px; }
 .nav-icons { display: flex; gap: 20px; align-items: center; }
 .nav-icon { width: 26px; height: 26px; color: #FFFFFF; cursor: pointer; transition: all 0.3s ease; }
 .nav-icon:hover { color: #00f2fe; transform: scale(1.15); }
 .nav-icon-link { display: flex; align-items: center; }
 
 .main-content { display: flex; flex-direction: row; gap: 20px; height: calc(100vh - 95px); width: 100%; }
-.left-sidebar { width: 250px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
+.left-sidebar { width: 280px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
 ul { list-style: none; padding: 0; }
 li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor: pointer; }
-
-/* Zidna had style l router-link bach tban bhal li knt */
-.user-link {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  color: white;
-  width: 100%;
-  transition: color 0.3s ease;
-}
-.user-link:hover { color: #00f2fe; }
-
-.avatar { width: 40px; height: 40px; border-radius: 50%; }
-.show-more { color: #cccccc; cursor: pointer; font-size: 0.9rem; }
 
 .profile-container { flex-grow: 1; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; scrollbar-width: none; }
 .profile-container::-webkit-scrollbar { display: none; }
 .profile-header { display: flex; align-items: flex-start; gap: 30px; position: relative; }
 .profile-avatar { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; }
 .profile-info { display: flex; flex-direction: column; gap: 10px; flex-grow: 1; }
-.name-row h2 { margin: 0; display: flex; align-items: center; gap: 5px; }
+.name-row h2 { margin: 0; display: flex; align-items: center; gap: 8px; }
 .stats-row { display: flex; gap: 20px; font-size: 1rem; }
 .description-box { background: rgba(255, 255, 255, 0.05); padding: 10px 15px; border-radius: 10px; min-height: 50px; width: 60%; border: 1px solid rgba(255, 255, 255, 0.2); }
 
 .profile-tabs { display: flex; justify-content: center; padding: 10px; border-radius: 10px; }
 .tab { padding: 10px 40px; font-weight: bold; cursor: pointer; border-bottom: 2px solid #00f2fe; color: white; }
 
-.video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
-.video-card { aspect-ratio: 9 / 16; display: flex; justify-content: center; align-items: center; position: relative; cursor: pointer; transition: transform 0.2s; }
-.video-card:hover { transform: scale(1.02); }
-.placeholder-text { font-family: "Bruno Ace", sans-serif; font-size: 1.5rem; opacity: 0.5; }
-.heart-icon { position: absolute; bottom: 15px; right: 15px; font-size: 1.5rem; }
-
-.action-buttons {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  display: flex;
-  gap: 10px;
-}
-
-/* Follow Button Styles */
-.follow-btn {
-  background: #00f2fe;
-  color: #000;
-  border: none;
-  border-radius: 10px;
-  padding: 10px 30px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.3s;
-}
+.action-buttons { position: absolute; bottom: 20px; right: 20px; display: flex; gap: 10px; }
+.follow-btn { background: #00f2fe; color: #000; border: none; border-radius: 10px; padding: 10px 30px; font-weight: bold; cursor: pointer; transition: background 0.3s; }
 .follow-btn:hover { background: #05d4ca; }
-
-.unfollow-btn {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 10px;
-  padding: 10px 30px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.3s;
-}
+.unfollow-btn { background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 10px; padding: 10px 30px; font-weight: bold; cursor: pointer; transition: background 0.3s; }
 .unfollow-btn:hover { background: rgba(255, 71, 87, 0.8); border-color: transparent; }
-
 .error-msg { text-align: center; font-weight: bold; }
 .follow-btn:disabled, .unfollow-btn:disabled { opacity: 0.6; cursor: wait; }
+.clickable-stat { cursor: default; }
 
-.clickable-stat {
-  cursor: default;
+.main-menu h3 { margin-bottom: 20px; color: rgba(255, 255, 255, 0.8); }
+.main-menu ul { display: flex; flex-direction: column; gap: 15px; }
+.menu-item { display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s ease; font-size: 1.05rem; }
+.menu-svg-icon { width: 22px; height: 22px; color: rgba(255, 255, 255, 0.7); transition: color 0.2s ease, transform 0.2s ease; }
+.menu-item:hover .menu-svg-icon, .menu-item:hover { color: #00f2fe; transform: scale(1.02); }
+
+/* RTL Fixes for Profile Buttons */
+[dir="rtl"] .profile-header {
+  padding-bottom: 70px; /* Zidna l'espace lta7t bach maytla3ch l'button fo9 l'bio */
 }
+
+[dir="rtl"] .action-buttons-styled {
+  right: auto;
+  left: 20px;
+  bottom: 20px;
+  flex-direction: row-reverse;
+}
+
+@media (max-width: 768px) {
+  [dir="rtl"] .action-buttons-styled {
+    position: static;
+    margin-top: 15px;
+    justify-content: center;
+  }
+  [dir="rtl"] .profile-header {
+    padding-bottom: 20px;
+  }
+}
+
 </style>

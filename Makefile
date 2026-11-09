@@ -73,7 +73,7 @@ start:
 # 	@echo Access to https://"$(USER)".42.fr
 
 save-database:
-	@docker compose exec django_backend python manage.py dumpdata > srcs/backend/demo_data.json
+	@docker compose exec django_backend sh -c 'set -a; . /vault/secrets/django.env; set +a; python manage.py dumpdata' > srcs/backend/demo_data.json
 	@echo "Database has been saved! You are ready to roll!"
 
 restore-database:
@@ -98,7 +98,7 @@ restore-all: restore-database restore-media
 
 reup: down up
 
-clean: 
+clean:
 	$(COMPOSE) down -v
 
 fclean: clean
