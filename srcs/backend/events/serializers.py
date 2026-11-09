@@ -101,8 +101,6 @@ class EventSerializer(serializers.ModelSerializer):
         return event
 
 
-
-
 class FeedEventSerializer(serializers.ModelSerializer):
     """One video of the home feed: media + owner info + stats."""
     media_src = serializers.SerializerMethodField()
