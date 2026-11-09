@@ -67,7 +67,7 @@ class FeedView(generics.ListAPIView):
         mode = request.query_params.get('mode', 'for_you')
         ids = build_feed(request.user, mode)
         events = (Event.objects.filter(id__in=ids)
-                  .select_related('organizer').prefetch_related('media'))
+                  .select_related('organizer').prefetch_related('media', 'tags'))
         by_id = {e.id: e for e in events}
         ordered = [by_id[i] for i in ids if i in by_id]
         return Response(self.get_serializer(ordered, many=True).data)
@@ -107,7 +107,21 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ['id', 'tag_name']
 
 class TagListView(generics.ListAPIView):
-    queryset = Tag.objects.order_by('tag_name')
+
     serializer_class = TagSerializer
     permission_classes = [permissions.AllowAny]
     pagination_class = None
+
+    def get_queryset(self):
+        default_tags = [
+            'Disco',
+            'Trap',
+            'Hip Hop',
+            'Rock',
+            'Jazz',
+        ]
+
+        for name in default_tags:
+            Tag.objects.get_or_create(tag_name=name)
+
+        return Tag.objects.order_by('tag_name')

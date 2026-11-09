@@ -52,17 +52,32 @@ class FollowCountsMixin(serializers.Serializer):
 
 
 class UserProfileSerializer(FollowCountsMixin, serializers.ModelSerializer):
-    """Used to READ the logged-in user's profile (GET /api/profile/)."""
+
+    tags = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = [
-
-             'id', 'username', 'email', 'first_name', 'last_name', 'bio',
-            'avatar_url', 'instagram_handle', 'bs_website',
-            'following_count', 'followers_count', 'type_of_user', 'tags',
+            'id',
+            'username',
+            'email',
+            'first_name',
+            'last_name',
+            'bio',
+            'avatar_url',
+            'instagram_handle',
+            'bs_website',
+            'following_count',
+            'followers_count',
+            'type_of_user',
+            'tags',
         ]
+
     def get_tags(self, obj):
-        return [tag.tag_name for tag in obj.tags.all()]
+        return [
+            tag.tag_name
+            for tag in obj.tags.all()
+        ]
 
 class ViewerRelationMixin(serializers.Serializer):
     is_following = serializers.SerializerMethodField()
@@ -104,8 +119,12 @@ class PublicUserProfileSerializer(FollowCountsMixin, ViewerRelationMixin, Avatar
         ]
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):
+
     avatar_url = serializers.ImageField(required=False, allow_null=True)
-    tags = serializers.CharField(required=False, allow_blank=True)
+
+    # JSONField يقبل JSON Array وحتى JSON String
+    tags = serializers.JSONField(required=False)
+
     class Meta:
         model = User
         fields = [
@@ -122,17 +141,36 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
             'tags',
         ]
 
+    def validate_tags(self, value):
+        if not isinstance(value, list):
+            raise serializers.ValidationError(
+                "Tags must be a list of strings."
+            )
+
+        if not all(isinstance(tag, str) for tag in value):
+            raise serializers.ValidationError(
+                "Every tag must be a string."
+            )
+
+        return list(dict.fromkeys(
+            tag.strip() for tag in value if tag.strip()
+        ))
+
     def update(self, instance, validated_data):
-        raw_tags = validated_data.pop('tags', None)
+        tag_names = validated_data.pop('tags', None)
+
         user = super().update(instance, validated_data)
 
-        if raw_tags is not None:
-            # Strip out any leftover brackets or quotes just in case, then split by comma
-            clean_string = raw_tags.replace('[', '').replace(']', '').replace('"', '')
-            tag_names = [t.strip() for t in clean_string.split(',') if t.strip()]
+        if tag_names is not None:
+            tags_objs = []
 
-            # Blindly create whatever tags were sent and save the relation
-            tags_objs = [Tag.objects.get_or_create(tag_name=n)[0] for n in tag_names]
+            for name in tag_names:
+                tag, created = Tag.objects.get_or_create(
+                    tag_name__iexact=name,
+                    defaults={'tag_name': name}
+                )
+                tags_objs.append(tag)
+
             user.tags.set(tags_objs)
 
         return user

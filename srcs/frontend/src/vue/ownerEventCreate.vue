@@ -24,7 +24,9 @@ export default {
       uploadedMediaSrc: null,
       actualFile: null,
       mediaType: null,
-      showMapBox: false
+      showMapBox: false,
+      availableTags: ['Disco', 'Trap', 'Hip Hop', 'Rock', 'Jazz'],
+      selectedTags: [],
     }
   },
   computed: {
@@ -38,7 +40,7 @@ export default {
       return this.eventDate;
     },
   },
-  mounted() {
+  async mounted() {
     if (this.$route.query.edit === 'true') {
       const savedEvent = localStorage.getItem('editingEvent');
       if (savedEvent) {
@@ -57,6 +59,12 @@ export default {
           this.eventStatus = ev.status ? ev.status.toLowerCase() : 'active';
           this.uploadedMediaSrc = ev.media_src || null;
           this.mediaType = ev.media_type || 'image';
+          this.selectedTags = (Array.isArray(ev.tags) ? ev.tags : [])
+            .map(tag => typeof tag === 'string' ? tag : tag.tag_name)
+            .map(name => this.availableTags.find(
+              k => k.toLowerCase() === String(name).toLowerCase()
+            ))
+            .filter(Boolean);
         } catch (e) {
           console.error('Error parsing editingEvent:', e);
         }
@@ -66,6 +74,35 @@ export default {
     }
   },
   methods: {
+    async fetchAvailableTags() {
+      this.tagsLoading = true;
+      this.tagsError = '';
+      try {
+        const response = await fetch('/api/tags/');
+        if (!response.ok) throw new Error(`Tags request failed (${response.status})`);
+        const data = await response.json();
+        this.availableTags = (Array.isArray(data) ? data : data.results || [])
+          .map(tag => typeof tag === 'string' ? tag : tag.tag_name)
+          .filter(Boolean);
+      } catch (error) {
+        console.error('Unable to load event tags:', error);
+        this.tagsError = 'Could not load tags. Please refresh the page.';
+      } finally {
+        this.tagsLoading = false;
+      }
+    },
+    toggleTag(tagName) {
+      const index = this.selectedTags.findIndex(
+        tag => tag.toLowerCase() === tagName.toLowerCase()
+      );
+      if (index >= 0) this.selectedTags.splice(index, 1);
+      else this.selectedTags.push(tagName);
+    },
+    isTagSelected(tagName) {
+      return this.selectedTags.some(
+        tag => tag.toLowerCase() === tagName.toLowerCase()
+      );
+    },
     goToStep(stepNumber) {
       this.activeStep = stepNumber;
     },
@@ -116,6 +153,8 @@ export default {
       formData.append('location', this.eventLocation);
       formData.append('event_date', this.eventDate);
       formData.append('status', this.eventStatus);
+      // Send the selected tag names as one JSON array for the DRF serializer.
+      this.selectedTags.forEach(tag => formData.append('tags', tag));
 
       if (this.maxCapacity) formData.append('max_capacity', this.maxCapacity);
       if (this.ticketPrice) formData.append('ticket_price', this.ticketPrice);
@@ -406,20 +445,29 @@ export default {
             </div>
 
             <!-- TAGS POSTI SOTTO ALLO STATUS -->
-            <div class="detail-input-group">
-              <label>{{ $t('tagsLabel') }}</label>
-              <div class="tag-selector-container">
-                <div
+            <div class="detail-input-group event-tags-group">
+              <div class="tags-heading-row">
+                <label>{{ $t('tagsLabel') }}</label>
+                <span class="tags-count">{{ selectedTags.length }} selected</span>
+              </div>
+
+              <p v-if="tagsLoading" class="tags-hint">Loading tags...</p>
+              <p v-else-if="tagsError" class="tags-error">{{ tagsError }}</p>
+              <div v-else-if="availableTags.length" class="tag-selector-container">
+                <button
                   v-for="t in availableTags"
                   :key="t"
-                  @click="toggleTag(t)"
+                  type="button"
+                  @click.stop="toggleTag(t)"
                   :class="isTagSelected(t) ? 'business-badge' : 'standard-badge'"
                   class="selectable-tag-pill"
+                  :aria-pressed="isTagSelected(t)"
                 >
-                  <span>{{ isTagSelected(t) ? '✓' : '+' }}</span>
+                  <span class="tag-pill-icon">{{ isTagSelected(t) ? '✓' : '+' }}</span>
                   <span>{{ t }}</span>
-                </div>
+                </button>
               </div>
+              <p v-else class="tags-hint">No tags are available yet.</p>
             </div>
 
           </div>
@@ -967,6 +1015,78 @@ textarea::placeholder {
     max-width: 480px;
     height: 440px;
   }
+}
+
+/* Event tags: same Ready2Roll glass + cyan badge style as the profile page */
+.event-tags-group {
+  margin-top: 4px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.tags-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tags-count,
+.tags-hint {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.62rem;
+}
+
+.tag-selector-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 7px;
+}
+
+.selectable-tag-pill {
+  appearance: none;
+  cursor: pointer;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 14px;
+  font: inherit;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.35px;
+  text-transform: uppercase;
+  backdrop-filter: blur(5px);
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.selectable-tag-pill:hover {
+  transform: translateY(-2px);
+}
+
+.business-badge {
+  background: rgba(0, 242, 254, 0.16);
+  border: 1px solid #00f2fe;
+  color: #00f2fe;
+  box-shadow: 0 0 9px rgba(0, 242, 254, 0.22);
+}
+
+.standard-badge {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.tag-pill-icon {
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.tags-error {
+  color: #ff9292;
+  font-size: 0.65rem;
 }
 
 /* RTL Fixes for Create Event Page */

@@ -342,9 +342,10 @@ const saveProfile = async () => {
   const formData = new FormData();
   formData.append('username', profileEditForm.value.username);
   formData.append('bio', profileEditForm.value.bio);
-  selectedTagsList.value.forEach(tag => {
-      formData.append('tags', tag);
-  });
+  formData.append(
+      'tags',
+      JSON.stringify(selectedTagsList.value)
+  );
 
   if (selectedFile.value) {
     formData.append('avatar_url', selectedFile.value);

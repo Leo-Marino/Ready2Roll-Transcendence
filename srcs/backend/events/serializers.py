@@ -111,13 +111,14 @@ class FeedEventSerializer(serializers.ModelSerializer):
     comments_count = serializers.SerializerMethodField()
     is_liked = serializers.SerializerMethodField()
     owner = serializers.SerializerMethodField()
+    tags = serializers.SerializerMethodField()
 
     class Meta:
         model = Event
         fields = [
             "id", "title", "description", "created_at", "event_date", "location",
             "media_src", "media_type",
-            "likes_count", "comments_count", "is_liked", "owner",
+            "likes_count", "comments_count", "is_liked", "owner", "tags",
         ]
 
     def _media(self, obj):
@@ -150,6 +151,9 @@ class FeedEventSerializer(serializers.ModelSerializer):
 
     def get_comments_count(self, obj):
         return obj.comments.count()
+
+    def get_tags(self, obj):
+        return [tag.tag_name for tag in obj.tags.all()]
 
     def get_is_liked(self, obj):
         viewer = self._viewer()

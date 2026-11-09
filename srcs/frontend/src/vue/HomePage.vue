@@ -792,6 +792,17 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
+        <div class="info-row tags-info-row">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ui-icon"><path d="M20.59 13.41 11 3.83V3H4v7h.83l9.58 9.59a2 2 0 0 0 2.83 0l3.35-3.35a2 2 0 0 0 0-2.83Z"/><circle cx="7.5" cy="7.5" r=".5"/></svg>
+          <div class="info-text-block tags-info-block">
+            <strong>Event Tags</strong>
+            <div v-if="activeEvent.tags?.length" class="event-info-tags">
+              <span v-for="tag in activeEvent.tags" :key="tag" class="event-info-tag"># {{ tag }}</span>
+            </div>
+            <span v-else class="no-event-tags">No tags added by the owner</span>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -1127,6 +1138,20 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   flex-direction: column;
   gap: 4px;
 }
+
+
+.tags-info-row { align-items: flex-start; }
+.tags-info-block { min-width: 0; width: 100%; }
+.event-info-tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 7px; }
+.event-info-tag {
+  display: inline-flex; align-items: center;
+  padding: 5px 10px; border-radius: 999px;
+  color: #00f2fe; font-size: 12px; font-weight: 700;
+  background: rgba(0, 242, 254, 0.12);
+  border: 1px solid rgba(0, 242, 254, 0.35);
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.08);
+}
+.no-event-tags { opacity: .65; font-size: 13px; }
 
 /* Fix l-Arabiya (RTL) */
 [dir="rtl"] .info-modal-card {
