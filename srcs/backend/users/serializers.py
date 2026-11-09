@@ -1,3 +1,4 @@
+import json
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from events.models import Tag
@@ -122,20 +123,17 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
         ]
 
     def update(self, instance, validated_data):
-        tags_json = validated_data.pop('tags', None)
+        raw_tags = validated_data.pop('tags', None)
         user = super().update(instance, validated_data)
 
-        if tags_json is not None:
-            try:
-                # Convert '["Disco", "Jazz"]' back into a Python list
-                tag_names = json.loads(tags_json)
-                # Filter out any bad tags just to be safe
-                valid_tags = [n for n in tag_names if n in ALLOWED_TAGS]
-                # Save to database
-                tags_objs = [Tag.objects.get_or_create(tag_name=n)[0] for n in valid_tags]
-                user.tags.set(tags_objs)
-            except Exception:
-                pass
+        if raw_tags is not None:
+            # Strip out any leftover brackets or quotes just in case, then split by comma
+            clean_string = raw_tags.replace('[', '').replace(']', '').replace('"', '')
+            tag_names = [t.strip() for t in clean_string.split(',') if t.strip()]
+
+            # Blindly create whatever tags were sent and save the relation
+            tags_objs = [Tag.objects.get_or_create(tag_name=n)[0] for n in tag_names]
+            user.tags.set(tags_objs)
 
         return user
 
