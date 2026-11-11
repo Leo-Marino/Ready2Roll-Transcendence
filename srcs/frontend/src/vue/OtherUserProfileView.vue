@@ -26,6 +26,7 @@ const userProfile = ref({
   followers: 0,
   description: '',
   avatar: DEFAULT_AVATAR,
+  isOnline: false,
 });
 
 const isBusiness = ref(false);
@@ -67,6 +68,7 @@ const fetchUserProfile = async (userId) => {
     userProfile.value.avatar = data.avatar_url || DEFAULT_AVATAR;
     userProfile.value.following = data.following_count || 0;
     userProfile.value.followers = data.followers_count || 0;
+    userProfile.value.isOnline = !!data.is_online;
     isFollowing.value = !!data.is_following;
     isSelf.value = !!data.is_self;
     isBusiness.value = data.type_of_user === 'business';
@@ -119,6 +121,10 @@ const handleSocialMessage = (message) => {
       if (newAvatar) {
          userProfile.value.avatar = newAvatar;
       }
+    }
+  } else if (action === 'online_status') {
+    if (targetId === Number(route.params.id)) {
+      userProfile.value.isOnline = !!data.is_online;
     }
   } else if (action === 'resync') {
     fetchUserProfile(route.params.id);
@@ -248,6 +254,10 @@ const toggleFollow = async () => {
                   <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/>
                   <path d="m16 9-5.5 5.5L8 12" stroke="#ffffff" stroke-width="2.5"/>
                 </svg>
+                <span class="status-pill" :class="{ online: userProfile.isOnline }">
+                  <span class="status-dot"></span>
+                  {{ userProfile.isOnline ? $t('rollyStatusOnline') : 'offline' }}
+                </span>
               </h2>
             </div>
             <div class="stats-row">
@@ -355,6 +365,36 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   [dir="rtl"] .profile-header {
     padding-bottom: 20px;
   }
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.status-pill.online {
+  background: rgba(61, 255, 160, 0.14);
+  border-color: rgba(61, 255, 160, 0.5);
+  color: #3dffa0;
+}
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+}
+.status-pill.online .status-dot {
+  background: #3dffa0;
+  box-shadow: 0 0 8px #3dffa0;
 }
 
 </style>

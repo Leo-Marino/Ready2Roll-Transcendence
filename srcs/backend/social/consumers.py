@@ -3,7 +3,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.contrib.auth import get_user_model
 from .models import DirectMessage
-from .realtime import GLOBAL_GROUP, user_group
+from .realtime import GLOBAL_GROUP, user_group, set_user_online, set_user_offline
 
 User = get_user_model()
 
@@ -103,8 +103,11 @@ class SocialConsumer(AsyncWebsocketConsumer):
         for group in self.group_names:
             await self.channel_layer.group_add(group, self.channel_name)
         await self.accept()
+        await database_sync_to_async(set_user_online)(self.user.id)
 
     async def disconnect(self, close_code):
+        if hasattr(self, "user") and not self.user.is_anonymous:
+            await database_sync_to_async(set_user_offline)(self.user.id)
         for group in getattr(self, "group_names", []):
             await self.channel_layer.group_discard(group, self.channel_name)
 

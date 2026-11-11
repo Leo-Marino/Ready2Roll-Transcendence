@@ -100,6 +100,31 @@ class EventSerializer(serializers.ModelSerializer):
 
         return event
 
+    def update(self, instance, validated_data):
+        media_file = validated_data.pop('media_file', None)
+        request = self.context.get('request')
+        m_type = request.data.get('media_type') if request else None
+
+        event = super().update(instance, validated_data)
+
+        if media_file:
+            media_obj = Media.objects.filter(event=event).first()
+            if media_obj:
+                media_obj.media_url = media_file
+                if m_type:
+                    media_obj.media_type = m_type
+                media_obj.save()
+            else:
+                Media.objects.create(
+                    event=event,
+                    media_url=media_file,
+                    media_type=m_type or 'image'
+                )
+        elif m_type:
+            Media.objects.filter(event=event).update(media_type=m_type)
+
+        return event
+
 
 class FeedEventSerializer(serializers.ModelSerializer):
     """One video of the home feed: media + owner info + stats."""

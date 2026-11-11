@@ -57,7 +57,7 @@ def update_profile_view(request):
             'user_bio' : user.bio,
             'user.name' : user.username,
         })
-        return Response({"messaggio": "Utente profile modificato con successo!"}, status=status.HTTP_200_OK)
+        Response(UserProfileSerializer(user).data, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 

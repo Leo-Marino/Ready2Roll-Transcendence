@@ -1,4 +1,5 @@
 import json
+from social.realtime import is_user_online
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from events.models import Tag
@@ -82,10 +83,11 @@ class UserProfileSerializer(FollowCountsMixin, serializers.ModelSerializer):
 class ViewerRelationMixin(serializers.Serializer):
     is_following = serializers.SerializerMethodField()
     is_self = serializers.SerializerMethodField()
+    is_online = serializers.SerializerMethodField()
 
     def _viewer(self):
-            request = self.context.get('request')
-            return request.user if request and request.user.is_authenticated else None
+        request = self.context.get('request')
+        return request.user if request and request.user.is_authenticated else None
 
     def get_is_following(self, obj):
         viewer = self._viewer()
@@ -96,6 +98,9 @@ class ViewerRelationMixin(serializers.Serializer):
     def get_is_self(self, obj):
         viewer = self._viewer()
         return viewer is not None and viewer.pk == obj.pk
+
+    def get_is_online(self, obj):
+        return is_user_online(obj.pk)
 
 class AvatarUrlMixin(serializers.Serializer):
     avatar_url = serializers.SerializerMethodField()
@@ -115,7 +120,7 @@ class PublicUserProfileSerializer(FollowCountsMixin, ViewerRelationMixin, Avatar
             'id', 'username', 'first_name', 'last_name', 'bio',
             'avatar_url', 'instagram_handle', 'bs_website',
             'following_count', 'followers_count',
-            'is_following', 'is_self', 'type_of_user',
+            'is_following', 'is_self', 'type_of_user', 'is_online'
         ]
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):

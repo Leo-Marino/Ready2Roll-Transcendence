@@ -52,12 +52,17 @@ const openFollowModal = async (type) => {
     const response = await fetch(endpoint, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
-    if (response.ok) {
+  if (response.ok) {
       const data = await response.json();
       followList.value = data.map(user => ({
         id: user.id,
         username: user.username,
-        avatar: user.avatar_url ? (user.avatar_url.startsWith('http') ? user.avatar_url : `http://localhost:9000/media/${user.avatar_url}`) : 'https://i.pravatar.cc/150?u=6'
+        isOnline: !!user.is_online,
+        avatar: user.avatar_url
+          ? (user.avatar_url.startsWith('http') || user.avatar_url.startsWith('/media/')
+              ? user.avatar_url
+              : `/media/${user.avatar_url}`)
+          : 'https://i.pravatar.cc/150?u=6'
       }));
     }
   } catch (error) {
@@ -230,12 +235,11 @@ const handleSocialMessage = (message) => {
       });
     });
   } else if (action === 'update_profile') {
-    // ---> ADDED THIS BLOCK FOR LIVE PROFILE UPDATES <---
     if (targetId === userProfile.value.id) {
-      userProfile.value.name = data.username;
-      userProfile.value.description = data.user_bio;
+      userProfile.value.name = data.username || data['user.name'] || userProfile.value.name;
+      userProfile.value.description = data.user_bio ?? userProfile.value.description;
       if (data.user_avatar) {
-         userProfile.value.avatar = data.user_avatar;
+        userProfile.value.avatar = data.user_avatar;
       }
     }
   } else if (action === 'resync') {

@@ -12,6 +12,7 @@ const newMessage = ref('');
 let socket = null;
 let pollTimer = null;
 const searchQuery = ref('');
+
 // Cerca nel database quando l'utente digita nella search bar
 watch(searchQuery, async (newQuery) => {
   if (!newQuery || !newQuery.trim()) {
@@ -42,7 +43,8 @@ watch(searchQuery, async (newQuery) => {
           img: finalImg,
           lastMsg: $t('clickToMessage'),
           lastMsgAt: null,
-          unread: 0
+          unread: 0,
+          isOnline: !!u.is_online
         };
       });
     } else {
@@ -105,12 +107,16 @@ const fetchContacts = async () => {
           img: finalImg,
           lastMsg: u.lastMsg || '',
           lastMsgAt: u.lastMsgAt || null,
-          unread: u.unread || 0
+          unread: u.unread || 0,
+          isOnline: !!u.is_online
         };
       });
 
-      const open = contacts.value.find(c => c.id === activeContact.value?.id);
-      if (open) open.unread = 0;
+    const open = contacts.value.find(c => c.id === activeContact.value?.id);
+      if (open) {
+        open.unread = 0;
+        activeContact.value.isOnline = open.isOnline;
+      }
 
       sortContacts();
     }
@@ -211,6 +217,15 @@ useSocialSocket((message) => {
       activeContact.value.name = data.username || data['user.name'] || data.name || activeContact.value.name;
     }
   }
+    else if (action === 'online_status') {
+    const contact = contacts.value.find(c => c.id === targetId);
+    if (contact) contact.isOnline = !!data.is_online;
+    const searched = searchResults.value.find(c => c.id === targetId);
+    if (searched) searched.isOnline = !!data.is_online;
+    if (activeContact.value && activeContact.value.id === targetId) {
+      activeContact.value.isOnline = !!data.is_online;
+    }
+  }
 });
 
 onMounted(() => {
@@ -267,12 +282,15 @@ onBeforeUnmount(() => {
           <li v-if="searchResults.length === 0" class="no-results">{{ $t('chatNoUsersFound') }}</li>
         </ul>
 
-        <!-- Lista dei contatti attivi -->
+<!-- Lista dei contatti attivi -->
         <ul v-else>
           <li v-for="contact in contacts" :key="contact.id" class="contact-item"
             :class="{ active: activeContact?.id === contact.id }"
             @click="selectContact(contact)">
-            <img :src="contact.img" alt="avatar" class="avatar">
+            <div class="avatar-wrap">
+              <img :src="contact.img" alt="avatar" class="avatar">
+              <span class="contact-status-dot" :class="{ online: contact.isOnline }"></span>
+            </div>
             <div class="contact-info">
               <span class="contact-name">{{ contact.name }}</span>
               <span class="contact-last-msg" :class="{ 'has-unread': contact.unread > 0 && activeContact?.id !== contact.id }">{{ contact.lastMsg }}</span>
@@ -288,7 +306,13 @@ onBeforeUnmount(() => {
 
       <main class="chat-container glass-panel">
         <div class="chat-header">
-          <h2 v-if="activeContact">{{ activeContact.name }}</h2>
+          <div v-if="activeContact" class="chat-header-user">
+            <h2>{{ activeContact.name }}</h2>
+            <span class="online-pill" :class="{ online: activeContact.isOnline }">
+              <span class="online-dot"></span>
+              {{ activeContact.isOnline ? $t('rollyStatusOnline') : 'offline' }}
+            </span>
+          </div>
           <h2 v-else>{{ $t('chatSelectContact') }}</h2>
         </div>
 
@@ -396,4 +420,38 @@ ul { list-style: none; padding: 0; margin: 0; }
   padding: 0 25px; cursor: pointer; font-weight: bold; transition: background 0.3s;
 }
 .chat-input-area button:hover { background: #00f2fe; }
+
+.avatar-wrap { position: relative; display: inline-flex; flex-shrink: 0; }
+.contact-status-dot {
+  position: absolute; bottom: 1px; right: 1px;
+  width: 11px; height: 11px; border-radius: 50%;
+  background: #777; border: 2px solid #1a102e;
+}
+.contact-status-dot.online {
+  background: #3dffa0;
+  box-shadow: 0 0 6px #3dffa0;
+}
+.chat-header-user { display: flex; align-items: center; gap: 12px; }
+.online-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+  padding: 3px 10px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.6);
+}
+.online-pill.online {
+  background: rgba(61, 255, 160, 0.15);
+  border-color: rgba(61, 255, 160, 0.5);
+  color: #3dffa0;
+}
+.online-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+}
+.online-pill.online .online-dot {
+  background: #3dffa0;
+  box-shadow: 0 0 6px #3dffa0;
+}
+
 </style>

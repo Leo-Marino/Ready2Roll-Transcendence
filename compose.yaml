@@ -42,7 +42,7 @@ services:
       PROXY_SSL: "off"                          # backend is plain HTTP; "on" crashes the WAF
       SERVER_NAME: localhost
       # Stage 1: observe. Stage 2: set to On, then raise PARANOIA to 2.
-      MODSEC_RULE_ENGINE: DetectionOnly
+      MODSEC_RULE_ENGINE: ON
       PARANOIA: "1"
       BLOCKING_PARANOIA: "1"
       ANOMALY_INBOUND: "5"
@@ -53,7 +53,7 @@ services:
       - ./srcs/waf/certs/server.crt:/etc/nginx/conf/server.crt:ro
       - ./srcs/waf/certs/server.key:/etc/nginx/conf/server.key:ro
       # Targeted, documented exclusions (chat, uploads, chatbot):
-      # - ./srcs/waf/rules/before-crs.conf:/etc/modsecurity.d/owasp-crs/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf:ro
+      - ./srcs/waf/rules/before-crs.conf:/etc/modsecurity.d/owasp-crs/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf:ro
     networks:
       - edge
       - app
