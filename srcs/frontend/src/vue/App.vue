@@ -211,4 +211,12 @@ body, html {
     grid-template-columns: 1fr !important;
   }
 }
+
+.navbar,
+.legal-navbar {
+  position: relative !important;
+  z-index: 100 !important;
+}
+
+
 </style>

@@ -1,6 +1,8 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import LanguageSwitcher from '../vue/LanguageSwitcher.vue';
+import { currentLang , t as $t} from '../i18n';
 
 const router = useRouter();
 
@@ -27,15 +29,17 @@ const submitLogin = async () => {
 
         if (response.ok) {
             const data = await response.json();
-            localStorage.setItem('access', data.access);
-            alert("Login successful! Welcome back.");
+            sessionStorage.setItem('access', data.access);
+            sessionStorage.setItem('token', data.access);
+            sessionStorage.setItem('type_of_user', data.user_type || 'standard');
+            alert($t('loginSuccess'));
             router.push('/home');
         } else {
-            alert("Invalid username or password. Please try again.");
+            alert($t('loginInvalid'));
         }
     } catch (error) {
         console.error("Network error:", error);
-        alert("Unable to connect to the Backend Server.");
+        alert($t('networkError'));
     }
 };
 </script>
@@ -44,29 +48,37 @@ const submitLogin = async () => {
         <source src="../assets/ready2roll_wave_background.mp4" type="video/mp4">
     </video>
     <div class="wrapper">
+              <div class="top-nav-icons">
+                  <LanguageSwitcher />
+              </div>
         <div id="logoDiv" class="centred">
             <img src="../assets/logo_temp.png" alt="logo">
         </div>
         <div id="loginForm" class="centred">
             <form @submit.prevent="submitLogin">
                 <div class="inputFieldDiv">
-                    <input type="text" placeholder="Username" v-model="username" required>
+                    <input type="text" :placeholder="$t('loginUsername')" v-model="username" required :dir="currentLang === 'ar' ? 'rtl' : 'ltr'">
                 </div>
                 <div class="inputFieldDiv">
-                    <input type="password" placeholder="Password" v-model="password" required>
+                    <input type="password" :placeholder="$t('loginPassword')" v-model="password" required :dir="currentLang === 'ar' ? 'rtl' : 'ltr'">
                 </div>
                 <br>
                 <div class="inputFieldButton">
-                    <button type="submit">Log-in</button>
+                    <button type="submit">{{ $t('loginButton') }}</button>
                 </div>
                 <div class="or-separator">
                     <hr class="dashedSeparator">
-                    <span class="or-text">OR</span>
+                    <span class="or-text">{{ $t('loginOr') }}</span>
                     <hr class="dashedSeparator">
                 </div>
                 <div class="centred" id="signupLink">
-                    <p>Don't have an account? <router-link to="/signup">Sign up</router-link></p>
+                    <p>{{ $t('loginNoAccount') }} <router-link to="/signup">{{ $t('loginSignupLink') }}</router-link></p>
                 </div>
+                <div class="centred legal-links">
+                  <router-link to="/privacy">Privacy Policy</router-link>
+                  <span>·</span>
+                  <router-link to="/terms">Terms of Service</router-link>
+              </div>
             </form>
         </div>
     </div>
@@ -204,4 +216,29 @@ const submitLogin = async () => {
         color: #FFFFFF;
         font-size: 14px;
     }
+
+    .top-nav-icons {
+    position: absolute;
+    top: 25px;
+    right: 30px;
+    z-index: 1000;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+/* Ila kan l-projet fih RTL (l-3arbiya), n-jibouha l-lisser */
+[dir="rtl"] .top-nav-icons {
+    right: auto;
+    left: 30px;
+}
+
+.legal-links {
+      gap: 8px;
+      margin-top: 12px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.7);
+      font-family: var(--font-main);
+  }
+
 </style>

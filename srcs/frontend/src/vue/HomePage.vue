@@ -5,6 +5,7 @@ import SearchBar from './SearchBar.vue';
 import NotificationBell from './NotificationBell.vue';
 import LanguageSwitcher from './LanguageSwitcher.vue';
 import { t as $t } from '../i18n';
+import { currentLang } from '../i18n';
 import ChatNavLink from './ChatNavLink.vue';
 import { useSocialSocket } from '../composables/useSocialSocket';
 
@@ -46,7 +47,7 @@ const togglePlay = (event) => {
   }
 };
 
-const getToken = () => localStorage.getItem('token') || localStorage.getItem('access') || localStorage.getItem('access_token');
+const getToken = () => sessionStorage.getItem('token') || sessionStorage.getItem('access') || sessionStorage.getItem('access_token');
 const API = '/api';
 
 // --- Comments state ---
@@ -505,6 +506,11 @@ onBeforeUnmount(() => {
             </li>
           </ul>
         </nav>
+        <div class="sidebar-legal-footer" style="margin-top: auto; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.12); display: flex; gap: 10px; justify-content: center; font-size: 0.78rem;">
+        <router-link to="/privacy" style="color: rgba(255,255,255,0.65); text-decoration: none;">{{ $t('privacy') }}</router-link>
+        <span style="color: rgba(255,255,255,0.35);">·</span>
+        <router-link to="/terms" style="color: rgba(255,255,255,0.65); text-decoration: none;">{{ $t ('term')}}</router-link>
+      </div>
       </aside>
 
       <main class="feed-container">
@@ -610,7 +616,7 @@ onBeforeUnmount(() => {
 
             <!-- Scrollable list: newest comment is at the bottom, right above the input -->
             <div class="comments-list" ref="commentsListRef">
-              <p v-if="comments.length === 0" class="no-comments">No comments yet. Be the first!</p>
+              <p v-if="comments.length === 0" class="no-comments">{{ $t('noCommentsYet') }}</p>
 
               <div class="comment-thread" v-for="comment in comments" :key="comment.id">
                 <div class="comment">
@@ -738,7 +744,7 @@ onBeforeUnmount(() => {
                   :placeholder="replyingTo ? $t('reply') + '...' : $t('addComment')"
                   @keyup.enter="postComment"
                   class="comment-input"
-                  :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'"
+                  :dir="currentLang === 'ar' ? 'rtl' : 'ltr'"
                 />
                 <button @click="postComment" class="send-comment-btn" :disabled="isSending || !newCommentText.trim()">{{ $t('post') }}</button>
               </div>

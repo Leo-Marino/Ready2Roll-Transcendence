@@ -3,6 +3,7 @@
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useSocialSocket } from '../composables/useSocialSocket';
 import { t as $t } from '../i18n';
+import { currentLang } from '../i18n';
 
 const contacts = ref([]);          // Contatti con chat attive
 const searchResults = ref([]);     // Risultati della ricerca globale
@@ -80,9 +81,9 @@ const sortContacts = () => {
 };
 
 const getToken = () =>
-  localStorage.getItem('token') ||
-  localStorage.getItem('access') ||
-  localStorage.getItem('access_token');
+  sessionStorage.getItem('token') ||
+  sessionStorage.getItem('access') ||
+  sessionStorage.getItem('access_token');
 
 // Fetch contacts attivi
 // Fetch contacts attivi
@@ -262,7 +263,7 @@ onBeforeUnmount(() => {
     <div class="main-content">
       <aside class="left-sidebar glass-panel">
       <div class="sidebar-search-bar">
-        <input type="text" v-model="searchQuery" :placeholder="$t('chatSearchPlaceholder')" :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'">
+        <input type="text" v-model="searchQuery" :placeholder="$t('chatSearchPlaceholder')" :dir="currentLang === 'ar' ? 'rtl' : 'ltr'">
       </div>
 
         <h3>{{ $t('chatMessagesTitle') }}</h3>
@@ -325,8 +326,8 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <form class="chat-input-area" @submit.prevent="sendMessage">
-          <input type="text" v-model="newMessage" :placeholder="$t('chatTypeMessage')" required :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'">
+        <form v-if="activeContact" class="chat-input-area" @submit.prevent="sendMessage">
+          <input type="text" v-model="newMessage" :placeholder="$t('chatTypeMessage')" required :dir="currentLang === 'ar' ? 'rtl' : 'ltr'">
           <button type="submit">{{ $t('chatSendButton') }}</button>
         </form>
       </main>
@@ -340,9 +341,15 @@ onBeforeUnmount(() => {
     width: 100%; height: 100%; z-index: -1; object-fit: cover;
 }
 .app-container {
-  display: flex; flex-direction: column; height: 100vh;
-  color: #FFFFFF; font-family: var(--font-main);
-  padding: 10px 20px; box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-height: 0;
+  color: #FFFFFF;
+  font-family: var(--font-main);
+  padding: 10px 20px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 .glass-panel {
   background: rgba(255, 255, 255, 0.1); border-radius: 15px;
@@ -360,11 +367,28 @@ onBeforeUnmount(() => {
 .nav-icon:hover { color: #00f2fe; transform: scale(1.15); }
 .nav-icon-link { display: flex; align-items: center; }
 .main-content {
-  display: flex; flex-direction: row; gap: 15px;
-  height: calc(100vh - 95px); width: 100%;
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
 }
+
+/* Keep the contacts panel at a stable width, even when a message is very long. */
 .left-sidebar {
-  width: 300px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto;
+  flex: 0 0 280px;
+  width: 280px;
+  min-width: 280px;
+  max-width: 280px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 .sidebar-search-bar input {
   width: 100%; box-sizing: border-box;
@@ -392,18 +416,26 @@ ul { list-style: none; padding: 0; margin: 0; }
 .contact-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
 .contact-time { font-size: 0.7rem; color: #cccccc; }
 .unread-dot { width: 10px; height: 10px; border-radius: 50%; background: #00f2fe; box-shadow: 0 0 6px #00f2fe; }
-.chat-container { flex-grow: 1; display: flex; flex-direction: column; }
+.chat-container {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 .chat-header { padding-bottom: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.2); margin-bottom: 15px; }
 .chat-header h2 { margin: 0; font-family: "Bruno Ace", sans-serif; }
-.chat-messages { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; padding-right: 10px; }
-.message-wrapper { display: flex; width: 100%; }
+.chat-messages { flex-grow: 1; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: 15px; padding-right: 10px; }
+.message-wrapper { display: flex; width: 100%; min-width: 0; }
 .my-message { justify-content: flex-end; }
 .message-bubble {
   max-width: 60%; padding: 12px 18px; border-radius: 20px;
   background: rgba(255, 255, 255, 0.15); line-height: 1.4;
+  min-width: 0; overflow-wrap: anywhere;
 }
 .my-message .message-bubble { background: rgba(0, 242, 254, 0.3); border-bottom-right-radius: 4px; }
-.message-text { white-space: pre-wrap; word-break: break-word; }
+.message-text { white-space: pre-wrap; word-break: break-all !important; overflow-wrap: break-word !important; display: inline-block; max-width: 100%;}
 .message-time { display: block; text-align: right; margin-top: 4px; font-size: 0.7rem; color: rgba(255, 255, 255, 0.65); }
 .message-wrapper:not(.my-message) .message-bubble { border-bottom-left-radius: 4px; }
 .chat-input-area {
@@ -411,8 +443,14 @@ ul { list-style: none; padding: 0; margin: 0; }
   border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 .chat-input-area input {
-  flex-grow: 1; background: rgba(255, 255, 255, 0.1); border: none;
-  border-radius: 20px; padding: 12px 20px; color: white;
+  flex: 1 1 0;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 20px;
+  padding: 12px 20px;
+  color: white;
+  box-sizing: border-box;
 }
 .chat-input-area input::placeholder { color: #cccccc; }
 .chat-input-area button {
@@ -454,4 +492,31 @@ ul { list-style: none; padding: 0; margin: 0; }
   box-shadow: 0 0 6px #3dffa0;
 }
 
+/* On smaller screens, keep both panels usable without horizontal squeezing. */
+@media (max-width: 760px) {
+  .app-container {
+    padding: 8px;
+  }
+  .main-content {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .left-sidebar {
+    flex: 0 0 180px;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    max-height: 38%;
+  }
+  .chat-container {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+  .message-bubble {
+    max-width: 88%;
+  }
+  .logo-text {
+    font-size: 1rem;
+  }
+}
 </style>

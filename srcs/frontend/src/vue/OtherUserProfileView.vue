@@ -8,15 +8,15 @@ import { t as $t } from '../i18n';
 import { useSocialSocket } from '../composables/useSocialSocket';
 import NotificationBell from './NotificationBell.vue';
 import ChatNavLink from './ChatNavLink.vue';
-
+import { currentLang } from '../i18n';
 const route = useRoute();
 const router = useRouter();
 const API = '/api';
 
 const getToken = () =>
-  localStorage.getItem('token') ||
-  localStorage.getItem('access') ||
-  localStorage.getItem('access_token');
+  sessionStorage.getItem('token') ||
+  sessionStorage.getItem('access') ||
+  sessionStorage.getItem('access_token');
 
 const DEFAULT_AVATAR = 'https://i.pravatar.cc/150?u=6';
 

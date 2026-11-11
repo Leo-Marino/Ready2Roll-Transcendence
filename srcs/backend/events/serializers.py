@@ -60,19 +60,6 @@ class EventSerializer(serializers.ModelSerializer):
         return obj.comments.count()
 
     def get_media_src(self, obj):
-        media = Media.objects.filter(event=obj).first()
-        if media and media.media_url:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(media.media_url.url)
-            return media.media_url.url
-        return None
-
-    def get_media_type(self, obj):
-        media = Media.objects.filter(event=obj).first()
-        return media.media_type if media else None
-
-    def get_media_src(self, obj):
             media = Media.objects.filter(event=obj).first()
             if media and media.media_url:
                 # Force a relative path so the frontend uses the current domain/port (e.g. localhost:8080)
@@ -151,13 +138,6 @@ class FeedEventSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         return request.user if request and request.user.is_authenticated else None
 
-    def get_media_src(self, obj):
-        media = self._media(obj)
-        if media and media.media_url:
-            request = self.context.get('request')
-            url = media.media_url.url
-            return request.build_absolute_uri(url) if request else url
-        return None
 
     def get_media_src(self, obj):
         media = self._media(obj)
@@ -186,8 +166,8 @@ class FeedEventSerializer(serializers.ModelSerializer):
         user = obj.organizer
         viewer = self._viewer()
         avatar = DEFAULT_AVATAR
-        if user.avatar_url:
-            avatar = str(user.avatar_url) if str(user.avatar_url).startswith('http') else user.avatar_url.url
+        if user.avatar_url and user.avatar_url.name:
+            avatar = str(user.avatar_url) if str(user.avatar_url).startswith('http') else f"/media/{user.avatar_url.name}"
         return {
             "id": user.id,
             "username": user.username,
