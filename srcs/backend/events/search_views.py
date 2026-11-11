@@ -37,6 +37,7 @@ def search_view(request):
         .filter(is_active=True)
         .filter(Q(username__icontains=q) | Q(legal_name__icontains=q))
         .exclude(pk=request.user.pk)
+        .exclude(username__iexact='admin')
         .annotate(rank=rank)
         .order_by('rank', 'username')[:MAX_USERS]
     )
