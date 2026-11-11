@@ -101,7 +101,7 @@ router.beforeEach((to, from) => {
   if (to.meta.requiresAuth && !token) {
     // 1. Bgha ydkhl l-page d nas li logé, w howa ma 3ndouch token -> lo7o l-Login
     return ('/login');
-  } else if (to.meta.requiresBusiness && userType !== 'business') {
+  } else if (to.meta.requiresBusiness && (!userType || userType.toLowerCase() !== 'business')) {
     // 2. Bgha ydkhl l-CreateEvent, w howa 3ndo token walakin machi "business" -> lo7o l-Home
     return ('/home');
   } else if (to.meta.guestOnly && token) {

@@ -5,6 +5,7 @@ import SearchBar from './SearchBar.vue';
 import NotificationBell from './NotificationBell.vue';
 import LanguageSwitcher from './LanguageSwitcher.vue';
 import { t as $t } from '../i18n';
+import { currentLang } from '../i18n';
 import ChatNavLink from './ChatNavLink.vue';
 import { useSocialSocket } from '../composables/useSocialSocket';
 
@@ -738,7 +739,7 @@ onBeforeUnmount(() => {
                   :placeholder="replyingTo ? $t('reply') + '...' : $t('addComment')"
                   @keyup.enter="postComment"
                   class="comment-input"
-                  :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'"
+                  :dir="currentLang === 'ar' ? 'rtl' : 'ltr'"
                 />
                 <button @click="postComment" class="send-comment-btn" :disabled="isSending || !newCommentText.trim()">{{ $t('post') }}</button>
               </div>

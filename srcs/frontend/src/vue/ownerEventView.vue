@@ -153,7 +153,7 @@ const saveEdit = async () => {
     }
   } catch (error) {
     console.error("Network error during save:", error);
-    alert("Unable to connect to the backend server.");
+    alert($t('networkError'));
   }
 };
 

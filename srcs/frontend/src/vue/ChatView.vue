@@ -3,6 +3,7 @@
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useSocialSocket } from '../composables/useSocialSocket';
 import { t as $t } from '../i18n';
+import { currentLang } from '../i18n';
 
 const contacts = ref([]);          // Contatti con chat attive
 const searchResults = ref([]);     // Risultati della ricerca globale
@@ -247,7 +248,7 @@ onBeforeUnmount(() => {
     <div class="main-content">
       <aside class="left-sidebar glass-panel">
       <div class="sidebar-search-bar">
-        <input type="text" v-model="searchQuery" :placeholder="$t('chatSearchPlaceholder')" :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'">
+        <input type="text" v-model="searchQuery" :placeholder="$t('chatSearchPlaceholder')" :dir="currentLang === 'ar' ? 'rtl' : 'ltr'">
       </div>
 
         <h3>{{ $t('chatMessagesTitle') }}</h3>
@@ -302,7 +303,7 @@ onBeforeUnmount(() => {
         </div>
 
         <form v-if="activeContact" class="chat-input-area" @submit.prevent="sendMessage">
-          <input type="text" v-model="newMessage" :placeholder="$t('chatTypeMessage')" required :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'">
+          <input type="text" v-model="newMessage" :placeholder="$t('chatTypeMessage')" required :dir="currentLang === 'ar' ? 'rtl' : 'ltr'">
           <button type="submit">{{ $t('chatSendButton') }}</button>
         </form>
       </main>

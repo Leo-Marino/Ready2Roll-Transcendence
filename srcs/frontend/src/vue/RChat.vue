@@ -1,6 +1,7 @@
 <script setup>
 import { ref, nextTick, onBeforeUnmount } from 'vue';
 import { t as $t } from '../i18n';
+import { currentLang } from '../i18n';
 // =====================================================================
 //  R Chat: floating assistant for the home page (FRONTEND ONLY for now)
 //
@@ -207,7 +208,7 @@ const showSuggestions = () => messages.value.length === 1 && !isTyping.value;
             placeholder="Ask Rolly..."
             maxlength="500"
             autocomplete="off"
-            :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'"
+            :dir="currentLang === 'ar' ? 'rtl' : 'ltr'"
           >
           <button type="submit" class="rc-send" :disabled="!input.trim() || isTyping" aria-label="Send">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="rc-send-icon">

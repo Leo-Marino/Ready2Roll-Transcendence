@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { t as $t } from '../i18n';
+import { currentLang } from '../i18n';
 
 const props = defineProps({ placeholder: { type: String, default: '' } });
 
@@ -22,7 +23,7 @@ const go = () => {
 
 <template>
   <form class="search-bar" @submit.prevent="go" :dir="'ltr'">
-    <input v-model="text" type="text" :placeholder="placeholder || $t('search')" maxlength="50" autocomplete="off" :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'">
+    <input v-model="text" type="text" :placeholder="placeholder || $t('search')" maxlength="50" autocomplete="off" :dir="currentLang === 'ar' ? 'rtl' : 'ltr'">
   </form>
 </template>
 

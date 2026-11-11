@@ -3,7 +3,8 @@ import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { z } from 'zod';
 import LanguageSwitcher from '../vue/LanguageSwitcher.vue';
-
+import { currentLang } from '../i18n';
+import { t as $t } from '../i18n';
 const router = useRouter();
 
 const type_of_user = ref('standard'); // 'standard' | 'business'
@@ -40,22 +41,22 @@ const isTagSelected = (tagName) => {
 const passwordRules = computed(() => [
 {
     id: 'length',
-    label: 'At least 8 characters',
+    label: $t('passReqLength'),
     valid: password.value.length >= 8
 },
 {
     id: 'uppercase',
-    label: 'At least one uppercase letter',
+    label: $t('passReqUpper'),
     valid: /[A-Z]/.test(password.value)
 },
 {
     id: 'number',
-    label: 'At least one number',
+    label: $t('passReqNumber'),
     valid: /[0-9]/.test(password.value)
 },
 {
     id: 'special',
-    label: 'At least one special character (!@#$%^&*)',
+    label: $t('passReqSpecial'),
     valid: /[!@#$%^&*(),.?":{}|<>]/.test(password.value)
 }
 ]);
@@ -156,15 +157,15 @@ const submitSignup = async () => {
             if (data.token) {
                 sessionStorage.setItem('token', data.token);
             }
-            alert('Signup successful! You may now login with your new account.');
+            alert($t('signupSuccess'));
             router.push('/login');
         } else {
             console.error('Error message by the server:', data);
-            alert(data.error || 'Signup failed. Please try again.');
+            alert(data.error || $t('signupFailed'));
         }
     } catch (error) {
         console.error('Network error: ', error);
-        alert('Unable to connect to the backend server.');
+        alert($t('networkError'));
     }
 };
 </script>
@@ -211,7 +212,7 @@ const submitSignup = async () => {
             v-model="username"
             :placeholder="$t('signupUsername')"
             :class="{ 'input-error': errors.username }"
-            :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'"
+            :dir="currentLang === 'ar' ? 'rtl' : 'ltr'"
         >
         </div>
 
@@ -221,7 +222,7 @@ const submitSignup = async () => {
             v-model="email"
             :placeholder="$t('signupEmail')"
             :class="{ 'input-error': errors.email }"
-            :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'"
+            :dir="currentLang === 'ar' ? 'rtl' : 'ltr'"
         >
         </div>
 
@@ -238,10 +239,10 @@ const submitSignup = async () => {
                 :class="{ 'input-error': errors.password }"
                 @focus="showPasswordBox = true"
                 @blur="showPasswordBox = false"
-                :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'"
+                :dir="currentLang === 'ar' ? 'rtl' : 'ltr'"
             />
             <div v-if="showPasswordBox" class="password-dropdown-box">
-                <p class="password-box-title">Password requirements:</p>
+                <p class="password-box-title">{{ $t('passwordReqTitle') }}</p>
                 <ul class="password-checklist">
                 <li
                     v-for="rule in passwordRules"
@@ -263,7 +264,7 @@ const submitSignup = async () => {
                 v-model="legalName"
                 :placeholder="$t('signupLegalName')"
                 :class="{ 'input-error': errors.legalName }"
-                :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'"
+                :dir="currentLang === 'ar' ? 'rtl' : 'ltr'"
             >
         </div>
         <div class="inputFieldDiv">
@@ -272,7 +273,7 @@ const submitSignup = async () => {
                 v-model="vatTax"
                 :placeholder="$t('signupVatTax')"
                 :class="{ 'input-error': errors.vatTax }"
-                :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'"
+                :dir="currentLang === 'ar' ? 'rtl' : 'ltr'"
             >
         </div>
         </div>
@@ -626,6 +627,29 @@ backdrop-filter: blur(4px);
 [dir="rtl"] .top-nav-icons {
     right: auto;
     left: 30px;
+}
+
+[dir="rtl"] .password-dropdown-box {
+  left: auto;
+  right: 105%; /* Kay-rje3ha t-ban f l-issser f RTL */
+}
+
+[dir="rtl"] .password-dropdown-box::before {
+  left: auto;
+  right: -6px;
+  transform: translateY(-50%) rotate(45deg);
+  border-left: none;
+  border-bottom: none;
+  border-right: 1px solid #dcdcdc;
+  border-top: 1px solid #dcdcdc;
+}
+
+[dir="rtl"] .password-checklist {
+  text-align: right; /* Bach ijiw n-n9ati (bullets) mn l-imin */
+}
+
+[dir="rtl"] .password-box-title {
+  text-align: right;
 }
 
 </style>

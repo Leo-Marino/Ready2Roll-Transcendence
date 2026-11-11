@@ -8,7 +8,7 @@ import { t as $t } from '../i18n';
 import { useSocialSocket } from '../composables/useSocialSocket';
 import NotificationBell from './NotificationBell.vue';
 import ChatNavLink from './ChatNavLink.vue';
-
+import { currentLang } from '../i18n';
 const route = useRoute();
 const router = useRouter();
 const API = '/api';

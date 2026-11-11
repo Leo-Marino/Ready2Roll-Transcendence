@@ -3,6 +3,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSocialSocket } from '../composables/useSocialSocket';
 import { t as $t } from '../i18n';
+import { currentLang } from '../i18n';
 
 // Campanellino con pallino rosso + pannello con le notifiche.
 // Ogni 20 secondi chiede al backend QUANTE notifiche non lette ci sono (chiamata leggerissima);

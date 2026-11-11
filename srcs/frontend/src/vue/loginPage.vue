@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import LanguageSwitcher from '../vue/LanguageSwitcher.vue';
+import { currentLang , t as $t} from '../i18n';
 
 const router = useRouter();
 
@@ -31,14 +32,14 @@ const submitLogin = async () => {
             sessionStorage.setItem('access', data.access);
             sessionStorage.setItem('token', data.access);
             sessionStorage.setItem('type_of_user', data.user_type || 'standard');
-            alert("Login successful! Welcome back.");
+            alert($t('loginSuccess'));
             router.push('/home');
         } else {
-            alert("Invalid username or password. Please try again.");
+            alert($t('loginInvalid'));
         }
     } catch (error) {
         console.error("Network error:", error);
-        alert("Unable to connect to the Backend Server.");
+        alert($t('networkError'));
     }
 };
 </script>
@@ -56,10 +57,10 @@ const submitLogin = async () => {
         <div id="loginForm" class="centred">
             <form @submit.prevent="submitLogin">
                 <div class="inputFieldDiv">
-                    <input type="text" :placeholder="$t('loginUsername')" v-model="username" required :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'">
+                    <input type="text" :placeholder="$t('loginUsername')" v-model="username" required :dir="currentLang === 'ar' ? 'rtl' : 'ltr'">
                 </div>
                 <div class="inputFieldDiv">
-                    <input type="password" :placeholder="$t('loginPassword')" v-model="password" required :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'">
+                    <input type="password" :placeholder="$t('loginPassword')" v-model="password" required :dir="currentLang === 'ar' ? 'rtl' : 'ltr'">
                 </div>
                 <br>
                 <div class="inputFieldButton">
