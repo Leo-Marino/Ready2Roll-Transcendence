@@ -84,7 +84,7 @@ const askLocal = async (text) => {
 };
 
 const getToken = () =>
-  localStorage.getItem('token') || localStorage.getItem('access') || localStorage.getItem('access_token');
+  sessionStorage.getItem('token') || sessionStorage.getItem('access') || sessionStorage.getItem('access_token');
 
 const askBot = async (text, history = []) => {
   if (!props.eventId) return askLocal(text);          // nessun video attivo

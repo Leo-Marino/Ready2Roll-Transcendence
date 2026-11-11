@@ -72,9 +72,9 @@ const closeFollowModal = () => {
 };
 
 const getToken = () =>
-  localStorage.getItem('token') ||
-  localStorage.getItem('access') ||
-  localStorage.getItem('access_token');
+  sessionStorage.getItem('token') ||
+  sessionStorage.getItem('access') ||
+  sessionStorage.getItem('access_token');
 
 const openLogoutModal = () => {
   showLogoutModal.value = true;
@@ -85,10 +85,10 @@ const closeLogoutModal = () => {
 };
 
 const confirmLogout = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('access');
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('lang');
+  sessionStorage.removeItem('token');
+  sessionStorage.removeItem('access');
+  sessionStorage.removeItem('access_token');
+  sessionStorage.removeItem('lang');
   setLanguage('en');
   router.push('/login');
 };
@@ -148,7 +148,7 @@ const fetchMyEvents = async () => {
 };
 
 const goToCreateEvent = () => {
-  localStorage.removeItem('editingEvent');
+  sessionStorage.removeItem('editingEvent');
   router.push('/CreateEvent');
 };
 
@@ -187,7 +187,7 @@ const closePreview = () => {
 };
 
 const openEdit = (event) => {
-  localStorage.setItem('editingEvent', JSON.stringify(event));
+  sessionStorage.setItem('editingEvent', JSON.stringify(event));
   router.push({ path: '/CreateEvent', query: { edit: 'true' } });
 };
 
@@ -260,9 +260,9 @@ onMounted(async () => {
     });
 
     if (response.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('access');
-      localStorage.removeItem('access_token');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('access');
+      sessionStorage.removeItem('access_token');
       router.push('/login');
       return;
     }

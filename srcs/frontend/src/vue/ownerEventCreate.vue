@@ -42,7 +42,7 @@ export default {
   },
   async mounted() {
     if (this.$route.query.edit === 'true') {
-      const savedEvent = localStorage.getItem('editingEvent');
+      const savedEvent = sessionStorage.getItem('editingEvent');
       if (savedEvent) {
         try {
           const ev = JSON.parse(savedEvent);
@@ -70,7 +70,7 @@ export default {
         }
       }
     } else {
-      localStorage.removeItem('editingEvent');
+      sessionStorage.removeItem('editingEvent');
     }
   },
   methods: {
@@ -145,7 +145,7 @@ export default {
         return;
       }
 
-      const token = localStorage.getItem('token') || localStorage.getItem('access') || localStorage.getItem('access_token');
+      const token = sessionStorage.getItem('token') || sessionStorage.getItem('access') || sessionStorage.getItem('access_token');
       const formData = new FormData();
 
       formData.append('title', this.eventTitle);
@@ -183,7 +183,7 @@ export default {
 
         if (response.ok) {
           const savedEvent = await response.json();
-          localStorage.removeItem('editingEvent');
+          sessionStorage.removeItem('editingEvent');
           alert(this.isEditMode ? "Event updated successfully!" : (this.eventStatus === 'scheduled' ? "Event scheduled successfully!" : "Event created successfully!"));
           this.$emit('event-published', savedEvent);
           this.goToVisualPage();
@@ -208,7 +208,7 @@ export default {
       }
     },
     goToVisualPage() {
-      localStorage.removeItem('editingEvent');
+      sessionStorage.removeItem('editingEvent');
       if (this.$router) {
         this.$router.push('/profile');
       }

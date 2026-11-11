@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { z } from 'zod';
+import LanguageSwitcher from '../vue/LanguageSwitcher.vue';
 
 const router = useRouter();
 
@@ -153,7 +154,7 @@ const submitSignup = async () => {
 
         if (response.ok) {
             if (data.token) {
-                localStorage.setItem('token', data.token);
+                sessionStorage.setItem('token', data.token);
             }
             alert('Signup successful! You may now login with your new account.');
             router.push('/login');
@@ -174,6 +175,9 @@ const submitSignup = async () => {
 </video>
 
 <div class="wrapper">
+        <div class="top-nav-icons">
+            <LanguageSwitcher />
+        </div>
 <div class="signup-container">
     <div id="logoDiv" class="centred">
     <img src="../assets/logo_temp.png" alt="logo">
@@ -183,7 +187,7 @@ const submitSignup = async () => {
 
         <!-- Banner di errore generale in cima -->
         <div v-if="Object.keys(errors).length > 0" class="error-banner">
-            <span>Please fill in all required fields correctly.</span>
+            <span>{{ $t('signupErrorBanner') }} </span>
         </div>
 
         <div class="role-toggle-container">
@@ -191,13 +195,13 @@ const submitSignup = async () => {
             type="button"
             :class="{'active-role': type_of_user === 'standard'}"
             @click="type_of_user = 'standard'; errors = {};">
-            standard
+            {{ $t('roleStandard') }}
         </button>
         <button
             type="button"
             :class="{'active-role': type_of_user === 'business'}"
             @click="type_of_user = 'business'; errors = {};">
-            business
+            {{ $t('roleBusiness') }}
         </button>
         </div>
 
@@ -205,8 +209,9 @@ const submitSignup = async () => {
         <input
             type="text"
             v-model="username"
-            placeholder="Username"
+            :placeholder="$t('signupUsername')"
             :class="{ 'input-error': errors.username }"
+            :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'"
         >
         </div>
 
@@ -214,8 +219,9 @@ const submitSignup = async () => {
         <input
             type="email"
             v-model="email"
-            placeholder="E-mail"
+            :placeholder="$t('signupEmail')"
             :class="{ 'input-error': errors.email }"
+            :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'"
         >
         </div>
 
@@ -228,10 +234,11 @@ const submitSignup = async () => {
             <input
                 type="password"
                 v-model="password"
-                placeholder="Password"
+                :placeholder="$t('signupPassword')"
                 :class="{ 'input-error': errors.password }"
                 @focus="showPasswordBox = true"
                 @blur="showPasswordBox = false"
+                :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'"
             />
             <div v-if="showPasswordBox" class="password-dropdown-box">
                 <p class="password-box-title">Password requirements:</p>
@@ -254,50 +261,35 @@ const submitSignup = async () => {
             <input
                 type="text"
                 v-model="legalName"
-                placeholder="Club / Venue Name"
+                :placeholder="$t('signupLegalName')"
                 :class="{ 'input-error': errors.legalName }"
+                :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'"
             >
         </div>
         <div class="inputFieldDiv">
             <input
                 type="text"
                 v-model="vatTax"
-                placeholder="Tax ID / VAT Number"
+                :placeholder="$t('signupVatTax')"
                 :class="{ 'input-error': errors.vatTax }"
+                :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'"
             >
         </div>
         </div>
 
-
-        <!-- <div v-if="type_of_user === 'standard'" class="inputFieldDiv">
-            <label class="tags-label">TAGS</label>
-            <div class="tag-selector-container">
-                <div
-                    v-for="t in availableTags"
-                    :key="t"
-                    @click="toggleTag(t)"
-                    :class="isTagSelected(t) ? 'business-badge' : 'standard-badge'"
-                    class="selectable-tag-pill"
-                >
-                    <span>{{ isTagSelected(t) ? '✓' : '+' }}</span>
-                    <span>{{ t }}</span>
-                </div>
-            </div>
-        </div> -->
-
         <br>
         <div class="inputFieldButton">
-        <button type="submit">Submit</button>
+        <button type="submit">{{ $t('signupButton') }}</button>
         </div>
 
         <div class="or-separator">
         <hr class="dashedSeparator">
-        <span class="or-text">OR</span>
+        <span class="or-text">{{ $t('signupOr') }}</span>
         <hr class="dashedSeparator">
         </div>
 
         <div class="centred" id="signupLink">
-        <p>Already have an account? <router-link to="/login">Login</router-link></p>
+        <p>{{ $t('signupHaveAccount') }} <router-link to="/login">{{ $t('signupLoginLink') }}</router-link></p>
         </div>
     </form>
     </div>
@@ -619,4 +611,21 @@ backdrop-filter: blur(4px);
 .rule-valid {
   color: #2e7d32;
 }
+
+.top-nav-icons {
+    position: absolute;
+    top: 25px;
+    right: 30px;
+    z-index: 1000;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+/* Ila kan l-projet fih RTL (l-3arbiya), n-jibouha l-lisser */
+[dir="rtl"] .top-nav-icons {
+    right: auto;
+    left: 30px;
+}
+
 </style>

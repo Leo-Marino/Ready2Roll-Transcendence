@@ -12,7 +12,7 @@ const POLL_MS = 20000;
 const router = useRouter();
 
 const getToken = () =>
-  localStorage.getItem('token') || localStorage.getItem('access') || localStorage.getItem('access_token');
+  sessionStorage.getItem('token') || sessionStorage.getItem('access') || sessionStorage.getItem('access_token');
 const authHeaders = () => ({ Authorization: `Bearer ${getToken()}` });
 
 const root = ref(null);
@@ -40,6 +40,7 @@ const translateNotification = (text) => {
   if (lowerText.includes('liked')) return $t('notifLike');
   if (lowerText.includes('commented')) return $t('notifComment');
   if (lowerText.includes('replied')) return $t('notifReply');
+  if (lowerText.includes('reacted')) return $t('notificationReacted');
 
   return text; // Ila kant chi notif khra, tl3 kima hya
 };

@@ -34,9 +34,9 @@ const closeFollowModal = () => {
 
 // Token helper
 const getToken = () =>
-  localStorage.getItem('token') ||
-  localStorage.getItem('access') ||
-  localStorage.getItem('access_token');
+  sessionStorage.getItem('token') ||
+  sessionStorage.getItem('access') ||
+  sessionStorage.getItem('access_token');
 
 
 // The active user's profile data
@@ -177,9 +177,9 @@ onMounted(async () => {
     });
 
     if (response.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('access');
-      localStorage.removeItem('access_token');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('access');
+      sessionStorage.removeItem('access_token');
       router.push('/login');
       return;
     }

@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import LanguageSwitcher from '../vue/LanguageSwitcher.vue';
 
 const router = useRouter();
 
@@ -27,7 +28,9 @@ const submitLogin = async () => {
 
         if (response.ok) {
             const data = await response.json();
-            localStorage.setItem('access', data.access);
+            sessionStorage.setItem('access', data.access);
+            sessionStorage.setItem('token', data.access);
+            sessionStorage.setItem('type_of_user', data.user_type || 'standard');
             alert("Login successful! Welcome back.");
             router.push('/home');
         } else {
@@ -44,28 +47,31 @@ const submitLogin = async () => {
         <source src="../assets/ready2roll_wave_background.mp4" type="video/mp4">
     </video>
     <div class="wrapper">
+              <div class="top-nav-icons">
+                  <LanguageSwitcher />
+              </div>
         <div id="logoDiv" class="centred">
             <img src="../assets/logo_temp.png" alt="logo">
         </div>
         <div id="loginForm" class="centred">
             <form @submit.prevent="submitLogin">
                 <div class="inputFieldDiv">
-                    <input type="text" placeholder="Username" v-model="username" required>
+                    <input type="text" :placeholder="$t('loginUsername')" v-model="username" required :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'">
                 </div>
                 <div class="inputFieldDiv">
-                    <input type="password" placeholder="Password" v-model="password" required>
+                    <input type="password" :placeholder="$t('loginPassword')" v-model="password" required :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'">
                 </div>
                 <br>
                 <div class="inputFieldButton">
-                    <button type="submit">Log-in</button>
+                    <button type="submit">{{ $t('loginButton') }}</button>
                 </div>
                 <div class="or-separator">
                     <hr class="dashedSeparator">
-                    <span class="or-text">OR</span>
+                    <span class="or-text">{{ $t('loginOr') }}</span>
                     <hr class="dashedSeparator">
                 </div>
                 <div class="centred" id="signupLink">
-                    <p>Don't have an account? <router-link to="/signup">Sign up</router-link></p>
+                    <p>{{ $t('loginNoAccount') }} <router-link to="/signup">{{ $t('loginSignupLink') }}</router-link></p>
                 </div>
             </form>
         </div>
@@ -204,4 +210,20 @@ const submitLogin = async () => {
         color: #FFFFFF;
         font-size: 14px;
     }
+
+    .top-nav-icons {
+    position: absolute;
+    top: 25px;
+    right: 30px;
+    z-index: 1000;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+/* Ila kan l-projet fih RTL (l-3arbiya), n-jibouha l-lisser */
+[dir="rtl"] .top-nav-icons {
+    right: auto;
+    left: 30px;
+}
 </style>

@@ -13,7 +13,7 @@ const route = useRoute();
 const router = useRouter();
 
 const getToken = () =>
-  localStorage.getItem('token') || localStorage.getItem('access') || localStorage.getItem('access_token');
+  sessionStorage.getItem('token') || sessionStorage.getItem('access') || sessionStorage.getItem('access_token');
 
 const query = ref('');
 const users = ref([]);

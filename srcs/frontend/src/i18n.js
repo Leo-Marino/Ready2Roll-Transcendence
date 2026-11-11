@@ -1,6 +1,6 @@
 import { ref } from 'vue';
 
-export const currentLang = ref(localStorage.getItem('lang') || 'en');
+export const currentLang = ref(sessionStorage.getItem('lang') || 'en');
 
 export const messages = {
   en: {
@@ -112,6 +112,27 @@ export const messages = {
     chatNoUsersFound: 'No users found',
     clickToMessage: 'Click to message',
     globalSearch: 'Global Search:',
+    "loginUsername": "Username",
+    loginPassword: "Password",
+    loginButton: "Log-in",
+    loginOr: "OR",
+    loginNoAccount: "Don't have an account?",
+    loginSignupLink: "Sign up",
+    signupUsername: "Username",
+    signupEmail: "Email",
+    signupPassword: "Password",
+    signupConfirmPassword: "Confirm Password",
+    signupButton: "Sign up",
+    signupOr: "OR",
+    signupHaveAccount: "Already have an account?",
+    signupLoginLink: "Log-in",
+    "signupErrorBanner": "Please fill in all required fields correctly.",
+    "roleBusiness": "business",
+    "roleStandard": "standard",
+    "signupLegalName": "Club / Venue Name",
+    "signupVatTax": "Tax ID / VAT Number",
+    "noCommentsYet": "No comments yet. Be the first!",
+    "notificationReacted": "reacted to your comment"
   },
   fr: {
     menu: 'Menu',
@@ -222,6 +243,28 @@ export const messages = {
     clickToMessage: 'Cliquez pour envoyer un message',
     chatSendButton: 'Envoyer',
     globalSearch: 'Recherche globale :',
+    "loginUsername": "Nom d'utilisateur",
+    "loginPassword": "Mot de passe",
+    "loginButton": "Se connecter",
+    "loginOr": "OU",
+    "loginNoAccount": "Vous n'avez pas de compte ?",
+    "loginSignupLink": "S'inscrire",
+
+    "signupUsername": "Nom d'utilisateur",
+    "signupEmail": "E-mail",
+    "signupPassword": "Mot de passe",
+    "signupConfirmPassword": "Confirmer le mot de passe",
+    "signupButton": "S'inscrire",
+    "signupOr": "OU",
+    "signupHaveAccount": "Vous avez déjà un compte ?",
+    "signupLoginLink": "Se connecter",
+    "signupErrorBanner": "Veuillez remplir correctement tous les champs obligatoires.",
+    "roleBusiness": "entreprise",
+    "roleStandard": "standard",
+    "signupLegalName": "Nom du club / lieu",
+    "signupVatTax": "Numéro de TVA / ID fiscal",
+    "noCommentsYet": "Aucun commentaire pour le moment. Soyez le premier !",
+    "notificationReacted": "a réagi à votre commentaire"
   },
   ar: {
     menu: 'القائمة',
@@ -315,8 +358,8 @@ export const messages = {
     insertMediaAlert: 'يرجى إدراج صورة أو فيديو قبل نشر الحدث!',
     capacityNegative: 'لا يمكن أن تكون السعة القصوى أقل من 0!',
     priceNegative: 'لا يمكن أن يكون سعر التذكرة أقل من 0!',
-    "Follow": "متابعة",
-    "Followed": "يتم متابعته",
+    Follow: "متابعة",
+    Followed : "يتم متابعته",
     notificationsTitle: 'الإشعارات',
     noNotificationsYet: 'لا توجد إشعارات بعد.',
     notifFollow: 'بدأ بمتابعتك',
@@ -332,12 +375,33 @@ export const messages = {
     chatNoUsersFound: 'لم يتم العثور على مستخدمين',
     clickToMessage: 'انقر للمراسلة',
     globalSearch: 'بحث عام:',
+    loginUsername: "اسم المستخدم",
+    loginPassword: "كلمة المرور",
+    loginButton: "تسجيل الدخول",
+    loginOr: "أو",
+    loginNoAccount: "ليس لديك حساب؟",
+    loginSignupLink: "إنشاء حساب",
+    signupUsername: "اسم المستخدم",
+    signupEmail: "البريد الإلكتروني",
+    signupPassword: "كلمة المرور",
+    signupConfirmPassword: "تأكيد كلمة المرور",
+    signupButton: "إنشاء حساب",
+    signupOr: "أو",
+    signupHaveAccount: "لديك حساب بالفعل؟",
+    signupLoginLink: "تسجيل الدخول",
+    "signupErrorBanner": "يرجى ملء جميع الحقول المطلوبة بشكل صحيح.",
+    "roleBusiness": "أعمال",
+    "roleStandard": "عادي",
+    "signupLegalName": "اسم النادي / المكان",
+    "signupVatTax": "الرقم الضريبي / القيمة المضافة",
+    "noCommentsYet": "لا توجد تعليقات بعد. كن أول من يعلق!",
+    "notificationReacted": "تفاعل مع تعليقك"
   }
 };
 
 export const setLanguage = (lang) => {
   currentLang.value = lang;
-  localStorage.setItem('lang', lang);
+  sessionStorage.setItem('lang', lang);
   document.documentElement.lang = lang;
   document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
 };

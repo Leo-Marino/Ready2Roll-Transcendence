@@ -24,7 +24,7 @@ let hasConnectedBefore = false;
 let wantOpen = false;
 
 const getToken = () =>
-  localStorage.getItem('token') || localStorage.getItem('access') || localStorage.getItem('access_token');
+  sessionStorage.getItem('token') || sessionStorage.getItem('access') || sessionStorage.getItem('access_token');
 
 const dispatch = (message) => {
   listeners.forEach((listener) => {
