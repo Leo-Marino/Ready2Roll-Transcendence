@@ -76,11 +76,11 @@ start:
 	docker vuejs_container
 
 save-database:
-	@docker compose exec django_backend sh -c 'set -a; . /vault/secrets/django.env; set +a; python manage.py dumpdata' > srcs/backend/demo_data.json
+	@docker compose exec django sh -c 'set -a; . /vault/secrets/django.env; set +a; python manage.py dumpdata' > srcs/backend/demo_data.json
 	@echo "Database has been saved! You are ready to roll!"
 
 restore-database:
-	@docker compose exec django_backend sh -c \
+	@docker compose exec django sh -c \
     	'set -a; . /vault/secrets/django.env; set +a; python manage.py loaddata demo_data.json'
 	@echo "Database is restored. You are ready to roll!"
 
