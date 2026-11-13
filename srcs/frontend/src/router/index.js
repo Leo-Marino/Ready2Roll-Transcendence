@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import CreateEvent from '../vue/ownerEventCreate.vue'
-import ViewEvent from '../vue/ownerEventView.vue'
 import LoginPage from '../vue/loginPage.vue'
 import SignupPage from '../vue/signupPage.vue'
 import HomePage from '../vue/HomePage.vue'

@@ -88,15 +88,14 @@ const fetchComments = async (eventId) => {
     });
     if (response.ok) {
       const data = await response.json();
-      if (eventId !== activeEventId.value) return; // user already scrolled to another video
-      // Only top-level comments (replies live inside their parent), newest first
+      if (eventId !== activeEventId.value) return;
       comments.value = data
         .filter(c => !c.parent_comment)
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       scrollCommentsToTop();
     }
   } catch (error) {
-    console.error('Errore durante il recupero dei commenti:', error);
+    // Silent catch: avoid console.error
   }
 };
 
@@ -120,6 +119,10 @@ const toggleReplies = (commentId) => {
 const postComment = async () => {
   const text = newCommentText.value.trim();
   if (!text || isSending.value || !activeEventId.value) return;
+  if (text.length > 500) {
+    alert($t('commentTooLong'));
+    return;
+  }
   const token = getToken();
   const parentId = replyingTo.value ? replyingTo.value.parentId : null;
   isSending.value = true;
@@ -134,8 +137,11 @@ const postComment = async () => {
       body: JSON.stringify({ content: text, parent_comment: parentId })
     });
 
+    const contentType = response.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+
     if (response.ok) {
-      const added = await response.json();
+      const added = isJson ? await response.json() : {};
       if (activeEvent.value) activeEvent.value.comments_count = (activeEvent.value.comments_count || 0) + 1;
       if (parentId) {
         const parent = comments.value.find(c => c.id === parentId);
@@ -146,22 +152,22 @@ const postComment = async () => {
           expandedReplies[parentId] = true;
         }
       } else {
-        // New comment goes at the TOP (newest first)
         comments.value.unshift(added);
         scrollCommentsToTop();
       }
       newCommentText.value = '';
       replyingTo.value = null;
     } else {
-      alert($t('commentSaveError'));
+      const errData = isJson ? await response.json() : {};
+      const firstErr = Object.values(errData)[0];
+      alert(Array.isArray(firstErr) ? firstErr[0] : (errData.error || errData.detail || $t('commentSaveError')));
     }
   } catch (error) {
-    console.error('Errore di rete durante l\'invio del commento:', error);
+    alert($t('networkError'));
   } finally {
     isSending.value = false;
   }
 };
-
 // --- Reactions on comments ---
 // Same list as Reaction.REACTION_CHOICES in the backend (type -> emoji)
 const REACTIONS = [
@@ -741,6 +747,7 @@ onBeforeUnmount(() => {
                   ref="commentInputRef"
                   type="text"
                   v-model="newCommentText"
+                  maxlength="500"
                   :placeholder="replyingTo ? $t('reply') + '...' : $t('addComment')"
                   @keyup.enter="postComment"
                   class="comment-input"

@@ -117,25 +117,32 @@ export default {
     toggleMapBox() {
       this.showMapBox = !this.showMapBox;
     },
-    handleFileUpload(event) {
+    async handleFileUpload(event) {
       const file = event.target.files[0];
-      const MAX_FILE_SIZE = 600 * 1024 * 1024; // 12 MB (under WAF 13.1 MB limit)
+      const MAX_FILE_SIZE = 600 * 1024 * 1024; // 600 MB
+      const ALLOWED_MEDIA_TYPES = [
+        'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+        'video/mp4', 'video/webm', 'video/quicktime'
+      ];
       if (file) {
+        if (!ALLOWED_MEDIA_TYPES.includes(file.type)) {
+          alert($t('invalidMediaType'));
+          event.target.value = '';
+          return;
+        }
         if (file.size > MAX_FILE_SIZE) {
           alert($t('fileTooLarge'));
           event.target.value = '';
           return;
         }
-       try {
-          // Attempt to create the object URL. If the file is unreadable
-          // (e.g., no permissions), this or the subsequent image load will fail.
+        try {
+          await file.slice(0, 1).arrayBuffer();
           this.uploadedMediaSrc = URL.createObjectURL(file);
           this.actualFile = file;
           this.mediaType = file.type.startsWith('video') ? 'video' : 'image';
-        } catch (error) {
-           // Gracefully handle the error without logging to console.error
-           alert("Unable to read the selected file. Please check file permissions.");
-           this.clearMedia();
+        } catch (err) {
+          alert($t('fileReadError'));
+          this.clearMedia();
         }
       }
       event.target.value = '';
@@ -146,7 +153,7 @@ export default {
       this.mediaType = null;
     },
     async handlePublish() {
-      if (!this.eventTitle || !this.descriptionText || !this.eventDate || !this.eventStatus) {
+      if (!this.eventTitle.trim() || !this.descriptionText.trim() || !this.eventDate || !this.eventStatus) {
         alert($t('allFieldsMandatory'));
         return;
       }
@@ -154,7 +161,10 @@ export default {
         alert($t('insertMediaAlert'));
         return;
       }
-
+      if (this.endTime && new Date(this.endTime) < new Date(this.eventDate)) {
+        alert($t('endBeforeStartError'));
+        return;
+      }
       if (this.maxCapacity !== '' && Number(this.maxCapacity) < 0) {
         alert($t('capacityNegative'));
         return;
@@ -167,19 +177,18 @@ export default {
       const token = sessionStorage.getItem('token') || sessionStorage.getItem('access') || sessionStorage.getItem('access_token');
       const formData = new FormData();
 
-      formData.append('title', this.eventTitle);
-      formData.append('description', this.descriptionText);
+      formData.append('title', this.eventTitle.trim());
+      formData.append('description', this.descriptionText.trim());
       formData.append('location', this.eventLocation);
       formData.append('event_date', this.eventDate);
       formData.append('status', this.eventStatus);
       this.selectedTags.forEach(tag => formData.append('tags', tag));
 
-      if (this.maxCapacity) formData.append('max_capacity', this.maxCapacity);
-      if (this.ticketPrice) formData.append('ticket_price', this.ticketPrice);
+      if (this.maxCapacity !== '' && this.maxCapacity !== null) formData.append('max_capacity', this.maxCapacity);
+      if (this.ticketPrice !== '' && this.ticketPrice !== null) formData.append('ticket_price', this.ticketPrice);
       if (this.endTime) formData.append('end_time', this.endTime);
-      if (this.eventDate) {
-        formData.append('start_time', this.eventDate);
-      }
+      if (this.eventDate) formData.append('start_time', this.eventDate);
+
       if (this.actualFile) {
         formData.append('media_file', this.actualFile);
         formData.append('media_type', this.mediaType);
@@ -201,12 +210,12 @@ export default {
 
         const contentType = response.headers.get('content-type') || '';
         const isJson = contentType.includes('application/json');
+        const data = isJson ? await response.json() : {};
 
         if (response.ok) {
-          const savedEvent = isJson ? await response.json() : {};
           sessionStorage.removeItem('editingEvent');
           alert(this.isEditMode ? $t('eventUpdated') : (this.eventStatus === 'scheduled' ? $t('eventScheduled') : $t('eventCreated')));
-          this.$emit('event-published', savedEvent);
+          this.$emit('event-published', data);
           this.goToVisualPage();
         }
         else if (response.status === 401) {
@@ -217,12 +226,10 @@ export default {
           alert($t('fileTooLarge'));
         }
         else if (response.status === 400) {
-          if (isJson) await response.json();
-          alert($t('validationError'));
+          alert(this.extractErrorMessage(data, $t('validationError')));
         }
         else {
-          if (isJson) await response.json();
-          alert($t('eventSaveError'));
+          alert(this.extractErrorMessage(data, $t('eventSaveError')));
         }
       } catch (error) {
         alert($t('networkError'));

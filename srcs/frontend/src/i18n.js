@@ -157,6 +157,12 @@ export const messages = {
     validationError: "A validation error was found; please check your input.",
     eventSaveError: "There was an error saving the event.",
     fileTooLarge: "File is too large! Maximum allowed size is 600 MB.",
+    fileReadError: "Unable to read the selected file. Please check file permissions.",
+    invalidImageType: "Invalid file format! Please select a valid image (JPG, PNG, GIF, or WEBP).",
+    invalidMediaType: "Invalid file format! Please select a valid image (JPG, PNG, WEBP) or video (MP4, WEBM).",
+    endBeforeStartError: "Event end time cannot be earlier than the start time.",
+    commentTooLong: "Comment cannot exceed 500 characters.",
+    titleTooLong: "Title cannot exceed 255 characters.",
   },
   fr: {
     menu: 'Menu',
@@ -313,6 +319,12 @@ export const messages = {
     validationError: "Erreur de validation ; veuillez vérifier vos champs.",
     eventSaveError: "Une erreur est survenue lors de l'enregistrement de l'événement.",
     fileTooLarge: "Le fichier est trop volumineux ! La taille maximale autorisée est de 600 Mo.",
+    fileReadError: "Impossible de lire le fichier sélectionné. Veuillez vérifier les permissions.",
+    invalidImageType: "Format de fichier invalide ! Veuillez sélectionner une image valide (JPG, PNG, GIF ou WEBP).",
+    invalidMediaType: "Format de fichier invalide ! Veuillez sélectionner une image (JPG, PNG, WEBP) ou une vidéo (MP4, WEBM).",
+    endBeforeStartError: "L'heure de fin ne peut pas être antérieure à l'heure de début.",
+    commentTooLong: "Le commentaire ne peut pas dépasser 500 caractères.",
+    titleTooLong: "Le titre ne peut pas dépasser 255 caractères.",
   },
   ar: {
     menu: 'القائمة',
@@ -468,6 +480,13 @@ export const messages = {
     validationError: "تم العثور على خطأ في التحقق؛ يرجى مراجعة المدخلات.",
     eventSaveError: "حدث خطأ أثناء حفظ الحدث.",
     fileTooLarge: "الملف كبير جداً! الحد الأقصى المسموح به هو 600 ميجابايت.",
+    fileTooLarge: "الملف كبير جداً! الحد الأقصى المسموح به هو 600 ميجابايت.",
+    fileReadError: "تعذر قراءة الملف المحدد. يرجى التحقق من صلاحيات الملف.",
+    invalidImageType: "صيغة الملف غير صالحة! يرجى اختيار صورة صالحة (JPG أو PNG أو GIF أو WEBP).",
+    invalidMediaType: "صيغة الملف غير صالحة! يرجى اختيار صورة أو فيديو صالح (MP4 أو WEBM).",
+    endBeforeStartError: "لا يمكن أن يكون وقت انتهاء الحدث قبل وقت البدء.",
+    commentTooLong: "لا يمكن أن يتجاوز التعليق 500 حرف.",
+    titleTooLong: "لا يمكن أن يتجاوز العنوان 255 حرفاً.",
   }
 };
 
