@@ -7,6 +7,7 @@ import ChatView from '../vue/ChatView.vue';
 import LegalView from '../vue/LegalView.vue'
 import NotFound from '../vue/NotFound.vue'
 import ProfileView from '../vue/ProfileView.vue';
+import SubscriptionsView from '../vue/SubscriptionsView.vue';
 import OtherUserProfileView from '../vue/OtherUserProfileView.vue';
 import SearchView from '../vue/SearchView.vue'
 
@@ -39,6 +40,13 @@ const routes = [
     name: 'discover',
     component: HomePage,
     props: { mode: 'discover' },
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/subscriptions',
+    name: 'subscriptions',
+    component: HomePage,
+    props: { mode: 'following' },
     meta: { requiresAuth: true }
   },
   {

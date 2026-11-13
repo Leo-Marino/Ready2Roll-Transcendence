@@ -31,7 +31,7 @@ const dispatch = (message) => {
     try {
       listener(message);
     } catch (error) {
-      console.error('Social socket listener failed:', error);
+      // console.error('Social socket listener failed:', error);
     }
   });
 };
@@ -64,7 +64,6 @@ const connect = () => {
     try {
       dispatch(JSON.parse(event.data));
     } catch (error) {
-      console.error('Invalid social socket message:', error);
     }
   };
 

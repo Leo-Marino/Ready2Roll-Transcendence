@@ -75,7 +75,6 @@ const openFollowModal = async (type) => {
       }));
     }
   } catch (error) {
-    console.error("Error fetching follow list:", error);
   } finally {
     isFollowListLoading.value = false;
   }
@@ -160,7 +159,6 @@ const fetchMyEvents = async () => {
       myEvents.value = await response.json();
     }
   } catch (error) {
-    console.error('Impossibile caricare gli eventi', error);
   }
 };
 
@@ -186,11 +184,9 @@ const deleteEvent = async (event) => {
       alert($t('eventDeleted'));
     } else {
       const errData = await response.json();
-      console.error("Error deleting event:", errData);
       alert($t('eventDeleteFailed'));
     }
   } catch (error) {
-    console.error("Network error during delete:", error);
     alert($t ('networkError'));
   }
 };
@@ -220,7 +216,6 @@ const fetchLikedEvents = async () => {
       likedEvents.value = await response.json();
     }
   } catch (error) {
-    console.error('Impossible to uplod the liked video', error);
   }
 };
 
@@ -308,7 +303,6 @@ onMounted(async () => {
     }
     fetchLikedEvents();
   } catch (error) {
-    console.error('Errore di fetch del profilo', error);
   }
 });
 

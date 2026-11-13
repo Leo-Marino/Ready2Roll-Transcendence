@@ -48,7 +48,6 @@ watch(searchQuery, async (newQuery) => {
       searchResults.value = [];
     }
   } catch (err) {
-    console.error('Error searching users:', err);
     searchResults.value = [];
   }
 });
@@ -122,7 +121,6 @@ const fetchContacts = async () => {
       sortContacts();
     }
   } catch (error) {
-    console.error('Error fetching contacts:', error);
   }
 };
 
@@ -170,7 +168,6 @@ const selectContact = async (contact) => {
   };
 
   socket.onerror = (error) => {
-    console.error("❌ WebSocket Error:", error);
   };
 
   socket.onclose = (event) => {

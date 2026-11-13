@@ -95,7 +95,6 @@ const fetchComments = async (eventId) => {
       scrollCommentsToTop();
     }
   } catch (error) {
-    console.error('Errore durante il recupero dei commenti:', error);
   }
 };
 
@@ -153,7 +152,6 @@ const postComment = async () => {
       alert($t('commentSaveError'));
     }
   } catch (error) {
-    console.error('Errore di rete durante l\'invio del commento:', error);
   } finally {
     isSending.value = false;
   }
@@ -220,7 +218,6 @@ const reactToComment = async (comment, type) => {
       comment.reactions_count = data.reactions_count;
     }
   } catch (error) {
-    console.error('Errore durante la reaction:', error);
   }
 };
 // reaction
@@ -247,7 +244,6 @@ const toggleLike = async () => {
       ev.likes_count = data.likes_count;
     }
   } catch (error) {
-    console.error('Like failed:', error);
   }
 };
 
@@ -262,7 +258,6 @@ const toggleSubscribe = async () => {
       videos.value.forEach((v) => { if (v.owner.id === ev.owner.id) v.owner.is_following = data.is_following; });
     }
   } catch (error) {
-    console.error('Subscribe failed:', error);
   }
 };
 
@@ -296,7 +291,6 @@ const fetchFeed = async () => {
       wrapperRefs.length = 0;
     }
   } catch (error) {
-    console.error('Could not load the feed:', error);
   } finally {
     feedLoading.value = false;
   }
