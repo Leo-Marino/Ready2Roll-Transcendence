@@ -35,7 +35,6 @@ loadsecrets: # 4. Load secrets in vault
 #	shred -u ./r2r-secrets.json
 
 setup:
-	@mkdir -p $(DATA_DIR)/ready2roll
 	@mkdir -p $(DATA_DIR)/pg_data
 	@mkdir -p $(DATA_DIR)/minio_data
 	@mkdir -p $(DATA_DIR)redis_data
