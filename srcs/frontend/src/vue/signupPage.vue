@@ -255,7 +255,6 @@ const submitSignup = async () => {
                 </ul>
             </div>
         </div>
-
         <!-- Campi Extra per business -->
         <div v-if="type_of_user === 'business'">
         <div class="inputFieldDiv">
@@ -401,16 +400,6 @@ display: flex;
 flex-direction: column;
 }
 
-/* .tags-label {
-font-size: 11px;
-font-family: "Huninn", sans-serif;
-color: rgba(255, 255, 255, 0.75);
-padding: 4px 0 4px 0;
-margin-bottom: 4px;
-text-align: left;
-margin-left: 4px;
-} */
-
 .inputFieldDiv input {
 width: 100%;
 box-sizing: border-box;
@@ -430,7 +419,6 @@ color: #FFFFFF;
 opacity: 1;
 }
 
-/* Stili per campi in errore (bordo rosso luminoso) */
 .inputFieldDiv input.input-error {
 border: 1px solid #ff4d4d !important;
 background: rgba(255, 77, 77, 0.15) !important;
@@ -628,7 +616,6 @@ backdrop-filter: blur(4px);
     align-items: center;
 }
 
-/* Ila kan l-projet fih RTL (l-3arbiya), n-jibouha l-lisser */
 [dir="rtl"] .top-nav-icons {
     right: auto;
     left: 30px;
@@ -636,7 +623,7 @@ backdrop-filter: blur(4px);
 
 [dir="rtl"] .password-dropdown-box {
   left: auto;
-  right: 105%; /* Kay-rje3ha t-ban f l-issser f RTL */
+  right: 105%;
 }
 
 [dir="rtl"] .password-dropdown-box::before {
@@ -650,11 +637,47 @@ backdrop-filter: blur(4px);
 }
 
 [dir="rtl"] .password-checklist {
-  text-align: right; /* Bach ijiw n-n9ati (bullets) mn l-imin */
+  text-align: right;
 }
 
 [dir="rtl"] .password-box-title {
   text-align: right;
+}
+
+@media (max-width: 768px) {
+  .signup-container {
+    flex-direction: column;
+    margin: 120px auto 40px auto;
+    gap: 30px;
+    padding: 0 20px;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  #logoDiv {
+    width: 200px;
+    height: 200px;
+    margin: 0 auto;
+  }
+
+  #loginForm {
+    width: 100%;
+    max-width: 400px;
+    padding: 25px 15px;
+  }
+
+  .password-dropdown-box,
+  [dir="rtl"] .password-dropdown-box {
+    position: static;
+    transform: none;
+    width: 100%;
+    margin-top: 10px;
+    box-sizing: border-box;
+  }
+
+  .password-dropdown-box::before {
+    display: none;
+  }
 }
 
 </style>

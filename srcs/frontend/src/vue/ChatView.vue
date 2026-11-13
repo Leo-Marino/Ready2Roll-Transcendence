@@ -4,9 +4,10 @@ import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useSocialSocket } from '../composables/useSocialSocket';
 import { t as $t } from '../i18n';
 import { currentLang } from '../i18n';
+import LanguageSwitcher from './LanguageSwitcher.vue';
 
-const contacts = ref([]);          // Contatti con chat attive
-const searchResults = ref([]);     // Risultati della ricerca globale
+const contacts = ref([]);
+const searchResults = ref([]);
 const activeContact = ref(null);
 const messages = ref([]);
 const newMessage = ref('');
@@ -14,7 +15,6 @@ let socket = null;
 let pollTimer = null;
 const searchQuery = ref('');
 
-// Cerca nel database quando l'utente digita nella search bar
 watch(searchQuery, async (newQuery) => {
   if (!newQuery || !newQuery.trim()) {
     searchResults.value = [];
@@ -27,17 +27,13 @@ watch(searchQuery, async (newQuery) => {
     });
     if (res.ok) {
       const data = await res.json();
-      // Escludiamo l'admin dai risultati della ricerca
       const filteredData = data.filter(u => u.username?.toLowerCase() !== 'admin' && u.email?.toLowerCase() !== 'admin');
-
       searchResults.value = filteredData.map(u => {
         // CLEAN NGINX PATH FORMATTING
         let finalImg = null;
         if (u.avatar_url) {
            finalImg = u.avatar_url.startsWith('http') || u.avatar_url.startsWith('/media/') ? u.avatar_url : `/media/${u.avatar_url}`;
-//           finalImg = u.avatar_url.startsWith('http') || u.avatar_url.startsWith('/media/') ? u.avatar_url : `/media/${u.avatar_url}`;
         }
-
         return {
           id: u.id,
           name: u.username,
@@ -85,8 +81,6 @@ const getToken = () =>
   sessionStorage.getItem('access') ||
   sessionStorage.getItem('access_token');
 
-// Fetch contacts attivi
-// Fetch contacts attivi
 const fetchContacts = async () => {
   const token = getToken();
   try {
@@ -106,7 +100,13 @@ const fetchContacts = async () => {
           id: u.id,
           name: u.username,
           img: finalImg,
-          lastMsg: u.lastMsg || '',
+          lastMsg: (() => {
+            let m = u.lastMsg || '';
+            if (m.startsWith('You: ')) {
+              m = m.replace('You: ', $t('youPrefix'));
+            }
+            return m;
+          })(),
           lastMsgAt: u.lastMsgAt || null,
           unread: u.unread || 0,
           isOnline: !!u.is_online
@@ -126,11 +126,10 @@ const fetchContacts = async () => {
   }
 };
 
-// Seleziona un contatto dalla ricerca o dalla lista e pulisce la ricerca
 const selectContact = async (contact) => {
   activeContact.value = contact;
   contact.unread = 0;
-  searchQuery.value = ''; // Pulisce la barra di ricerca quando si seleziona un utente
+  searchQuery.value = '';
   searchResults.value = [];
 
   if (socket) {
@@ -161,7 +160,7 @@ const selectContact = async (contact) => {
 
     const c = contacts.value.find(x => x.id === activeContact.value?.id);
     if (c) {
-      c.lastMsg = (incomingMsg.isMe ? 'You: ' : '') + incomingMsg.text;
+      c.lastMsg = (incomingMsg.isMe ? $t('youPrefix') : '') + incomingMsg.text;
       c.lastMsgAt = incomingMsg.created_at;
       c.unread = 0;
       sortContacts();
@@ -202,7 +201,6 @@ useSocialSocket((message) => {
     if (contact) {
       // Map the new name (checks all possible backend keys)
       contact.name = data.username || data['user.name'] || data.name || contact.name;
-
       // Map the new avatar
     const newAvatar = data.user_avatar || data.avatar_url || data.avatar;
       if (newAvatar) {
@@ -212,8 +210,6 @@ useSocialSocket((message) => {
             : `/media/${newAvatar}`;
       }
     }
-
-    // 2. Also update the chat header if you are currently talking to them!
     if (activeContact.value && activeContact.value.id === targetId) {
       activeContact.value.name = data.username || data['user.name'] || data.name || activeContact.value.name;
     }
@@ -252,6 +248,7 @@ onBeforeUnmount(() => {
         <span class="logo-text">Ready2Roll</span>
       </div>
       <div class="nav-icons">
+        <LanguageSwitcher />
         <router-link to="/home" class="nav-icon-link">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
             <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
@@ -311,7 +308,7 @@ onBeforeUnmount(() => {
             <h2>{{ activeContact.name }}</h2>
             <span class="online-pill" :class="{ online: activeContact.isOnline }">
               <span class="online-dot"></span>
-              {{ activeContact.isOnline ? $t('rollyStatusOnline') : 'offline' }}
+              {{ activeContact.isOnline ? $t('UserStatusOnline') : $t('UserStatusOffline') }}
             </span>
           </div>
           <h2 v-else>{{ $t('chatSelectContact') }}</h2>
@@ -343,7 +340,7 @@ onBeforeUnmount(() => {
 .app-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100dvh;
   min-height: 0;
   color: #FFFFFF;
   font-family: var(--font-main);
@@ -361,31 +358,36 @@ onBeforeUnmount(() => {
 }
 .logo { display: flex; align-items: center; gap: 10px; cursor: pointer; }
 .nav-logo-img { height: 35px; width: auto; object-fit: contain; }
-.logo-text { font-family: "Bruno Ace", sans-serif; font-weight: bold; font-size: 1.2rem; }
+.logo-text {
+  display: inline-block !important;
+  font-family: "Bruno Ace", sans-serif;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
 .nav-icons { display: flex; gap: 20px; align-items: center; }
 .nav-icon { width: 26px; height: 26px; color: #FFFFFF; cursor: pointer; transition: all 0.3s ease; }
 .nav-icon:hover { color: #00f2fe; transform: scale(1.15); }
 .nav-icon-link { display: flex; align-items: center; }
 .main-content {
-  display: flex;
-  flex-direction: row;
+  display: flex !important;
+  flex-direction: row !important;
   gap: 15px;
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
   width: 100%;
-  overflow: hidden;
+  overflow: hidden !important;
 }
 
 /* Keep the contacts panel at a stable width, even when a message is very long. */
 .left-sidebar {
+  display: flex !important;
+  flex-direction: column !important;
   flex: 0 0 280px;
-  width: 280px;
-  min-width: 280px;
-  max-width: 280px;
+  width: 280px !important;
+  min-width: 280px !important;
+  max-width: 280px !important;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
   gap: 15px;
   overflow-x: hidden;
   overflow-y: auto;
@@ -492,31 +494,103 @@ ul { list-style: none; padding: 0; margin: 0; }
   box-shadow: 0 0 6px #3dffa0;
 }
 
-/* On smaller screens, keep both panels usable without horizontal squeezing. */
+@media (max-width: 1024px) {
+  .left-sidebar {
+    flex: 0 0 220px !important;
+    width: 220px !important;
+    min-width: 220px !important;
+    max-width: 220px !important;
+  }
+}
+
 @media (max-width: 760px) {
-  .app-container {
-    padding: 8px;
+    .main-content {
+      flex-direction: column !important;
+      gap: 8px;
+  }
+  .navbar {
+    height: 50px;
+    margin-bottom: 8px;
+    padding: 8px 12px;
+  }
+  .logo-text {
+    display: inline-block !important;
+    font-size: 0.95rem;
   }
   .main-content {
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
   }
   .left-sidebar {
-    flex: 0 0 180px;
-    width: 100%;
-    min-width: 0;
-    max-width: none;
-    max-height: 38%;
+    display: flex !important; /* باش ما يغبرش بسبب الـ CSS العام */
+    flex: 0 0 210px;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    max-height: 36vh;
+    padding: 10px;
+    gap: 8px;
+  }
+  .left-sidebar h3 {
+    margin: 0;
+    font-size: 0.95rem;
+  }
+  .left-sidebar ul {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0;
+  }
+  .contact-item {
+    padding: 6px 8px;
+  }
+  .avatar {
+    width: 36px;
+    height: 36px;
   }
   .chat-container {
-    flex: 1 1 auto;
+    flex: 1 1 0;
     width: 100%;
+    min-height: 0;
+    padding: 10px;
   }
-  .message-bubble {
-    max-width: 88%;
+  .chat-header {
+    padding-bottom: 8px;
+    margin-bottom: 8px;
   }
-  .logo-text {
+  .chat-header h2 {
     font-size: 1rem;
   }
+  .message-bubble {
+    max-width: 85%;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+  .chat-input-area {
+    margin-top: 8px;
+    padding-top: 8px;
+    gap: 6px;
+  }
+  .chat-input-area input {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+  .chat-input-area button {
+    padding: 0 14px;
+    font-size: 0.85rem;
+  }
 }
+
+[dir="rtl"] .navbar,
+[dir="rtl"] .contact-item,
+[dir="rtl"] .chat-header-user,
+[dir="rtl"] .chat-input-area {
+  flex-direction: row-reverse;
+}
+[dir="rtl"] .contact-info,
+[dir="rtl"] .left-sidebar h3,
+[dir="rtl"] .chat-header {
+  text-align: right;
+}
+
+
 </style>

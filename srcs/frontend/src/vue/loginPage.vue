@@ -240,5 +240,17 @@ const submitLogin = async () => {
       color: rgba(255, 255, 255, 0.7);
       font-family: var(--font-main);
   }
+@media (max-width: 480px) {
+  #logoDiv {
+    width: 160px;
+    height: 160px;
+    margin: 80px auto 20px auto;
+  }
+  #loginForm {
+    width: 92%;
+    max-width: 350px;
+    height: auto;
+  }
+}
 
 </style>
