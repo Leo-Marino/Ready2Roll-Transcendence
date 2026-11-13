@@ -343,7 +343,7 @@ onBeforeUnmount(() => {
 .app-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100dvh;
   min-height: 0;
   color: #FFFFFF;
   font-family: var(--font-main);
@@ -492,31 +492,79 @@ ul { list-style: none; padding: 0; margin: 0; }
   box-shadow: 0 0 6px #3dffa0;
 }
 
-/* On smaller screens, keep both panels usable without horizontal squeezing. */
 @media (max-width: 760px) {
   .app-container {
     padding: 8px;
   }
-  .main-content {
-    flex-direction: column;
-    gap: 10px;
-  }
-  .left-sidebar {
-    flex: 0 0 180px;
-    width: 100%;
-    min-width: 0;
-    max-width: none;
-    max-height: 38%;
-  }
-  .chat-container {
-    flex: 1 1 auto;
-    width: 100%;
-  }
-  .message-bubble {
-    max-width: 88%;
+  .navbar {
+    height: 50px;
+    margin-bottom: 8px;
+    padding: 8px 12px;
   }
   .logo-text {
+    display: inline-block !important;
+    font-size: 0.95rem;
+  }
+  .main-content {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .left-sidebar {
+    display: flex !important; /* باش ما يغبرش بسبب الـ CSS العام */
+    flex: 0 0 210px;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    max-height: 36vh;
+    padding: 10px;
+    gap: 8px;
+  }
+  .left-sidebar h3 {
+    margin: 0;
+    font-size: 0.95rem;
+  }
+  .left-sidebar ul {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0;
+  }
+  .contact-item {
+    padding: 6px 8px;
+  }
+  .avatar {
+    width: 36px;
+    height: 36px;
+  }
+  .chat-container {
+    flex: 1 1 0;
+    width: 100%;
+    min-height: 0;
+    padding: 10px;
+  }
+  .chat-header {
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+  }
+  .chat-header h2 {
     font-size: 1rem;
+  }
+  .message-bubble {
+    max-width: 85%;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+  .chat-input-area {
+    margin-top: 8px;
+    padding-top: 8px;
+    gap: 6px;
+  }
+  .chat-input-area input {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+  .chat-input-area button {
+    padding: 0 14px;
+    font-size: 0.85rem;
   }
 }
 </style>

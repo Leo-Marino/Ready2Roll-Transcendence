@@ -1175,5 +1175,21 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
     transform: translate(-50%, -50%);
   }
 }
+@media (max-width: 1024px) {
+  .feed-container {
+    width: 100%;
+    max-width: 100%;
+    height: 70vh;
+    flex-shrink: 0;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+  }
+
+  .video-wrapper {
+    height: 100%;
+    min-height: 100%;
+    flex-shrink: 0;
+  }
+}
 
 </style>

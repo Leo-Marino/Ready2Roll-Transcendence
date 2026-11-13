@@ -657,4 +657,40 @@ backdrop-filter: blur(4px);
   text-align: right;
 }
 
+@media (max-width: 768px) {
+  .signup-container {
+    flex-direction: column;
+    margin: 120px auto 40px auto; /* زدنا الفراغ الفوق (120px) والتحت */
+    gap: 30px;
+    padding: 0 20px; /* باش مايلصقش الفورم فـ الجناب */
+    box-sizing: border-box;
+    width: 100%; /* باش الفورم ياخد العرض كامل */
+  }
+
+  #logoDiv {
+    width: 200px; /* كبرنا اللوغو شوية باش يبان مزيان */
+    height: 200px;
+    margin: 0 auto;
+  }
+
+  #loginForm {
+    width: 100%; /* الفورم كياخد 100% من العرض اللي بقا */
+    max-width: 400px; /* ولكن ماكيفوتش 400px باش مايجيش عريض بزاف فـ الطابليت */
+    padding: 25px 15px; /* صغرنا الفراغ لداخل باش نربحو البلاصة */
+  }
+
+  .password-dropdown-box,
+  [dir="rtl"] .password-dropdown-box {
+    position: static;
+    transform: none;
+    width: 100%;
+    margin-top: 10px;
+    box-sizing: border-box; /* ضرورية باش ميخرجش على الإطار */
+  }
+
+  .password-dropdown-box::before {
+    display: none; /* حيدنا السهم حيت ماقاش عندو معنى ملي البوكس ولا تحت Input */
+  }
+}
+
 </style>
