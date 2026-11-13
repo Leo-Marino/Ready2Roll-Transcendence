@@ -10,7 +10,7 @@ all: down up
 vault-status:
 	$(COMPOSE) exec vault vault status
 
-keygen: # 1. Inititialize vault and create token keys
+keygen: # 1. Initialize vault and create token keys
 	$(COMPOSE) exec vault vault operator init -key-shares=5 -key-threshold=2
 
 unseal: # 2. Unseal vault
@@ -35,7 +35,7 @@ loadsecrets: # 4. Load secrets in vault
 #	shred -u ./r2r-secrets.json
 
 setup:
-	@mkdir -p /sgoinfre/$(USER)/ready2roll
+	@mkdir -p $(DATA_DIR)/ready2roll
 	@mkdir -p $(DATA_DIR)/pg_data
 	@mkdir -p $(DATA_DIR)/minio_data
 	@mkdir -p $(DATA_DIR)redis_data
@@ -45,6 +45,10 @@ up: setup
 	$(COMPOSE) build --parallel
 	$(COMPOSE) up -d
 	@echo "login at https://localhost:8443/login"
+
+run-app: up # Runs a script to automatically unseal vault
+	chmod +x vault-bootstrap.sh
+	./vault-bootstrap.sh
 
 down:
 	$(COMPOSE) down
@@ -70,14 +74,13 @@ migration-clean: clear
 
 start:
 	docker vuejs_container
-# 	@echo Access to https://"$(USER)".42.fr
 
 save-database:
-	@docker compose exec django_backend sh -c 'set -a; . /vault/secrets/django.env; set +a; python manage.py dumpdata' > srcs/backend/demo_data.json
+	@docker compose exec django sh -c 'set -a; . /vault/secrets/django.env; set +a; python manage.py dumpdata' > srcs/backend/demo_data.json
 	@echo "Database has been saved! You are ready to roll!"
 
 restore-database:
-	@docker compose exec django_backend sh -c \
+	@docker compose exec django sh -c \
     	'set -a; . /vault/secrets/django.env; set +a; python manage.py loaddata demo_data.json'
 	@echo "Database is restored. You are ready to roll!"
 
@@ -89,7 +92,6 @@ save-media:
 restore-media: setup
 	@echo "Restoring MinIO media..."
 	@tar -xzvf media_backup.tar.gz -C /sgoinfre/$(USER)/ready2roll/minio_data
-#	@rm -rf media_backup.tar.gz
 	@echo "Media restored successfully!"
 
 save-all: save-database save-media
@@ -110,4 +112,4 @@ cleardatabase: fclean
 
 re: fclean up
 
-.PHONY: all up down restart clean fclean re keygen unseal enable loadsecrets
+.PHONY: all up down restart clean fclean re keygen unseal enable loadsecrets run-app

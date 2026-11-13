@@ -5,7 +5,6 @@ RUN npm install && npm install zod
 COPY frontend/. .
 EXPOSE 5173
 CMD ["npm", "run", "dev", "--", "--host"]
-# RUN npm run build
 
 # =========================================
 # Stage 2: Prepare Nginx to Serve Static Files

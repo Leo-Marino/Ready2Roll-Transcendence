@@ -16,9 +16,9 @@ class TagNameField(serializers.SlugRelatedField):
     def to_internal_value(self, data):
         name = str(data).strip().lower()
         if not name:
-            raise serializers.ValidationError("Il tag non può essere vuoto.")
+            raise serializers.ValidationError("Tag cannot be empty.")
         if len(name) > 55:
-            raise serializers.ValidationError("Il tag può avere al massimo 55 caratteri.")
+            raise serializers.ValidationError("Tag cannot exceed 55 characters.")
         tag, _ = self.get_queryset().get_or_create(tag_name=name)
         return tag
 

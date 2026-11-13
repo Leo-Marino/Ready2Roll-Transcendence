@@ -152,6 +152,14 @@ export const messages = {
     "term": "Terms of Service",
     "privacy": "Privacy Policy",
     'youPrefix': 'You: ',
+    commentSaveError: "Could not save comment.",
+    eventDeleted: "Event deleted successfully!",
+    eventDeleteFailed: "Failed to delete the event.",
+    profileSaveError: "Error saving profile.",
+    unauthorizedError: "Unauthorized user; please log in again.",
+    validationError: "A validation error was found; please check your input.",
+    eventSaveError: "There was an error saving the event.",
+    fileTooLarge: "File is too large! Maximum allowed size is 600 MB.",
   },
   fr: {
     menu: 'Menu',
@@ -302,7 +310,15 @@ export const messages = {
     passReqSpecial: "Au moins un caractère spécial (!@#$%^&*)",
     "term": "Conditions d'Utilisation",
     "privacy": "Politique de Confidentialité",
-    'youPrefix': 'Vous : '
+    'youPrefix': 'Vous : ',
+    commentSaveError: "Impossible d'enregistrer le commentaire.",
+    eventDeleted: "Événement supprimé avec succès !",
+    eventDeleteFailed: "Échec de la suppression de l'événement.",
+    profileSaveError: "Erreur lors de l'enregistrement du profil.",
+    unauthorizedError: "Utilisateur non autorisé ; veuillez vous reconnecter.",
+    validationError: "Erreur de validation ; veuillez vérifier vos champs.",
+    eventSaveError: "Une erreur est survenue lors de l'enregistrement de l'événement.",
+    fileTooLarge: "Le fichier est trop volumineux ! La taille maximale autorisée est de 600 Mo.",
   },
   ar: {
     menu: 'القائمة',
@@ -452,7 +468,15 @@ export const messages = {
     passReqSpecial: "رمز خاص واحد على الأقل (!@#$%^&*)",
     "term": "شروط الخدمة",
     "privacy": "سياسة الخصوصية",
-    youPrefix: 'أنت: '
+    youPrefix: 'أنت: ',
+    commentSaveError: "تعذر حفظ التعليق.",
+    eventDeleted: "تم حذف الحدث بنجاح!",
+    eventDeleteFailed: "فشل حذف الحدث.",
+    profileSaveError: "حدث خطأ أثناء حفظ الملف الشخصي.",
+    unauthorizedError: "مستخدم غير مصرح له؛ يرجى تسجيل الدخول مرة أخرى.",
+    validationError: "تم العثور على خطأ في التحقق؛ يرجى مراجعة المدخلات.",
+    eventSaveError: "حدث خطأ أثناء حفظ الحدث.",
+    fileTooLarge: "الملف كبير جداً! الحد الأقصى المسموح به هو 600 ميجابايت.",
   }
 };
 

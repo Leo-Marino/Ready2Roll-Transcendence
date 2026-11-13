@@ -119,10 +119,24 @@ export default {
     },
     handleFileUpload(event) {
       const file = event.target.files[0];
+      const MAX_FILE_SIZE = 600 * 1024 * 1024; // 12 MB (under WAF 13.1 MB limit)
       if (file) {
-        this.uploadedMediaSrc = URL.createObjectURL(file);
-        this.actualFile = file;
-        this.mediaType = file.type.startsWith('video') ? 'video' : 'image';
+        if (file.size > MAX_FILE_SIZE) {
+          alert($t('fileTooLarge'));
+          event.target.value = '';
+          return;
+        }
+       try {
+          // Attempt to create the object URL. If the file is unreadable
+          // (e.g., no permissions), this or the subsequent image load will fail.
+          this.uploadedMediaSrc = URL.createObjectURL(file);
+          this.actualFile = file;
+          this.mediaType = file.type.startsWith('video') ? 'video' : 'image';
+        } catch (error) {
+           // Gracefully handle the error without logging to console.error
+           alert("Unable to read the selected file. Please check file permissions.");
+           this.clearMedia();
+        }
       }
       event.target.value = '';
     },
@@ -186,29 +200,32 @@ export default {
           body: formData
         });
 
+        const contentType = response.headers.get('content-type') || '';
+        const isJson = contentType.includes('application/json');
+
         if (response.ok) {
-          const savedEvent = await response.json();
+          const savedEvent = isJson ? await response.json() : {};
           sessionStorage.removeItem('editingEvent');
           alert(this.isEditMode ? $t('eventUpdated') : (this.eventStatus === 'scheduled' ? $t('eventScheduled') : $t('eventCreated')));
           this.$emit('event-published', savedEvent);
           this.goToVisualPage();
         }
         else if (response.status === 401) {
-          alert("Unauthorized user; please log in again");
+          alert($t('unauthorizedError'));
           this.$router.push('/login');
         }
+        else if (response.status === 413 || response.status === 403) {
+          alert($t('fileTooLarge'));
+        }
         else if (response.status === 400) {
-          const errorData = await response.json();
-          console.error("Validation error: ", errorData);
-          alert("A validation error was found; please check your input");
+          if (isJson) await response.json();
+          alert($t('validationError'));
         }
         else {
-          const errorData = await response.json();
-          console.error("Backend error:", errorData);
-          alert("There was an error saving the event");
+          if (isJson) await response.json();
+          alert($t('eventSaveError'));
         }
       } catch (error) {
-        console.error("Network error", error);
         alert($t('networkError'));
       }
     },
@@ -1007,6 +1024,78 @@ textarea::placeholder {
   transform: translateY(-2px);
 }
 
+
+/* Event tags: same Ready2Roll glass + cyan badge style as the profile page */
+.event-tags-group {
+  margin-top: 4px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.tags-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tags-count,
+.tags-hint {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.62rem;
+}
+
+.tag-selector-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 7px;
+}
+
+.selectable-tag-pill {
+  appearance: none;
+  cursor: pointer;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 14px;
+  font: inherit;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.35px;
+  text-transform: uppercase;
+  backdrop-filter: blur(5px);
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.selectable-tag-pill:hover {
+  transform: translateY(-2px);
+}
+
+.business-badge {
+  background: rgba(0, 242, 254, 0.16);
+  border: 1px solid #00f2fe;
+  color: #00f2fe;
+  box-shadow: 0 0 9px rgba(0, 242, 254, 0.22);
+}
+
+.standard-badge {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.tag-pill-icon {
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.tags-error {
+  color: #ff9292;
+  font-size: 0.65rem;
+}
 
 /* Event tags: same Ready2Roll glass + cyan badge style as the profile page */
 .event-tags-group {

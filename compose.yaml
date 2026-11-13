@@ -2,12 +2,12 @@
 # Ready2Roll — compose.yaml (WAF + Vault hardened, school-machine variant)
 #
 # Traffic path:  browser -> waf (ModSecurity+CRS, TLS) -> nginx (internal
-#                router) -> vuejs-prod / django_backend / minio (/media/)
+#                router) -> vuejs / django / minio (/media/)
 #
 # Networks (internal: true = no route to the outside, nothing published):
 #   edge    : waf only. The ONLY network with published app ports.
-#   app     : waf, nginx, vuejs-prod, django_backend, minio_storage, minio_setup
-#   data    : django_backend, postgre_db, redis_cache, pgadmin
+#   app     : waf, nginx, vuejs, django, minio_storage, minio_setup
+#   data    : django, postgre_db, redis_cache, pgadmin
 #   secrets : vault, vault-agent   (no app container is on this network)
 #   vaultdb : vault <-> postgre_db only (Database secrets engine, step 9)
 #   mgmt    : pgadmin only, so its loopback port can publish (debug profile)
@@ -48,7 +48,9 @@ services:
       ANOMALY_INBOUND: "5"
       ANOMALY_OUTBOUND: "4"
       MODSEC_AUDIT_LOG_FORMAT: JSON
-      MODSEC_REQ_BODY_LIMIT: "13107200"         # poster uploads: set to your real max (bytes)
+      CLIENT_MAX_BODY_SIZE: "600m"
+      MODSEC_REQ_BODY_LIMIT: "629145600"         # poster uploads: set to your real max (bytes)
+      PROXY_READ_TIMEOUT: "300"
     volumes:
       - ./srcs/waf/certs/server.crt:/etc/nginx/conf/server.crt:ro
       - ./srcs/waf/certs/server.key:/etc/nginx/conf/server.key:ro
@@ -72,14 +74,14 @@ services:
     networks:
       - app
     depends_on:
-      - vuejs-prod
-      - django_backend
+      - vuejs
+      - django
       - minio_storage
 
 #---------------------------------------------------------------------------
 # Vue.js — frontend (still the dev build)
 #---------------------------------------------------------------------------
-  vuejs-prod:
+  vuejs:
     build:
       context: ./srcs
       dockerfile: frontend/Dockerfile
@@ -117,7 +119,6 @@ services:
     networks:
       - secrets
       - vaultdb
-    # No published port: docker compose exec vault vault ...
 
 #---------------------------------------------------------------------------
 # Vault Agent — AppRole login, renders secrets to two separate tmpfs volumes
@@ -144,13 +145,13 @@ services:
 #---------------------------------------------------------------------------
 # Django — backend. No env_file, no published port, no route to Vault.
 #---------------------------------------------------------------------------
-  django_backend:
+  django:
     build:
       context: ./srcs/backend
       dockerfile: Dockerfile
       target: development
     container_name: django_container
-    image: django_backend
+    image: django
     environment:
       DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,${PUBLIC_HOST_IP:-127.0.0.1},${PUBLIC_HOSTNAME:-localhost}"
     restart: unless-stopped
@@ -181,7 +182,7 @@ services:
     restart: unless-stopped
     environment:
       PGDATA: /var/lib/postgresql/data/pgdata
-      POSTGRES_USER: r2r_admin                 # must match POSTGRES_USER in Vault
+      POSTGRES_USER: r2r_admin
       POSTGRES_DB: ready2roll
       POSTGRES_PASSWORD_FILE: /run/secrets/pg_root_password
     secrets:
@@ -287,14 +288,13 @@ services:
     image: redis:7-alpine
     container_name: ready2roll-redis
     restart: unless-stopped
-#    user: "${UID:-1000}:${GID:-1000}"
     command: >
       sh -c 'exec redis-server --appendonly yes
       --requirepass "$$(cat /run/secrets/redis_password)"'
     secrets:
       - redis_password
     volumes:
-      - redis_data:/data # <--- CHANGED THIS LINE
+      - redis_data:/data
     networks:
       - data
 

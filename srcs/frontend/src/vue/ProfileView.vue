@@ -183,11 +183,11 @@ const deleteEvent = async (event) => {
     if (response.ok) {
       myEvents.value = myEvents.value.filter(e => e.id !== event.id);
       closePreview();
-      alert("Event deleted successfully!");
+      alert($t('eventDeleted'));
     } else {
       const errData = await response.json();
       console.error("Error deleting event:", errData);
-      alert("Failed to delete the event.");
+      alert($t('eventDeleteFailed'));
     }
   } catch (error) {
     console.error("Network error during delete:", error);
@@ -344,7 +344,13 @@ const triggerFileInput = () => {
 
 const handleImageUpload = (event) => {
   const file = event.target.files[0];
+  const MAX_FILE_SIZE = 12 * 1024 * 1024; // 12 MB
   if (file) {
+    if (file.size > MAX_FILE_SIZE) {
+      alert($t('fileTooLarge'));
+      event.target.value = '';
+      return;
+    }
     selectedFile.value = file;
     tempAvatar.value = URL.createObjectURL(file);
   }
@@ -376,7 +382,14 @@ const saveProfile = async () => {
       body: formData
     });
 
-    const data = await response.json();
+    const contentType = response.headers.get('content-type') || '';
+    const data = contentType.includes('application/json') ? await response.json() : {};
+
+    if (response.status === 413 || response.status === 403) {
+      alert($t('fileTooLarge'));
+      return;
+    }
+
     if (response.ok) {
       userProfile.value.name = data.username ?? profileEditForm.value.username;
       userProfile.value.description = data.bio ?? profileEditForm.value.bio;
@@ -388,7 +401,7 @@ const saveProfile = async () => {
       showEditModal.value = false;
     } else {
       const firstError = Object.values(data)[0];
-      alert(Array.isArray(firstError) ? firstError[0] : 'Error saving profile.');
+      alert(Array.isArray(firstError) ? firstError[0] : $t('profileSaveError'));
     }
   } catch (error) {
     alert($t('networkError'));
