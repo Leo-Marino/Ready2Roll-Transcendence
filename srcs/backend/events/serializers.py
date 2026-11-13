@@ -16,9 +16,9 @@ class TagNameField(serializers.SlugRelatedField):
     def to_internal_value(self, data):
         name = str(data).strip().lower()
         if not name:
-            raise serializers.ValidationError("Il tag non può essere vuoto.")
+            raise serializers.ValidationError("Tag cannot be empty.")
         if len(name) > 55:
-            raise serializers.ValidationError("Il tag può avere al massimo 55 caratteri.")
+            raise serializers.ValidationError("Tag cannot exceed 55 characters.")
         tag, _ = self.get_queryset().get_or_create(tag_name=name)
         return tag
 
@@ -60,19 +60,6 @@ class EventSerializer(serializers.ModelSerializer):
         return obj.comments.count()
 
     def get_media_src(self, obj):
-        media = Media.objects.filter(event=obj).first()
-        if media and media.media_url:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(media.media_url.url)
-            return media.media_url.url
-        return None
-
-    def get_media_type(self, obj):
-        media = Media.objects.filter(event=obj).first()
-        return media.media_type if media else None
-
-    def get_media_src(self, obj):
             media = Media.objects.filter(event=obj).first()
             if media and media.media_url:
                 # Force a relative path so the frontend uses the current domain/port (e.g. localhost:8080)
@@ -100,7 +87,30 @@ class EventSerializer(serializers.ModelSerializer):
 
         return event
 
+    def update(self, instance, validated_data):
+        media_file = validated_data.pop('media_file', None)
+        request = self.context.get('request')
+        m_type = request.data.get('media_type') if request else None
 
+        event = super().update(instance, validated_data)
+
+        if media_file:
+            media_obj = Media.objects.filter(event=event).first()
+            if media_obj:
+                media_obj.media_url = media_file
+                if m_type:
+                    media_obj.media_type = m_type
+                media_obj.save()
+            else:
+                Media.objects.create(
+                    event=event,
+                    media_url=media_file,
+                    media_type=m_type or 'image'
+                )
+        elif m_type:
+            Media.objects.filter(event=event).update(media_type=m_type)
+
+        return event
 
 
 class FeedEventSerializer(serializers.ModelSerializer):
@@ -111,13 +121,14 @@ class FeedEventSerializer(serializers.ModelSerializer):
     comments_count = serializers.SerializerMethodField()
     is_liked = serializers.SerializerMethodField()
     owner = serializers.SerializerMethodField()
+    tags = serializers.SerializerMethodField()
 
     class Meta:
         model = Event
         fields = [
             "id", "title", "description", "created_at", "event_date", "location",
             "media_src", "media_type",
-            "likes_count", "comments_count", "is_liked", "owner",
+            "likes_count", "comments_count", "is_liked", "owner", "tags",
         ]
 
     def _media(self, obj):
@@ -127,13 +138,6 @@ class FeedEventSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         return request.user if request and request.user.is_authenticated else None
 
-    def get_media_src(self, obj):
-        media = self._media(obj)
-        if media and media.media_url:
-            request = self.context.get('request')
-            url = media.media_url.url
-            return request.build_absolute_uri(url) if request else url
-        return None
 
     def get_media_src(self, obj):
         media = self._media(obj)
@@ -151,6 +155,9 @@ class FeedEventSerializer(serializers.ModelSerializer):
     def get_comments_count(self, obj):
         return obj.comments.count()
 
+    def get_tags(self, obj):
+        return [tag.tag_name for tag in obj.tags.all()]
+
     def get_is_liked(self, obj):
         viewer = self._viewer()
         return bool(viewer) and obj.likes.filter(user=viewer).exists()
@@ -159,8 +166,8 @@ class FeedEventSerializer(serializers.ModelSerializer):
         user = obj.organizer
         viewer = self._viewer()
         avatar = DEFAULT_AVATAR
-        if user.avatar_url:
-            avatar = str(user.avatar_url) if str(user.avatar_url).startswith('http') else user.avatar_url.url
+        if user.avatar_url and user.avatar_url.name:
+            avatar = str(user.avatar_url) if str(user.avatar_url).startswith('http') else f"/media/{user.avatar_url.name}"
         return {
             "id": user.id,
             "username": user.username,

@@ -11,3 +11,4 @@ channels
 daphne
 channels-redis
 google-genai
+django-cleanup

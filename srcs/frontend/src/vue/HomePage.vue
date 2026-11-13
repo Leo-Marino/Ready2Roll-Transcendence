@@ -5,6 +5,7 @@ import SearchBar from './SearchBar.vue';
 import NotificationBell from './NotificationBell.vue';
 import LanguageSwitcher from './LanguageSwitcher.vue';
 import { t as $t } from '../i18n';
+import { currentLang } from '../i18n';
 import ChatNavLink from './ChatNavLink.vue';
 import { useSocialSocket } from '../composables/useSocialSocket';
 
@@ -46,7 +47,7 @@ const togglePlay = (event) => {
   }
 };
 
-const getToken = () => localStorage.getItem('token') || localStorage.getItem('access') || localStorage.getItem('access_token');
+const getToken = () => sessionStorage.getItem('token') || sessionStorage.getItem('access') || sessionStorage.getItem('access_token');
 const API = '/api';
 
 // --- Comments state ---
@@ -152,7 +153,7 @@ const postComment = async () => {
       newCommentText.value = '';
       replyingTo.value = null;
     } else {
-      alert("Errore nel salvataggio del commento.");
+      alert($t('commentSaveError'));
     }
   } catch (error) {
     console.error('Errore di rete durante l\'invio del commento:', error);
@@ -505,6 +506,11 @@ onBeforeUnmount(() => {
             </li>
           </ul>
         </nav>
+        <div class="sidebar-legal-footer" style="margin-top: auto; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.12); display: flex; gap: 10px; justify-content: center; font-size: 0.78rem;">
+        <router-link to="/privacy" style="color: rgba(255,255,255,0.65); text-decoration: none;">{{ $t('privacy') }}</router-link>
+        <span style="color: rgba(255,255,255,0.35);">·</span>
+        <router-link to="/terms" style="color: rgba(255,255,255,0.65); text-decoration: none;">{{ $t ('term')}}</router-link>
+      </div>
       </aside>
 
       <main class="feed-container">
@@ -610,7 +616,7 @@ onBeforeUnmount(() => {
 
             <!-- Scrollable list: newest comment is at the bottom, right above the input -->
             <div class="comments-list" ref="commentsListRef">
-              <p v-if="comments.length === 0" class="no-comments">No comments yet. Be the first!</p>
+              <p v-if="comments.length === 0" class="no-comments">{{ $t('noCommentsYet') }}</p>
 
               <div class="comment-thread" v-for="comment in comments" :key="comment.id">
                 <div class="comment">
@@ -738,7 +744,7 @@ onBeforeUnmount(() => {
                   :placeholder="replyingTo ? $t('reply') + '...' : $t('addComment')"
                   @keyup.enter="postComment"
                   class="comment-input"
-                  :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'"
+                  :dir="currentLang === 'ar' ? 'rtl' : 'ltr'"
                 />
                 <button @click="postComment" class="send-comment-btn" :disabled="isSending || !newCommentText.trim()">{{ $t('post') }}</button>
               </div>
@@ -789,6 +795,17 @@ onBeforeUnmount(() => {
           <div class="info-text-block">
             <strong>{{ $t('maxCapacity') }}</strong>
             <span>{{ activeEvent.max_capacity || '∞' }}</span>
+          </div>
+        </div>
+
+        <div class="info-row tags-info-row">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ui-icon"><path d="M20.59 13.41 11 3.83V3H4v7h.83l9.58 9.59a2 2 0 0 0 2.83 0l3.35-3.35a2 2 0 0 0 0-2.83Z"/><circle cx="7.5" cy="7.5" r=".5"/></svg>
+          <div class="info-text-block tags-info-block">
+            <strong>Event Tags</strong>
+            <div v-if="activeEvent.tags?.length" class="event-info-tags">
+              <span v-for="tag in activeEvent.tags" :key="tag" class="event-info-tag"># {{ tag }}</span>
+            </div>
+            <span v-else class="no-event-tags">No tags added by the owner</span>
           </div>
         </div>
 
@@ -1127,6 +1144,20 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   flex-direction: column;
   gap: 4px;
 }
+
+
+.tags-info-row { align-items: flex-start; }
+.tags-info-block { min-width: 0; width: 100%; }
+.event-info-tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 7px; }
+.event-info-tag {
+  display: inline-flex; align-items: center;
+  padding: 5px 10px; border-radius: 999px;
+  color: #00f2fe; font-size: 12px; font-weight: 700;
+  background: rgba(0, 242, 254, 0.12);
+  border: 1px solid rgba(0, 242, 254, 0.35);
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.08);
+}
+.no-event-tags { opacity: .65; font-size: 13px; }
 
 /* Fix l-Arabiya (RTL) */
 [dir="rtl"] .info-modal-card {

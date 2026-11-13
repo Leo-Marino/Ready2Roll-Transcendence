@@ -16,7 +16,7 @@ from .models import Subscription, Comment, EventLike, Reaction
 from .serializers import CommentSerializer, DEFAULT_AVATAR
 from events.serializers import FeedEventSerializer
 from notifications.services import notify, unnotify, short
-from .realtime import broadcast_social_action, push_message_signal
+from .realtime import broadcast_social_action, push_message_signal, is_user_online
 
 User = get_user_model()
 
@@ -303,6 +303,7 @@ class ContactsView(APIView):
                 "lastMsg": last_text,
                 "lastMsgAt": last_at,
                 "unread": unread.get(u.id, 0),
+                "is_online": is_user_online(u.id),
             })
 
         return Response(data, status=status.HTTP_200_OK)

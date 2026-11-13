@@ -69,3 +69,36 @@ def push_message_signal(recipient_id):
         "target_id": recipient_id,
     }
     transaction.on_commit(lambda: _group_send(user_group(recipient_id), payload))
+
+# Track how many active WebSocket tabs each user_id currently has open
+_ONLINE_COUNTS = {}
+
+
+def is_user_online(user_id):
+    return _ONLINE_COUNTS.get(user_id, 0) > 0
+
+
+def set_user_online(user_id):
+    prev = _ONLINE_COUNTS.get(user_id, 0)
+    _ONLINE_COUNTS[user_id] = prev + 1
+    if prev == 0:
+        _group_send(GLOBAL_GROUP, {
+            "type": "social_action",
+            "action": "online_status",
+            "target_id": user_id,
+            "data": {"is_online": True},
+        })
+
+
+def set_user_offline(user_id):
+    prev = _ONLINE_COUNTS.get(user_id, 0)
+    if prev <= 1:
+        _ONLINE_COUNTS.pop(user_id, None)
+        _group_send(GLOBAL_GROUP, {
+            "type": "social_action",
+            "action": "online_status",
+            "target_id": user_id,
+            "data": {"is_online": False},
+        })
+    else:
+        _ONLINE_COUNTS[user_id] = prev - 1

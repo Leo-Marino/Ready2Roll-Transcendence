@@ -42,18 +42,20 @@ services:
       PROXY_SSL: "off"                          # backend is plain HTTP; "on" crashes the WAF
       SERVER_NAME: localhost
       # Stage 1: observe. Stage 2: set to On, then raise PARANOIA to 2.
-      MODSEC_RULE_ENGINE: DetectionOnly
+      MODSEC_RULE_ENGINE: ON
       PARANOIA: "1"
       BLOCKING_PARANOIA: "1"
       ANOMALY_INBOUND: "5"
       ANOMALY_OUTBOUND: "4"
       MODSEC_AUDIT_LOG_FORMAT: JSON
-      MODSEC_REQ_BODY_LIMIT: "13107200"         # poster uploads: set to your real max (bytes)
+      CLIENT_MAX_BODY_SIZE: "600m"
+      MODSEC_REQ_BODY_LIMIT: "629145600"         # poster uploads: set to your real max (bytes)
+      PROXY_READ_TIMEOUT: "300"
     volumes:
       - ./srcs/waf/certs/server.crt:/etc/nginx/conf/server.crt:ro
       - ./srcs/waf/certs/server.key:/etc/nginx/conf/server.key:ro
       # Targeted, documented exclusions (chat, uploads, chatbot):
-      # - ./srcs/waf/rules/before-crs.conf:/etc/modsecurity.d/owasp-crs/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf:ro
+      - ./srcs/waf/rules/before-crs.conf:/etc/modsecurity.d/owasp-crs/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf:ro
     networks:
       - edge
       - app
@@ -117,7 +119,6 @@ services:
     networks:
       - secrets
       - vaultdb
-    # No published port: docker compose exec vault vault ...
 
 #---------------------------------------------------------------------------
 # Vault Agent — AppRole login, renders secrets to two separate tmpfs volumes
@@ -181,7 +182,7 @@ services:
     restart: unless-stopped
     environment:
       PGDATA: /var/lib/postgresql/data/pgdata
-      POSTGRES_USER: r2r_admin                 # must match POSTGRES_USER in Vault
+      POSTGRES_USER: r2r_admin
       POSTGRES_DB: ready2roll
       POSTGRES_PASSWORD_FILE: /run/secrets/pg_root_password
     secrets:
@@ -287,14 +288,13 @@ services:
     image: redis:7-alpine
     container_name: ready2roll-redis
     restart: unless-stopped
-#    user: "${UID:-1000}:${GID:-1000}"
     command: >
       sh -c 'exec redis-server --appendonly yes
       --requirepass "$$(cat /run/secrets/redis_password)"'
     secrets:
       - redis_password
     volumes:
-      - redis_data:/data # <--- CHANGED THIS LINE
+      - redis_data:/data
     networks:
       - data
 

@@ -2,10 +2,13 @@
 import { t as $t } from '../i18n';
 import NotificationBell from './NotificationBell.vue';
 import ChatNavLink from './ChatNavLink.vue';
+import { currentLang } from '../i18n';
+import LanguageSwitcher from './LanguageSwitcher.vue';
+
 
 export default {
   name: 'CreateEvent',
-  components: { NotificationBell, ChatNavLink },
+  components: { NotificationBell, ChatNavLink , LanguageSwitcher},
   emits: ['navigate-view', 'event-published'],
   data() {
     return {
@@ -24,7 +27,11 @@ export default {
       uploadedMediaSrc: null,
       actualFile: null,
       mediaType: null,
-      showMapBox: false
+      showMapBox: false,
+      availableTags: ['Disco', 'Trap', 'Hip Hop', 'Rock', 'Jazz'],
+      selectedTags: [],
+      tagsLoading: false,
+      tagsError: '',
     }
   },
   computed: {
@@ -38,9 +45,9 @@ export default {
       return this.eventDate;
     },
   },
-  mounted() {
+  async mounted() {
     if (this.$route.query.edit === 'true') {
-      const savedEvent = localStorage.getItem('editingEvent');
+      const savedEvent = sessionStorage.getItem('editingEvent');
       if (savedEvent) {
         try {
           const ev = JSON.parse(savedEvent);
@@ -57,15 +64,50 @@ export default {
           this.eventStatus = ev.status ? ev.status.toLowerCase() : 'active';
           this.uploadedMediaSrc = ev.media_src || null;
           this.mediaType = ev.media_type || 'image';
+          this.selectedTags = (Array.isArray(ev.tags) ? ev.tags : [])
+            .map(tag => typeof tag === 'string' ? tag : tag.tag_name)
+            .map(name => this.availableTags.find(
+              k => k.toLowerCase() === String(name).toLowerCase()
+            ))
+            .filter(Boolean);
         } catch (e) {
           console.error('Error parsing editingEvent:', e);
         }
       }
     } else {
-      localStorage.removeItem('editingEvent');
+      sessionStorage.removeItem('editingEvent');
     }
   },
   methods: {
+    async fetchAvailableTags() {
+      this.tagsLoading = true;
+      this.tagsError = '';
+      try {
+        const response = await fetch('/api/tags/');
+        if (!response.ok) throw new Error(`Tags request failed (${response.status})`);
+        const data = await response.json();
+        this.availableTags = (Array.isArray(data) ? data : data.results || [])
+          .map(tag => typeof tag === 'string' ? tag : tag.tag_name)
+          .filter(Boolean);
+      } catch (error) {
+        console.error('Unable to load event tags:', error);
+        this.tagsError = 'Could not load tags. Please refresh the page.';
+      } finally {
+        this.tagsLoading = false;
+      }
+    },
+    toggleTag(tagName) {
+      const index = this.selectedTags.findIndex(
+        tag => tag.toLowerCase() === tagName.toLowerCase()
+      );
+      if (index >= 0) this.selectedTags.splice(index, 1);
+      else this.selectedTags.push(tagName);
+    },
+    isTagSelected(tagName) {
+      return this.selectedTags.some(
+        tag => tag.toLowerCase() === tagName.toLowerCase()
+      );
+    },
     goToStep(stepNumber) {
       this.activeStep = stepNumber;
     },
@@ -77,10 +119,24 @@ export default {
     },
     handleFileUpload(event) {
       const file = event.target.files[0];
+      const MAX_FILE_SIZE = 600 * 1024 * 1024; // 12 MB (under WAF 13.1 MB limit)
       if (file) {
-        this.uploadedMediaSrc = URL.createObjectURL(file);
-        this.actualFile = file;
-        this.mediaType = file.type.startsWith('video') ? 'video' : 'image';
+        if (file.size > MAX_FILE_SIZE) {
+          alert($t('fileTooLarge'));
+          event.target.value = '';
+          return;
+        }
+       try {
+          // Attempt to create the object URL. If the file is unreadable
+          // (e.g., no permissions), this or the subsequent image load will fail.
+          this.uploadedMediaSrc = URL.createObjectURL(file);
+          this.actualFile = file;
+          this.mediaType = file.type.startsWith('video') ? 'video' : 'image';
+        } catch (error) {
+           // Gracefully handle the error without logging to console.error
+           alert("Unable to read the selected file. Please check file permissions.");
+           this.clearMedia();
+        }
       }
       event.target.value = '';
     },
@@ -108,7 +164,7 @@ export default {
         return;
       }
 
-      const token = localStorage.getItem('token') || localStorage.getItem('access') || localStorage.getItem('access_token');
+      const token = sessionStorage.getItem('token') || sessionStorage.getItem('access') || sessionStorage.getItem('access_token');
       const formData = new FormData();
 
       formData.append('title', this.eventTitle);
@@ -116,6 +172,7 @@ export default {
       formData.append('location', this.eventLocation);
       formData.append('event_date', this.eventDate);
       formData.append('status', this.eventStatus);
+      this.selectedTags.forEach(tag => formData.append('tags', tag));
 
       if (this.maxCapacity) formData.append('max_capacity', this.maxCapacity);
       if (this.ticketPrice) formData.append('ticket_price', this.ticketPrice);
@@ -142,34 +199,37 @@ export default {
           body: formData
         });
 
+        const contentType = response.headers.get('content-type') || '';
+        const isJson = contentType.includes('application/json');
+
         if (response.ok) {
-          const savedEvent = await response.json();
-          localStorage.removeItem('editingEvent');
-          alert(this.isEditMode ? "Event updated successfully!" : (this.eventStatus === 'scheduled' ? "Event scheduled successfully!" : "Event created successfully!"));
+          const savedEvent = isJson ? await response.json() : {};
+          sessionStorage.removeItem('editingEvent');
+          alert(this.isEditMode ? $t('eventUpdated') : (this.eventStatus === 'scheduled' ? $t('eventScheduled') : $t('eventCreated')));
           this.$emit('event-published', savedEvent);
           this.goToVisualPage();
         }
         else if (response.status === 401) {
-          alert("Unauthorized user; please log in again");
+          alert($t('unauthorizedError'));
           this.$router.push('/login');
         }
+        else if (response.status === 413 || response.status === 403) {
+          alert($t('fileTooLarge'));
+        }
         else if (response.status === 400) {
-          const errorData = await response.json();
-          console.error("Validation error: ", errorData);
-          alert("A validation error was found; please check your input");
+          if (isJson) await response.json();
+          alert($t('validationError'));
         }
         else {
-          const errorData = await response.json();
-          console.error("Backend error:", errorData);
-          alert("There was an error saving the event");
+          if (isJson) await response.json();
+          alert($t('eventSaveError'));
         }
       } catch (error) {
-        console.error("Network error", error);
-        alert("Unable to connect to the backend server");
+        alert($t('networkError'));
       }
     },
     goToVisualPage() {
-      localStorage.removeItem('editingEvent');
+      sessionStorage.removeItem('editingEvent');
       if (this.$router) {
         this.$router.push('/profile');
       }
@@ -192,33 +252,28 @@ export default {
     @change="handleFileUpload"
   />
 
-  <header class="navbar glass-panel">
-    <div class="nav-left">
+    <header class="navbar glass-panel">
       <div class="logo" @click="$router.push('/home')">
-        <img src="../assets/logo_temp.png" alt="Ready2Roll Logo" class="nav-logo-img" />
+        <img src="../assets/logo_temp.png" alt="Ready2Roll Logo" class="nav-logo-img">
         <span class="logo-text">Ready2Roll</span>
       </div>
-    </div>
-
-    <div class="nav-right">
       <div class="nav-icons">
+        <LanguageSwitcher />
         <NotificationBell />
+        <router-link to="/chat" class="nav-icon-link">
         <ChatNavLink>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-          </svg>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+              </svg>
         </ChatNavLink>
-        <!-- <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
-        </svg> -->
+        </router-link>
         <router-link to="/profile" class="nav-icon-link">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
           </svg>
         </router-link>
       </div>
-    </div>
-  </header>
+    </header>
 
   <main class="main-content">
     <div class="page-title-row">
@@ -406,20 +461,29 @@ export default {
             </div>
 
             <!-- TAGS POSTI SOTTO ALLO STATUS -->
-            <div class="detail-input-group">
-              <label>{{ $t('tagsLabel') }}</label>
-              <div class="tag-selector-container">
-                <div
+            <div class="detail-input-group event-tags-group">
+              <div class="tags-heading-row">
+                <label>{{ $t('tagsLabel') }}</label>
+                <span class="tags-count">{{ selectedTags.length }} selected</span>
+              </div>
+
+              <p v-if="tagsLoading" class="tags-hint">Loading tags...</p>
+              <p v-else-if="tagsError" class="tags-error">{{ tagsError }}</p>
+              <div v-else-if="availableTags.length" class="tag-selector-container">
+                <button
                   v-for="t in availableTags"
                   :key="t"
-                  @click="toggleTag(t)"
+                  type="button"
+                  @click.stop="toggleTag(t)"
                   :class="isTagSelected(t) ? 'business-badge' : 'standard-badge'"
                   class="selectable-tag-pill"
+                  :aria-pressed="isTagSelected(t)"
                 >
-                  <span>{{ isTagSelected(t) ? '✓' : '+' }}</span>
+                  <span class="tag-pill-icon">{{ isTagSelected(t) ? '✓' : '+' }}</span>
                   <span>{{ t }}</span>
-                </div>
+                </button>
               </div>
+              <p v-else class="tags-hint">No tags are available yet.</p>
             </div>
 
           </div>
@@ -506,13 +570,14 @@ textarea::placeholder {
 }
 
 .main-content {
+  position: relative;
+  z-index: 1;
   max-width: 98vw;
   margin: 0 auto;
   padding: 10px 20px;
   box-sizing: border-box;
   overflow: hidden;
 }
-
 .page-title-row {
   display: flex;
   justify-content: space-between;
@@ -546,11 +611,13 @@ textarea::placeholder {
 }
 
 .navbar {
+  position: relative;
+  z-index: 50;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 12px 30px;
-  width: 100%; /* Badlna width: calc(100% - 40px) b 100% */
+  width: 100%;
   max-width: 1550px;
   margin: 15px auto;
   box-sizing: border-box;
@@ -624,6 +691,8 @@ textarea::placeholder {
 }
 
 .glass-card {
+  position: relative;
+  z-index: 1;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 15px;
   padding: 25px;
@@ -714,7 +783,9 @@ textarea::placeholder {
   border: 1px solid rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(12px);
   width: 380px;
-  height: 525px;
+  height: 590px;
+  overflow-y: auto;
+  scrollbar-width: none;
   box-sizing: border-box;
   overflow: hidden;
   cursor: default;
@@ -787,7 +858,7 @@ textarea::placeholder {
   justify-content: center;
   align-items: center;
   width: 380px;
-  height: 525px;
+  height: 590px;
   flex-shrink: 0;
   cursor: default;
   transition: border 0.3s ease, box-shadow 0.3s ease;
@@ -889,7 +960,7 @@ textarea::placeholder {
 
 .map-container-inline {
   width: 380px;
-  height: 525px;
+  height: 590px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 24px;
@@ -967,6 +1038,78 @@ textarea::placeholder {
     max-width: 480px;
     height: 440px;
   }
+}
+
+/* Event tags: same Ready2Roll glass + cyan badge style as the profile page */
+.event-tags-group {
+  margin-top: 4px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.tags-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tags-count,
+.tags-hint {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.62rem;
+}
+
+.tag-selector-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 7px;
+}
+
+.selectable-tag-pill {
+  appearance: none;
+  cursor: pointer;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 14px;
+  font: inherit;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.35px;
+  text-transform: uppercase;
+  backdrop-filter: blur(5px);
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.selectable-tag-pill:hover {
+  transform: translateY(-2px);
+}
+
+.business-badge {
+  background: rgba(0, 242, 254, 0.16);
+  border: 1px solid #00f2fe;
+  color: #00f2fe;
+  box-shadow: 0 0 9px rgba(0, 242, 254, 0.22);
+}
+
+.standard-badge {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.tag-pill-icon {
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.tags-error {
+  color: #ff9292;
+  font-size: 0.65rem;
 }
 
 /* RTL Fixes for Create Event Page */

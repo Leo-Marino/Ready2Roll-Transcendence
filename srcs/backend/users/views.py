@@ -30,9 +30,9 @@ def signup_view(request):
         user = serializer.save() # WIP ALEK
         refresh = RefreshToken.for_user(user)
         return Response({
-            "messaggio": "Utente registrato con successo!",
-            "token": str(refresh.access_token), # WIP ALEK
-            "refresh": str(refresh), # WIP ALEK
+                "message": "User registered successfully!",
+                "token": str(refresh.access_token),
+                "refresh": str(refresh),
             }, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -48,18 +48,18 @@ def profile_view(request):
 @permission_classes([IsAuthenticated])
 def update_profile_view(request):
     user = request.user
-    serializer = UserProfileUpdateSerializer(user, data=request.data, partial=True) # WIP ALEK
+    serializer = UserProfileUpdateSerializer(user, data=request.data, partial=True)
     if serializer.is_valid():
-        serializer.save()
+        user = serializer.save()
         avatar = f"/media/{user.avatar_url.name}" if user.avatar_url and user.avatar_url.name else None
         broadcast_social_action("update_profile", user.pk, {
-            'user_avatar' : avatar,
-            'user_bio' : user.bio,
-            'user.name' : user.username,
+            'user_avatar': avatar,
+            'user_bio': user.bio,
+            'user.name': user.username,
+            'username': user.username,
         })
-        return Response({"messaggio": "Utente profile modificato con successo!"}, status=status.HTTP_200_OK)
+        return Response(UserProfileSerializer(user).data, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

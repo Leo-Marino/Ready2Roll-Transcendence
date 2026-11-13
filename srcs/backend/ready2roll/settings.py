@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'events',
     'social',
     'notifications',
+    'django_cleanup.apps.CleanupConfig',
 ]
 
 #Loop for multiple connections without one having to wait for one to finish

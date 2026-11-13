@@ -1,4 +1,5 @@
 import json
+from social.realtime import is_user_online
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from events.models import Tag
@@ -16,13 +17,15 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['username', 'email', 'password', 'type_of_user', 'legal_name', 'tags','vat_tax']
         extra_kwargs = {'password': {'write_only': True}}
-    def validate(selfs,attrs):
+    def validate(self, attrs):
         if attrs.get('type_of_user') == 'business':
             errors = {}
             if not (attrs.get('legal_name') or '').strip():
                 errors['legal_name'] = 'Business / Venue name is required.'
+            if not (attrs.get('vat_tax') or '').strip():
+                errors['vat_tax'] = 'Tax ID / VAT Number is required.'
             if errors:
-                    raise serializers.ValidationError(errors)
+                raise serializers.ValidationError(errors)
         return attrs
 
     def create(self, validated_data):
@@ -50,27 +53,52 @@ class FollowCountsMixin(serializers.Serializer):
     def get_followers_count(self, obj):
         return obj.followers.count()
 
+class AvatarUrlMixin(serializers.Serializer):
+    avatar_url = serializers.SerializerMethodField()
 
-class UserProfileSerializer(FollowCountsMixin, serializers.ModelSerializer):
-    """Used to READ the logged-in user's profile (GET /api/profile/)."""
+    def get_avatar_url(self, obj):
+        if obj.avatar_url and obj.avatar_url.name:
+            # Force a relative path so the frontend uses the correct domain/port
+            return f"/media/{obj.avatar_url.name}"
+        return None
+
+
+class UserProfileSerializer(FollowCountsMixin, AvatarUrlMixin, serializers.ModelSerializer):
+
+    tags = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = [
-
-             'id', 'username', 'email', 'first_name', 'last_name', 'bio',
-            'avatar_url', 'instagram_handle', 'bs_website',
-            'following_count', 'followers_count', 'type_of_user', 'tags',
+            'id',
+            'username',
+            'email',
+            'first_name',
+            'last_name',
+            'bio',
+            'avatar_url',
+            'instagram_handle',
+            'bs_website',
+            'following_count',
+            'followers_count',
+            'type_of_user',
+            'tags',
         ]
+
     def get_tags(self, obj):
-        return [tag.tag_name for tag in obj.tags.all()]
+        return [
+            tag.tag_name
+            for tag in obj.tags.all()
+        ]
 
 class ViewerRelationMixin(serializers.Serializer):
     is_following = serializers.SerializerMethodField()
     is_self = serializers.SerializerMethodField()
+    is_online = serializers.SerializerMethodField()
 
     def _viewer(self):
-            request = self.context.get('request')
-            return request.user if request and request.user.is_authenticated else None
+        request = self.context.get('request')
+        return request.user if request and request.user.is_authenticated else None
 
     def get_is_following(self, obj):
         viewer = self._viewer()
@@ -82,14 +110,8 @@ class ViewerRelationMixin(serializers.Serializer):
         viewer = self._viewer()
         return viewer is not None and viewer.pk == obj.pk
 
-class AvatarUrlMixin(serializers.Serializer):
-    avatar_url = serializers.SerializerMethodField()
-
-    def get_avatar_url(self, obj):
-        if obj.avatar_url and obj.avatar_url.name:
-            # Force a relative path so the frontend uses the correct domain/port
-            return f"/media/{obj.avatar_url.name}"
-        return None
+    def get_is_online(self, obj):
+        return is_user_online(obj.pk)
 
 class PublicUserProfileSerializer(FollowCountsMixin, ViewerRelationMixin, AvatarUrlMixin, serializers.ModelSerializer):
     """Profilo visto da un ALTRO utente (GET /api/users/<id>/). Niente dati privati."""
@@ -100,12 +122,13 @@ class PublicUserProfileSerializer(FollowCountsMixin, ViewerRelationMixin, Avatar
             'id', 'username', 'first_name', 'last_name', 'bio',
             'avatar_url', 'instagram_handle', 'bs_website',
             'following_count', 'followers_count',
-            'is_following', 'is_self', 'type_of_user',
+            'is_following', 'is_self', 'type_of_user', 'is_online'
         ]
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):
     avatar_url = serializers.ImageField(required=False, allow_null=True)
-    tags = serializers.CharField(required=False, allow_blank=True)
+    tags = serializers.JSONField(required=False)
+
     class Meta:
         model = User
         fields = [
@@ -122,24 +145,42 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
             'tags',
         ]
 
+    def validate_tags(self, value):
+        if isinstance(value, str):
+            try:
+                value = json.loads(value)
+            except Exception:
+                value = [t.strip() for t in value.split(',') if t.strip()]
+
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Tags must be a list of strings.")
+
+        if not all(isinstance(tag, str) for tag in value):
+            raise serializers.ValidationError("Every tag must be a string.")
+
+        return list(dict.fromkeys(tag.strip() for tag in value if tag.strip()))
+
     def update(self, instance, validated_data):
-        raw_tags = validated_data.pop('tags', None)
+        tag_names = validated_data.pop('tags', None)
         user = super().update(instance, validated_data)
 
-        if raw_tags is not None:
-            # Strip out any leftover brackets or quotes just in case, then split by comma
-            clean_string = raw_tags.replace('[', '').replace(']', '').replace('"', '')
-            tag_names = [t.strip() for t in clean_string.split(',') if t.strip()]
+        if tag_names is not None:
+            tags_objs = []
+            for name in tag_names:
+                # Safe lookup: avoids MultipleObjectsReturned if 'Hip Hop' and 'hip hop' both exist
+                tag = Tag.objects.filter(tag_name__iexact=name).first()
+                if not tag:
+                    tag = Tag.objects.create(tag_name=name)
+                tags_objs.append(tag)
 
-            # Blindly create whatever tags were sent and save the relation
-            tags_objs = [Tag.objects.get_or_create(tag_name=n)[0] for n in tag_names]
             user.tags.set(tags_objs)
 
         return user
+
 
 class FollowUserSerializer(ViewerRelationMixin, AvatarUrlMixin, serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id', 'username', 'avatar_url', 'is_following', 'is_self',
+            'id', 'username', 'avatar_url', 'is_following', 'is_self', 'is_online',
         ]

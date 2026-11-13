@@ -1,6 +1,7 @@
 <script setup>
 import { ref, nextTick, onBeforeUnmount } from 'vue';
 import { t as $t } from '../i18n';
+import { currentLang } from '../i18n';
 // =====================================================================
 //  R Chat: floating assistant for the home page (FRONTEND ONLY for now)
 //
@@ -84,7 +85,7 @@ const askLocal = async (text) => {
 };
 
 const getToken = () =>
-  localStorage.getItem('token') || localStorage.getItem('access') || localStorage.getItem('access_token');
+  sessionStorage.getItem('token') || sessionStorage.getItem('access') || sessionStorage.getItem('access_token');
 
 const askBot = async (text, history = []) => {
   if (!props.eventId) return askLocal(text);          // nessun video attivo
@@ -207,7 +208,7 @@ const showSuggestions = () => messages.value.length === 1 && !isTyping.value;
             placeholder="Ask Rolly..."
             maxlength="500"
             autocomplete="off"
-            :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'"
+            :dir="currentLang === 'ar' ? 'rtl' : 'ltr'"
           >
           <button type="submit" class="rc-send" :disabled="!input.trim() || isTyping" aria-label="Send">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="rc-send-icon">
@@ -238,7 +239,7 @@ const showSuggestions = () => messages.value.length === 1 && !isTyping.value;
 </template>
 
 <style scoped>
-.rc-root { position: fixed; left: 24px; bottom: 24px; z-index: 50; display: flex; flex-direction: column; align-items: flex-start; gap: 14px; font-family: var(--font-main); color: #fff; }
+.rc-root { position: fixed; left: 24px; bottom: 58px; z-index: 50; display: flex; flex-direction: column; align-items: flex-start; gap: 14px; font-family: var(--font-main); color: #fff; }
 
 /* ---------------- Launcher ---------------- */
 .rc-launcher-wrap { display: flex; flex-direction: row-reverse; align-items: center; gap: 10px; }

@@ -3,6 +3,7 @@
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useSocialSocket } from '../composables/useSocialSocket';
 import { t as $t } from '../i18n';
+import { currentLang } from '../i18n';
 
 const contacts = ref([]);          // Contatti con chat attive
 const searchResults = ref([]);     // Risultati della ricerca globale
@@ -12,6 +13,7 @@ const newMessage = ref('');
 let socket = null;
 let pollTimer = null;
 const searchQuery = ref('');
+
 // Cerca nel database quando l'utente digita nella search bar
 watch(searchQuery, async (newQuery) => {
   if (!newQuery || !newQuery.trim()) {
@@ -42,7 +44,8 @@ watch(searchQuery, async (newQuery) => {
           img: finalImg,
           lastMsg: $t('clickToMessage'),
           lastMsgAt: null,
-          unread: 0
+          unread: 0,
+          isOnline: !!u.is_online
         };
       });
     } else {
@@ -78,9 +81,9 @@ const sortContacts = () => {
 };
 
 const getToken = () =>
-  localStorage.getItem('token') ||
-  localStorage.getItem('access') ||
-  localStorage.getItem('access_token');
+  sessionStorage.getItem('token') ||
+  sessionStorage.getItem('access') ||
+  sessionStorage.getItem('access_token');
 
 // Fetch contacts attivi
 // Fetch contacts attivi
@@ -105,12 +108,16 @@ const fetchContacts = async () => {
           img: finalImg,
           lastMsg: u.lastMsg || '',
           lastMsgAt: u.lastMsgAt || null,
-          unread: u.unread || 0
+          unread: u.unread || 0,
+          isOnline: !!u.is_online
         };
       });
 
-      const open = contacts.value.find(c => c.id === activeContact.value?.id);
-      if (open) open.unread = 0;
+    const open = contacts.value.find(c => c.id === activeContact.value?.id);
+      if (open) {
+        open.unread = 0;
+        activeContact.value.isOnline = open.isOnline;
+      }
 
       sortContacts();
     }
@@ -211,6 +218,15 @@ useSocialSocket((message) => {
       activeContact.value.name = data.username || data['user.name'] || data.name || activeContact.value.name;
     }
   }
+    else if (action === 'online_status') {
+    const contact = contacts.value.find(c => c.id === targetId);
+    if (contact) contact.isOnline = !!data.is_online;
+    const searched = searchResults.value.find(c => c.id === targetId);
+    if (searched) searched.isOnline = !!data.is_online;
+    if (activeContact.value && activeContact.value.id === targetId) {
+      activeContact.value.isOnline = !!data.is_online;
+    }
+  }
 });
 
 onMounted(() => {
@@ -247,7 +263,7 @@ onBeforeUnmount(() => {
     <div class="main-content">
       <aside class="left-sidebar glass-panel">
       <div class="sidebar-search-bar">
-        <input type="text" v-model="searchQuery" :placeholder="$t('chatSearchPlaceholder')" :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'">
+        <input type="text" v-model="searchQuery" :placeholder="$t('chatSearchPlaceholder')" :dir="currentLang === 'ar' ? 'rtl' : 'ltr'">
       </div>
 
         <h3>{{ $t('chatMessagesTitle') }}</h3>
@@ -267,12 +283,15 @@ onBeforeUnmount(() => {
           <li v-if="searchResults.length === 0" class="no-results">{{ $t('chatNoUsersFound') }}</li>
         </ul>
 
-        <!-- Lista dei contatti attivi -->
+<!-- Lista dei contatti attivi -->
         <ul v-else>
           <li v-for="contact in contacts" :key="contact.id" class="contact-item"
             :class="{ active: activeContact?.id === contact.id }"
             @click="selectContact(contact)">
-            <img :src="contact.img" alt="avatar" class="avatar">
+            <div class="avatar-wrap">
+              <img :src="contact.img" alt="avatar" class="avatar">
+              <span class="contact-status-dot" :class="{ online: contact.isOnline }"></span>
+            </div>
             <div class="contact-info">
               <span class="contact-name">{{ contact.name }}</span>
               <span class="contact-last-msg" :class="{ 'has-unread': contact.unread > 0 && activeContact?.id !== contact.id }">{{ contact.lastMsg }}</span>
@@ -288,7 +307,13 @@ onBeforeUnmount(() => {
 
       <main class="chat-container glass-panel">
         <div class="chat-header">
-          <h2 v-if="activeContact">{{ activeContact.name }}</h2>
+          <div v-if="activeContact" class="chat-header-user">
+            <h2>{{ activeContact.name }}</h2>
+            <span class="online-pill" :class="{ online: activeContact.isOnline }">
+              <span class="online-dot"></span>
+              {{ activeContact.isOnline ? $t('rollyStatusOnline') : 'offline' }}
+            </span>
+          </div>
           <h2 v-else>{{ $t('chatSelectContact') }}</h2>
         </div>
 
@@ -301,8 +326,8 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <form class="chat-input-area" @submit.prevent="sendMessage">
-          <input type="text" v-model="newMessage" :placeholder="$t('chatTypeMessage')" required :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'">
+        <form v-if="activeContact" class="chat-input-area" @submit.prevent="sendMessage">
+          <input type="text" v-model="newMessage" :placeholder="$t('chatTypeMessage')" required :dir="currentLang === 'ar' ? 'rtl' : 'ltr'">
           <button type="submit">{{ $t('chatSendButton') }}</button>
         </form>
       </main>
@@ -316,9 +341,15 @@ onBeforeUnmount(() => {
     width: 100%; height: 100%; z-index: -1; object-fit: cover;
 }
 .app-container {
-  display: flex; flex-direction: column; height: 100vh;
-  color: #FFFFFF; font-family: var(--font-main);
-  padding: 10px 20px; box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-height: 0;
+  color: #FFFFFF;
+  font-family: var(--font-main);
+  padding: 10px 20px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 .glass-panel {
   background: rgba(255, 255, 255, 0.1); border-radius: 15px;
@@ -336,11 +367,28 @@ onBeforeUnmount(() => {
 .nav-icon:hover { color: #00f2fe; transform: scale(1.15); }
 .nav-icon-link { display: flex; align-items: center; }
 .main-content {
-  display: flex; flex-direction: row; gap: 15px;
-  height: calc(100vh - 95px); width: 100%;
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
 }
+
+/* Keep the contacts panel at a stable width, even when a message is very long. */
 .left-sidebar {
-  width: 300px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto;
+  flex: 0 0 280px;
+  width: 280px;
+  min-width: 280px;
+  max-width: 280px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 .sidebar-search-bar input {
   width: 100%; box-sizing: border-box;
@@ -368,18 +416,26 @@ ul { list-style: none; padding: 0; margin: 0; }
 .contact-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
 .contact-time { font-size: 0.7rem; color: #cccccc; }
 .unread-dot { width: 10px; height: 10px; border-radius: 50%; background: #00f2fe; box-shadow: 0 0 6px #00f2fe; }
-.chat-container { flex-grow: 1; display: flex; flex-direction: column; }
+.chat-container {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 .chat-header { padding-bottom: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.2); margin-bottom: 15px; }
 .chat-header h2 { margin: 0; font-family: "Bruno Ace", sans-serif; }
-.chat-messages { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; padding-right: 10px; }
-.message-wrapper { display: flex; width: 100%; }
+.chat-messages { flex-grow: 1; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: 15px; padding-right: 10px; }
+.message-wrapper { display: flex; width: 100%; min-width: 0; }
 .my-message { justify-content: flex-end; }
 .message-bubble {
   max-width: 60%; padding: 12px 18px; border-radius: 20px;
   background: rgba(255, 255, 255, 0.15); line-height: 1.4;
+  min-width: 0; overflow-wrap: anywhere;
 }
 .my-message .message-bubble { background: rgba(0, 242, 254, 0.3); border-bottom-right-radius: 4px; }
-.message-text { white-space: pre-wrap; word-break: break-word; }
+.message-text { white-space: pre-wrap; word-break: break-all !important; overflow-wrap: break-word !important; display: inline-block; max-width: 100%;}
 .message-time { display: block; text-align: right; margin-top: 4px; font-size: 0.7rem; color: rgba(255, 255, 255, 0.65); }
 .message-wrapper:not(.my-message) .message-bubble { border-bottom-left-radius: 4px; }
 .chat-input-area {
@@ -387,8 +443,14 @@ ul { list-style: none; padding: 0; margin: 0; }
   border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 .chat-input-area input {
-  flex-grow: 1; background: rgba(255, 255, 255, 0.1); border: none;
-  border-radius: 20px; padding: 12px 20px; color: white;
+  flex: 1 1 0;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 20px;
+  padding: 12px 20px;
+  color: white;
+  box-sizing: border-box;
 }
 .chat-input-area input::placeholder { color: #cccccc; }
 .chat-input-area button {
@@ -396,4 +458,65 @@ ul { list-style: none; padding: 0; margin: 0; }
   padding: 0 25px; cursor: pointer; font-weight: bold; transition: background 0.3s;
 }
 .chat-input-area button:hover { background: #00f2fe; }
+
+.avatar-wrap { position: relative; display: inline-flex; flex-shrink: 0; }
+.contact-status-dot {
+  position: absolute; bottom: 1px; right: 1px;
+  width: 11px; height: 11px; border-radius: 50%;
+  background: #777; border: 2px solid #1a102e;
+}
+.contact-status-dot.online {
+  background: #3dffa0;
+  box-shadow: 0 0 6px #3dffa0;
+}
+.chat-header-user { display: flex; align-items: center; gap: 12px; }
+.online-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+  padding: 3px 10px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.6);
+}
+.online-pill.online {
+  background: rgba(61, 255, 160, 0.15);
+  border-color: rgba(61, 255, 160, 0.5);
+  color: #3dffa0;
+}
+.online-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+}
+.online-pill.online .online-dot {
+  background: #3dffa0;
+  box-shadow: 0 0 6px #3dffa0;
+}
+
+/* On smaller screens, keep both panels usable without horizontal squeezing. */
+@media (max-width: 760px) {
+  .app-container {
+    padding: 8px;
+  }
+  .main-content {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .left-sidebar {
+    flex: 0 0 180px;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    max-height: 38%;
+  }
+  .chat-container {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+  .message-bubble {
+    max-width: 88%;
+  }
+  .logo-text {
+    font-size: 1rem;
+  }
+}
 </style>
