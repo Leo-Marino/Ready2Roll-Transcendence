@@ -95,7 +95,6 @@ const fetchComments = async (eventId) => {
       scrollCommentsToTop();
     }
   } catch (error) {
-    // Silent catch: avoid console.error
   }
 };
 
@@ -115,7 +114,6 @@ const toggleReplies = (commentId) => {
   expandedReplies[commentId] = !expandedReplies[commentId];
 };
 
-// POST: Salva il nuovo commento (or reply)
 const postComment = async () => {
   const text = newCommentText.value.trim();
   if (!text || isSending.value || !activeEventId.value) return;
@@ -208,18 +206,15 @@ const reactionList = (counts) =>
     .map(([type, n]) => ({ type, emoji: emojiOf(type), n }))
     .sort((a, b) => b.n - a.n);
 
-// Total number of reactions on a comment
 const reactionTotal = (counts) =>
   Object.values(counts || {}).reduce((sum, n) => sum + (n || 0), 0);
 
-// POST react toggle: same type removes it, a different type replaces it.
-// Works for top-level comments AND replies (both have the same fields).
 const reactToComment = async (comment, type) => {
   if (pickerTimeout) {
     clearTimeout(pickerTimeout);
     pickerTimeout = null;
   }
-  openPicker.value = null; // close the emoji bar after choosing
+  openPicker.value = null;
   try {
     const res = await fetch(`${API}/social/comments/${comment.id}/react/`, {
       method: 'POST',
@@ -228,12 +223,10 @@ const reactToComment = async (comment, type) => {
     });
     if (res.ok) {
       const data = await res.json();
-      // The server answer is the truth: overwrite what the screen shows
       comment.user_reaction = data.user_reaction;
       comment.reactions_count = data.reactions_count;
     }
   } catch (error) {
-    console.error('Errore durante la reaction:', error);
   }
 };
 // reaction
@@ -260,7 +253,6 @@ const toggleLike = async () => {
       ev.likes_count = data.likes_count;
     }
   } catch (error) {
-    console.error('Like failed:', error);
   }
 };
 
@@ -272,16 +264,12 @@ const toggleSubscribe = async () => {
     const res = await fetch(`${API}/social/follow/${ev.owner.id}/`, { method: 'POST', headers: authHeaders() });
     if (res.ok) {
       const data = await res.json();
-      // same owner can have several videos: keep them all in sync
       videos.value.forEach((v) => { if (v.owner.id === ev.owner.id) v.owner.is_following = data.is_following; });
     }
   } catch (error) {
-    console.error('Subscribe failed:', error);
   }
 };
 
-// The "radar": the video that is >60% visible becomes the active one.
-// It plays, the others pause, and the right panel (owner, stats, comments) follows it.
 let observer = null;
 const setupObserver = async () => {
   await nextTick();
@@ -300,20 +288,6 @@ const setupObserver = async () => {
   wrapperRefs.forEach((el) => el && observer.observe(el));
 };
 
-// const fetchFeed = async () => {
-//   try {
-//     const res = await fetch(`${API}/feed/`, { headers: authHeaders() });
-//     if (res.ok) {
-//       videos.value = await res.json();
-//       wrapperRefs.length = 0;
-//     }
-//   } catch (error) {
-//     console.error('Could not load the feed:', error);
-//   } finally {
-//     feedLoading.value = false;
-//   }
-  // setupObserver();
-// };
 //-----------------xh add part start-----------------------------
 const fetchFeed = async () => {
   feedLoading.value = true;
@@ -326,7 +300,6 @@ const fetchFeed = async () => {
       wrapperRefs.length = 0;
     }
   } catch (error) {
-    console.error('Could not load the feed:', error);
   } finally {
     feedLoading.value = false;
   }
@@ -334,12 +307,9 @@ const fetchFeed = async () => {
   setupObserver();
 };
 
-watch(() => props.mode, fetchFeed);   // passando da For you a Discover la pagina resta la stessa
+watch(() => props.mode, fetchFeed);
 onMounted(fetchFeed);
 //-----------------------xh add part end----------------------------
-// --- Live updates from other users (WebSocket) ---
-// Only the PUBLIC numbers are overwritten here (counts). Personal state such as
-// is_liked or user_reaction is never touched: it depends on who is looking.
 const findCommentById = (commentId) => {
   for (const comment of comments.value) {
     if (comment.id === commentId) return comment;
@@ -369,8 +339,6 @@ const handleSocialMessage = (message) => {
     if (comment) comment.reactions_count = data.reactions_count;
 
   } else if (action === 'update_profile') {
-    // ---> BULLETPROOF LIVE PROFILE UPDATES FOR THE FEED <---
-    // 1. Update the owner of any video in the feed
     videos.value.forEach((v) => {
       if (v.owner && v.owner.id === targetId) {
         v.owner.display_name = data.username || data['user.name'] || data.name || v.owner.display_name;
@@ -379,7 +347,6 @@ const handleSocialMessage = (message) => {
         if (newAvatar) v.owner.avatar = newAvatar;
       }
     });
-    // 2. Update the avatars/names in the active comments section
     comments.value.forEach((c) => {
       // Top-level comments
       if (c.user_id === targetId || (c.user && c.user.id === targetId)) {
@@ -400,14 +367,13 @@ const handleSocialMessage = (message) => {
     });
 
   } else if (action === 'resync') {
-    // The connection was down for a while: reload what is on screen
     if (activeEventId.value) fetchComments(activeEventId.value);
   }
 };
 
 useSocialSocket(handleSocialMessage);
 
-// Scrolled to another video -> load ITS comments
+
 watch(activeEventId, (id) => {
   comments.value = [];
   cancelReply();
@@ -434,9 +400,6 @@ onBeforeUnmount(() => {
         <img src="../assets/logo_temp.png" alt="Ready2Roll Logo" class="nav-logo-img">
         <span class="logo-text">Ready2Roll</span>
       </div>
-      <!-- <div class="search-bar">
-        <input type="text" placeholder="Search...">
-      </div> -->
       <SearchBar />
       <div class="nav-icons">
         <LanguageSwitcher />
@@ -446,9 +409,6 @@ onBeforeUnmount(() => {
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
           </svg>
         </ChatNavLink>
-        <!-- <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
-        </svg> -->
         <router-link to="/profile" class="nav-icon-link">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
@@ -520,7 +480,6 @@ onBeforeUnmount(() => {
       </aside>
 
       <main class="feed-container">
-        <!-- Empty state: animated R logo in the middle of the page -->
         <div v-if="!feedLoading && videos.length === 0" class="empty-state">
           <div class="r-stage">
             <span class="r-glow"></span>
@@ -592,38 +551,33 @@ onBeforeUnmount(() => {
             <p class="description">{{ activeEvent.description }}</p>
           </div>
 
-<div class="action-buttons glass-panel" style="display: flex; justify-content: space-between; padding: 10px; gap: 8px;">
+          <div class="action-buttons glass-panel" style="display: flex; justify-content: space-between; padding: 10px; gap: 8px;">
             <!-- LIKES BUTTON -->
-            <button :class="{ liked: activeEvent.is_liked }" @click="toggleLike" style="display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1; padding: 8px 0;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" :fill="activeEvent.is_liked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart">
-                <path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/>
-              </svg>
-              {{ formatCount(activeEvent.likes_count) }}
-            </button>
-
-            <!-- SHOW INFORMATIONS BUTTON (B7alhom f size) -->
-            <button class="show-info-btn" @click="openInfoModal" style="display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1; padding: 8px 0; border: none; background: rgba(0, 242, 254, 0.15); color: #00f2fe; border-radius: 10px; cursor: pointer;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-              <span style="font-size: 0.75rem; font-weight: bold;">Info</span>
-            </button>
-
-            <!-- COMMENTS BUTTON -->
-            <button style="display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1; padding: 8px 0;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle-more">
-                <path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/>
-                <path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/>
-              </svg>
-              {{ formatCount(activeEvent.comments_count) }}
-            </button>
+              <button :class="{ liked: activeEvent.is_liked }" @click="toggleLike" style="display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1; padding: 8px 0;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" :fill="activeEvent.is_liked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart">
+                  <path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/>
+                </svg>
+                {{ formatCount(activeEvent.likes_count) }}
+              </button>
+              <!-- SHOW INFORMATIONS BUTTON (B7alhom f size) -->
+              <button class="show-info-btn" @click="openInfoModal" style="display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1; padding: 8px 0; border: none; background: rgba(0, 242, 254, 0.15); color: #00f2fe; border-radius: 10px; cursor: pointer;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                <span style="font-size: 0.75rem; font-weight: bold;">Info</span>
+              </button>
+              <!-- COMMENTS BUTTON -->
+              <button style="display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1; padding: 8px 0;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle-more">
+                  <path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/>
+                  <path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/>
+                </svg>
+                {{ formatCount(activeEvent.comments_count) }}
+              </button>
           </div>
-
           <div class="comments-section glass-panel">
             <h3>{{ $t('comments') }}</h3>
-
             <!-- Scrollable list: newest comment is at the bottom, right above the input -->
             <div class="comments-list" ref="commentsListRef">
               <p v-if="comments.length === 0" class="no-comments">{{ $t('noCommentsYet') }}</p>
-
               <div class="comment-thread" v-for="comment in comments" :key="comment.id">
                 <div class="comment">
                   <img :src="comment.user_avatar" alt="avatar" class="avatar comment-avatar">
@@ -680,7 +634,6 @@ onBeforeUnmount(() => {
                       <span class="replies-line"></span>
                       {{ expandedReplies[comment.id] ? $t('hideReplies') : `${$t('viewReplies')} ${comment.reply_count}` }}
                     </button>
-
                     <div v-if="expandedReplies[comment.id]" class="replies">
                       <div class="comment reply" v-for="reply in comment.replies" :key="reply.id">
                         <img :src="reply.user_avatar" alt="avatar" class="avatar reply-avatar">
@@ -714,7 +667,6 @@ onBeforeUnmount(() => {
                                 </button>
                               </div>
                               </div>
-                              <!-- all reactions in one chip; hover = every emoji with its count -->
                               <div class="reaction-stats" v-if="reactionTotal(reply.reactions_count) > 0" tabindex="0">
                                 <span class="stats-emojis">
                                   <span v-for="r in reactionList(reply.reactions_count).slice(0, 3)" :key="r.type">{{ r.emoji }}</span>
@@ -735,8 +687,6 @@ onBeforeUnmount(() => {
                 </div>
               </div>
             </div>
-
-            <!-- Input pinned at the bottom -->
             <div class="comment-composer">
               <div v-if="replyingTo" class="replying-bar">
                 <span>{{ $t('replyingTo') }} <strong>@{{ replyingTo.username }}</strong></span>
@@ -916,13 +866,13 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 .stats-emoji { font-size: 18px; line-height: 1.15; }
 .stats-n { font-size: 11px; font-weight: bold; color: rgba(255,255,255,0.85); }
 .stats-item.mine { background: rgba(0,242,254,0.18); box-shadow: inset 0 0 0 1px rgba(0,242,254,0.6); }
-/* Aggiungi padding-bottom: 35px a .comments-list già esistente */
+
 .comments-list {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
-  padding-bottom: 80px; /* Spazio extra per non tagliare il menu/popover sull'ultimo commento */
+  padding-bottom: 80px;
   scrollbar-width: thin;
   scrollbar-color: rgba(255,255,255,0.3) transparent;
 }
@@ -930,7 +880,7 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 .reaction-picker {
   position: absolute;
   left: -40px;
-  top: calc(100% + 4px); /* Si apre verso il basso */
+  top: calc(100% + 4px);
   z-index: 20;
   display: flex;
   gap: 4px;
@@ -1086,14 +1036,13 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   color: #00f2fe;
 }
 
-/* --- Info Modal Styling (Fixed Position) --- */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.15); /* khellitha khfifa bach matdlemsh */
+  background: rgba(0, 0, 0, 0.15);
   backdrop-filter: blur(2px);
   z-index: 9999;
 }
@@ -1104,12 +1053,11 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   right: 350px;
   transform: translateY(-50%);
   width: 320px;
-  /* Khalfia glass bhal dyal l-comments */
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 15px; /* bhal dyal glass-panel */
+  border-radius: 15px;
   box-sizing: border-box;
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.15); /* border khfif byed */
+  border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   padding: 0;
   display: flex;
@@ -1122,7 +1070,7 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   justify-content: space-between;
   align-items: center;
   padding: 15px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15); /* line khfif byed */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .info-modal-body {
@@ -1136,7 +1084,6 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   display: flex;
   align-items: center;
   gap: 15px;
-  /* Chwya dyal contraste khfif 3la background dyal card */
   background: rgba(255, 255, 255, 0.05);
   padding: 12px 18px;
   border-radius: 12px;
@@ -1166,7 +1113,6 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 }
 .no-event-tags { opacity: .65; font-size: 13px; }
 
-/* Fix l-Arabiya (RTL) */
 [dir="rtl"] .info-modal-card {
   right: auto;
   left: 350px;
@@ -1180,6 +1126,22 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
   [dir="rtl"] .info-modal-card {
     left: 50%;
     transform: translate(-50%, -50%);
+  }
+}
+@media (max-width: 1024px) {
+  .feed-container {
+    width: 100%;
+    max-width: 100%;
+    height: 70vh;
+    flex-shrink: 0;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+  }
+
+  .video-wrapper {
+    height: 100%;
+    min-height: 100%;
+    flex-shrink: 0;
   }
 }
 

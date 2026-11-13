@@ -90,7 +90,6 @@ const timeAgo = (iso) => {
   return `${Math.floor(s / 86400)}d`;
 };
 
-// Click fuori dal pannello -> si chiude
 const onDocClick = (e) => {
   if (open.value && root.value && !root.value.contains(e.target)) open.value = false;
 };
@@ -176,4 +175,29 @@ onBeforeUnmount(() => {
 .avatar-system { display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.12); }
 .txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; font-size: 0.85rem; line-height: 1.35; word-break: break-word; }
 .txt small { color: rgba(255, 255, 255, 0.55); font-size: 0.75rem; }
+
+[dir="rtl"] .panel {
+  text-align: right;
+}
+
+[dir="rtl"] .list li {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+@media (max-width: 1024px) {
+  .panel,
+  [dir="rtl"] .panel {
+    position: fixed;
+    top: 65px;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%);
+    width: calc(100vw - 20px) !important;
+    max-width: 360px !important;
+    max-height: 70vh;
+    box-sizing: border-box;
+  }
+}
+
 </style>

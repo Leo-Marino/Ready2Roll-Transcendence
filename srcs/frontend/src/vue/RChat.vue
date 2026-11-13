@@ -2,12 +2,6 @@
 import { ref, nextTick, onBeforeUnmount } from 'vue';
 import { t as $t } from '../i18n';
 import { currentLang } from '../i18n';
-// =====================================================================
-//  R Chat: floating assistant for the home page (FRONTEND ONLY for now)
-//
-//  When the backend is ready, only `askBot()` below has to change.
-//  Everything else (UI, animations, history) stays the same.
-// =====================================================================
 
 const isOpen = ref(false);
 const input = ref('');
@@ -64,19 +58,6 @@ let fallbackIdx = 0;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/**
- * The only place to touch when connecting to the backend.
- * Must resolve with the bot's answer as a string.
- *
- * Example (later):
- *   const res = await fetch('/api/chatbot/', {
- *     method: 'POST',
- *     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
- *     body: JSON.stringify({ message: text, history }),
- *   });
- *   const data = await res.json();
- *   return data.reply;
- */
 const askLocal = async (text) => {
   await sleep(700 + Math.random() * 700);   // fake "thinking" time
   const hit = rules.find((r) => r.re.test(text));
@@ -105,10 +86,6 @@ const askBot = async (text, history = []) => {
   return askLocal(text);
 };
 
-
-// ---------------------------------------------------------------------
-//  UI logic
-// ---------------------------------------------------------------------
 let alive = true;
 onBeforeUnmount(() => { alive = false; });
 

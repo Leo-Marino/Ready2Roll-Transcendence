@@ -71,7 +71,6 @@ export default {
             ))
             .filter(Boolean);
         } catch (e) {
-          console.error('Error parsing editingEvent:', e);
         }
       }
     } else {
@@ -90,7 +89,6 @@ export default {
           .map(tag => typeof tag === 'string' ? tag : tag.tag_name)
           .filter(Boolean);
       } catch (error) {
-        console.error('Unable to load event tags:', error);
         this.tagsError = 'Could not load tags. Please refresh the page.';
       } finally {
         this.tagsLoading = false;
@@ -182,6 +180,7 @@ export default {
       formData.append('location', this.eventLocation);
       formData.append('event_date', this.eventDate);
       formData.append('status', this.eventStatus);
+      // Send the selected tag names as one JSON array for the DRF serializer.
       this.selectedTags.forEach(tag => formData.append('tags', tag));
 
       if (this.maxCapacity !== '' && this.maxCapacity !== null) formData.append('max_capacity', this.maxCapacity);
@@ -213,6 +212,7 @@ export default {
         const data = isJson ? await response.json() : {};
 
         if (response.ok) {
+          const savedEvent = isJson ? await response.json() : {};
           sessionStorage.removeItem('editingEvent');
           alert(this.isEditMode ? $t('eventUpdated') : (this.eventStatus === 'scheduled' ? $t('eventScheduled') : $t('eventCreated')));
           this.$emit('event-published', data);
@@ -521,11 +521,12 @@ html, body {
 .owner-visual-wrapper {
   position: relative;
   height: 100vh;
-  width: 100vw;
+  width: 100%;
   color: #ffffff;
   font-family: var(--font-main);
   box-sizing: border-box;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
 }
@@ -577,13 +578,13 @@ textarea::placeholder {
 }
 
 .main-content {
-  position: relative;
-  z-index: 1;
-  max-width: 98vw;
+  display: block !important;
+  width: 100%;
+  max-width: 1550px;
   margin: 0 auto;
-  padding: 10px 20px;
+  padding: 10px 20px 40px 20px;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: visible !important;
 }
 .page-title-row {
   display: flex;
@@ -665,6 +666,7 @@ textarea::placeholder {
 }
 
 .logo-text {
+  display: inline-block !important;
   font-family: "Bruno Ace", sans-serif;
   font-weight: 400;
   font-size: 1.25rem;
@@ -1028,23 +1030,77 @@ textarea::placeholder {
   transform: translateY(-2px);
 }
 
-@media (max-width: 1200px) {
-  .preview-box {
-    flex-direction: column;
-    align-items: center;
-  }
-  .right-section,
-  .event-details-bar-vertical {
-    width: 100%;
-    max-width: 480px;
-    height: auto;
-  }
-  .map-container-inline,
-  .media-outer-wrapper {
-    width: 100%;
-    max-width: 480px;
-    height: 440px;
-  }
+
+/* Event tags: same Ready2Roll glass + cyan badge style as the profile page */
+.event-tags-group {
+  margin-top: 4px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.tags-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tags-count,
+.tags-hint {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.62rem;
+}
+
+.tag-selector-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 7px;
+}
+
+.selectable-tag-pill {
+  appearance: none;
+  cursor: pointer;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 14px;
+  font: inherit;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.35px;
+  text-transform: uppercase;
+  backdrop-filter: blur(5px);
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.selectable-tag-pill:hover {
+  transform: translateY(-2px);
+}
+
+.business-badge {
+  background: rgba(0, 242, 254, 0.16);
+  border: 1px solid #00f2fe;
+  color: #00f2fe;
+  box-shadow: 0 0 9px rgba(0, 242, 254, 0.22);
+}
+
+.standard-badge {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.tag-pill-icon {
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.tags-error {
+  color: #ff9292;
+  font-size: 0.65rem;
 }
 
 /* Event tags: same Ready2Roll glass + cyan badge style as the profile page */
@@ -1148,6 +1204,117 @@ textarea::placeholder {
 
 [dir="rtl"] .tag-selector-container {
   justify-content: flex-end; /* Tags kiybano mn limin */
+}
+
+@media (max-width: 1250px) {
+  .preview-box {
+    gap: 15px;
+    padding: 15px;
+  }
+  .right-section,
+  .event-details-bar-vertical,
+  .media-outer-wrapper,
+  .map-container-inline {
+    width: 310px;
+  }
+}
+
+/* 2. Tablet (max-width: 900px): كيهبطو واحد تحت واحد بعرض مريح */
+@media (max-width: 900px) {
+  .navbar {
+    width: calc(100% - 24px);
+    padding: 10px 16px;
+    margin: 10px auto;
+  }
+  .main-content {
+    padding: 10px 12px 30px 12px;
+  }
+  .glass-card {
+    padding: 15px;
+  }
+  .preview-box,
+  [dir="rtl"] .preview-box {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 20px;
+    padding: 15px;
+  }
+  .step-column,
+  .right-section {
+    width: 100% !important;
+    max-width: 500px !important;
+  }
+  .event-details-bar-vertical {
+    width: 100% !important;
+    max-width: 500px !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .media-outer-wrapper,
+  .map-container-inline {
+    width: 100% !important;
+    max-width: 500px !important;
+    height: 380px;
+  }
+  .map-slide-enter-active,
+  .map-slide-leave-active {
+    max-width: 500px !important;
+  }
+}
+
+/* 3. Mobile (max-width: 480px): للشاشات الصغار بحال 320px */
+@media (max-width: 480px) {
+  .navbar {
+    width: calc(100% - 16px);
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  .logo-text {
+    display: none !important; /* كنخليو غير أيقونة اللوغو فـ 320px باش يقدو الـ 4 أيقونات */
+  }
+  .nav-icons {
+    gap: 10px;
+  }
+  .page-title-row {
+    justify-content: center;
+    text-align: center;
+  }
+  .page-title {
+    font-size: 1.15rem;
+    width: 100%;
+  }
+  .nav-visual-btn {
+    width: 100%;
+    padding: 8px 14px;
+    font-size: 0.75rem;
+  }
+  .glass-card,
+  .preview-box {
+    padding: 10px;
+  }
+  .step-column,
+  .right-section,
+  .event-details-bar-vertical,
+  .media-outer-wrapper,
+  .map-container-inline,
+  .custom-input {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+  .media-outer-wrapper,
+  .map-container-inline {
+    height: 260px;
+    padding: 10px;
+  }
+  .form-row,
+  [dir="rtl"] .form-row {
+    flex-direction: column !important;
+    gap: 10px;
+  }
+  .publish-btn {
+    width: 100%;
+    padding: 12px;
+  }
 }
 
 </style>

@@ -57,7 +57,7 @@ const routes = [
   },
   {
     path: '/profile',
-    name: 'profile', // Sme7 lia beddelt lik '/profile' b 'profile' (name dyal route 7ssen ykon bla '/')
+    name: 'profile',
     component: ProfileView,
     meta: { requiresAuth: true }
   },
@@ -65,7 +65,6 @@ const routes = [
     path: '/CreateEvent',
     name: 'CreateEvent',
     component: CreateEvent,
-    // Hna zedna requiresBusiness bach n-7ebsou l-comptat l-3adiyin
     meta: { requiresAuth: true, requiresBusiness: true }
   },
   {
@@ -106,23 +105,18 @@ const router = createRouter({
 
 // === HADA HWA L-3ESSASS (Navigation Guard) ===
 router.beforeEach((to, from) => {
-  // Kan-qraw l-token mn sessionStorage wla localStorage
+
   const token = sessionStorage.getItem('token');
 
-  // Kan-qraw type d l-user (khassk tkon katsauvegardih f loginPage)
   const userType = sessionStorage.getItem('type_of_user');
 
   if (to.meta.requiresAuth && !token) {
-    // 1. Bgha ydkhl l-page d nas li logé, w howa ma 3ndouch token -> lo7o l-Login
     return ('/login');
   } else if (to.meta.requiresBusiness && (!userType || userType.toLowerCase() !== 'business')) {
-    // 2. Bgha ydkhl l-CreateEvent, w howa 3ndo token walakin machi "business" -> lo7o l-Home
     return ('/home');
   } else if (to.meta.guestOnly && token) {
-    // 3. Howa m-logé, w bgha ydkhl l-page d Login wla Signup -> lo7o l-Home (ma 3ndo maydir bihom)
     return ('/home');
   } else {
-    // 4. Kolchi mzyan, khelsso ydkhl l-page
     return true;
   }
 })

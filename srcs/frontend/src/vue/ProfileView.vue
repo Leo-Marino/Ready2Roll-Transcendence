@@ -31,6 +31,15 @@ const openMapModal = (location, title, event) => {
   showMapModal.value = true;
 };
 
+const translateStatus = (status) => {
+  if (!status) return '';
+  const s = status.toLowerCase();
+  if (s === 'active') return $t('statusActive');
+  if (s === 'draft') return $t('statusDraft');
+  if (s === 'scheduled') return $t('statusScheduled');
+  return status;
+};
+
 const closeMapModal = () => {
   showMapModal.value = false;
 };
@@ -66,7 +75,6 @@ const openFollowModal = async (type) => {
       }));
     }
   } catch (error) {
-    console.error("Error fetching follow list:", error);
   } finally {
     isFollowListLoading.value = false;
   }
@@ -151,7 +159,6 @@ const fetchMyEvents = async () => {
       myEvents.value = await response.json();
     }
   } catch (error) {
-    console.error('Impossibile caricare gli eventi', error);
   }
 };
 
@@ -176,10 +183,11 @@ const deleteEvent = async (event) => {
       closePreview();
       alert($t('eventDeleted'));
     } else {
+      const errData = await response.json();
       alert($t('eventDeleteFailed'));
     }
   } catch (error) {
-    alert($t('networkError'));
+    alert($t ('networkError'));
   }
 };
 
@@ -208,7 +216,6 @@ const fetchLikedEvents = async () => {
       likedEvents.value = await response.json();
     }
   } catch (error) {
-    console.error('Impossible to uplod the liked video', error);
   }
 };
 
@@ -296,7 +303,6 @@ onMounted(async () => {
     }
     fetchLikedEvents();
   } catch (error) {
-    console.error('Errore di fetch del profilo', error);
   }
 });
 
@@ -579,7 +585,7 @@ const saveProfile = async () => {
               </div>
 
               <span class="status-badge" :class="event.status ? event.status.toLowerCase() : ''">
-                {{ event.status }}
+                {{ translateStatus(event.status) }}
               </span>
 
               <div class="reel-overlay-content">
@@ -641,7 +647,7 @@ const saveProfile = async () => {
       <div class="stats-info-box">
         <div class="stats-header">
           <span class="status-badge-inline" :class="activePreviewEvent.status ? activePreviewEvent.status.toLowerCase() : ''" v-if="activePreviewEvent.status">
-            {{ activePreviewEvent.status }}
+            {{ translateStatus(activePreviewEvent.status) }}
           </span>
           <h2>{{ activePreviewEvent.title }}</h2>
           <p class="stats-desc">{{ activePreviewEvent.description || $t('noDescription') }}</p>
@@ -755,9 +761,10 @@ const saveProfile = async () => {
 
         <div class="edit-form-grid">
           <div class="input-group">
-            <label>{{ $t('username') }}</label>
-            <input type="text" v-model="profileEditForm.username" :placeholder="$t('username')" class="custom-input">
-            <p class="helper-text">{{ $t('usernameHelper') }}</p>
+              <label>{{ $t('username') }}</label>
+                  <input type="text" v-model="profileEditForm.username" :placeholder="$t('username')" class="custom-input">
+                   <p v-if="profileEditUsernameError" class="username-error-text">{{ profileEditUsernameError }}</p>
+                    <p class="helper-text">{{ $t('usernameHelper') }}</p>
           </div>
           <div class="input-group">
             <label>{{ $t('bio') }}</label>
@@ -1035,13 +1042,47 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 }
 
 @media (max-width: 768px) {
+  .profile-header,
+  [dir="rtl"] .profile-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding-bottom: 20px;
+    gap: 15px;
+  }
+  .profile-info {
+    align-items: center;
+    width: 100%;
+  }
+  .description-box {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .action-buttons-styled,
   [dir="rtl"] .action-buttons-styled {
     position: static;
-    margin-top: 15px;
+    margin-top: 10px;
     justify-content: center;
+    flex-wrap: wrap;
+    width: 100%;
   }
-  [dir="rtl"] .profile-header {
-    padding-bottom: 20px;
+  .stats-modal-card {
+    flex-direction: column;
+    align-items: center;
+    overflow-y: auto;
+    padding: 15px;
+  }
+  .stats-media-box {
+    height: 280px;
+    width: 100%;
+    max-width: 220px;
+  }
+  .stats-info-box {
+    width: 100%;
+    overflow-y: visible;
+  }
+  .stats-metrics-grid {
+    grid-template-columns: 1fr;
   }
 }
 
