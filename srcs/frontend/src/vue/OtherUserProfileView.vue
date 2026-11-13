@@ -86,7 +86,6 @@ const fetchUserEvents = async (userId) => {
     });
     if (response.ok) userEvents.value = await response.json();
   } catch (error) {
-    console.error('Error loading events:', error);
   }
 };
 

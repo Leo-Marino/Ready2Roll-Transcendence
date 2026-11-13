@@ -71,7 +71,6 @@ export default {
             ))
             .filter(Boolean);
         } catch (e) {
-          console.error('Error parsing editingEvent:', e);
         }
       }
     } else {
@@ -90,7 +89,6 @@ export default {
           .map(tag => typeof tag === 'string' ? tag : tag.tag_name)
           .filter(Boolean);
       } catch (error) {
-        console.error('Unable to load event tags:', error);
         this.tagsError = 'Could not load tags. Please refresh the page.';
       } finally {
         this.tagsLoading = false;
@@ -133,7 +131,6 @@ export default {
           this.actualFile = file;
           this.mediaType = file.type.startsWith('video') ? 'video' : 'image';
         } catch (error) {
-           // Gracefully handle the error without logging to console.error
            alert("Unable to read the selected file. Please check file permissions.");
            this.clearMedia();
         }

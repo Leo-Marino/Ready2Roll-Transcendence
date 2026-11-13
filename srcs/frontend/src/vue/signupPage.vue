@@ -160,11 +160,9 @@ const submitSignup = async () => {
             alert($t('signupSuccess'));
             router.push('/login');
         } else {
-            console.error('Error message by the server:', data);
             alert(data.error || $t('signupFailed'));
         }
     } catch (error) {
-        console.error('Network error: ', error);
         alert($t('networkError'));
     }
 };

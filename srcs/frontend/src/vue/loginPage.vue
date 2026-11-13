@@ -38,7 +38,6 @@ const submitLogin = async () => {
             alert($t('loginInvalid'));
         }
     } catch (error) {
-        console.error("Network error:", error);
         alert($t('networkError'));
     }
 };
