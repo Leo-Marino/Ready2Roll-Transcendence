@@ -64,6 +64,8 @@ export const messages = {
     addComment: 'Add a comment...',
     post: 'Post',
     rollyStatusOnline: 'online',
+    UserStatusOnline: 'online',
+    UserStatusOffline: 'offline',
     rollyStatusTyping: 'typing...',
     askRolly: 'Ask Rolly...',
     send: 'Send',
@@ -149,6 +151,7 @@ export const messages = {
     passReqSpecial: "At least one special character (!@#$%^&*)",
     "term": "Terms of Service",
     "privacy": "Privacy Policy",
+    'youPrefix': 'You: ',
   },
   fr: {
     menu: 'Menu',
@@ -211,6 +214,8 @@ export const messages = {
     addComment: 'Ajouter un commentaire...',
     post: 'Publier',
     rollyStatusOnline: 'en ligne',
+    UserStatusOnline: 'en ligne',
+    UserStatusOffline: 'Hors ligne',
     rollyStatusTyping: 'en train d\'écrire...',
     askRolly: 'Demander à Rolly...',
     send: 'Envoyer',
@@ -297,6 +302,7 @@ export const messages = {
     passReqSpecial: "Au moins un caractère spécial (!@#$%^&*)",
     "term": "Conditions d'Utilisation",
     "privacy": "Politique de Confidentialité",
+    'youPrefix': 'Vous : '
   },
   ar: {
     menu: 'القائمة',
@@ -359,6 +365,8 @@ export const messages = {
     addComment: 'أضف تعليقاً...',
     post: 'نشر',
     rollyStatusOnline: 'متصل',
+    UserStatusOnline: 'متصل',
+    UserStatusOffline: 'غير متصل',
     rollyStatusTyping: 'يكتب...',
     askRolly: 'اسأل رولي...',
     send: 'إرسال',
@@ -444,6 +452,7 @@ export const messages = {
     passReqSpecial: "رمز خاص واحد على الأقل (!@#$%^&*)",
     "term": "شروط الخدمة",
     "privacy": "سياسة الخصوصية",
+    youPrefix: 'أنت: '
   }
 };
 

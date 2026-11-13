@@ -110,7 +110,6 @@ const handleSocialMessage = (message) => {
 } else if (action === 'update_profile') {
     // ---> BULLETPROOF LIVE PROFILE UPDATES <---
     if (targetId === Number(route.params.id)) {
-      // Check all possible backend key names, fallback to existing name if missing
       userProfile.value.name = data.username || data['user.name'] || data.name || userProfile.value.name;
 
       // Same for bio
@@ -191,7 +190,6 @@ const toggleFollow = async () => {
 
           <div class="nav-icons">
             <LanguageSwitcher />
-
             <router-link to="/chat" class="nav-icon-link">
               <ChatNavLink>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
@@ -209,7 +207,6 @@ const toggleFollow = async () => {
             </router-link>
           </div>
         </header>
-
     <div class="main-content">
       <aside class="left-sidebar glass-panel">
         <nav class="main-menu">
@@ -346,7 +343,7 @@ li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor:
 
 /* RTL Fixes for Profile Buttons */
 [dir="rtl"] .profile-header {
-  padding-bottom: 70px; /* Zidna l'espace lta7t bach maytla3ch l'button fo9 l'bio */
+  padding-bottom: 70px;
 }
 
 [dir="rtl"] .action-buttons-styled {
