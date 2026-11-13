@@ -48,7 +48,9 @@ services:
       ANOMALY_INBOUND: "5"
       ANOMALY_OUTBOUND: "4"
       MODSEC_AUDIT_LOG_FORMAT: JSON
-      MODSEC_REQ_BODY_LIMIT: "13107200"         # poster uploads: set to your real max (bytes)
+      CLIENT_MAX_BODY_SIZE: "600m"
+      MODSEC_REQ_BODY_LIMIT: "629145600"         # poster uploads: set to your real max (bytes)
+      PROXY_READ_TIMEOUT: "300"
     volumes:
       - ./srcs/waf/certs/server.crt:/etc/nginx/conf/server.crt:ro
       - ./srcs/waf/certs/server.key:/etc/nginx/conf/server.key:ro

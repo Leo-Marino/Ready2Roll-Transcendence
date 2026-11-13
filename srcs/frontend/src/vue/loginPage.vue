@@ -75,9 +75,9 @@ const submitLogin = async () => {
                     <p>{{ $t('loginNoAccount') }} <router-link to="/signup">{{ $t('loginSignupLink') }}</router-link></p>
                 </div>
                 <div class="centred legal-links">
-                  <router-link to="/privacy">Privacy Policy</router-link>
+                  <router-link to="/privacy">{{ $t('privacy') }}</router-link>
                   <span>·</span>
-                  <router-link to="/terms">Terms of Service</router-link>
+                  <router-link to="/terms">{{ $t ('term')}}</router-link>
               </div>
             </form>
         </div>

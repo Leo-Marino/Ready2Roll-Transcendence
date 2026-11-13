@@ -153,7 +153,7 @@ const postComment = async () => {
       newCommentText.value = '';
       replyingTo.value = null;
     } else {
-      alert("Errore nel salvataggio del commento.");
+      alert($t('commentSaveError'));
     }
   } catch (error) {
     console.error('Errore di rete durante l\'invio del commento:', error);
