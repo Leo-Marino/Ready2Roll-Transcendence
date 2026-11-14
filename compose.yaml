@@ -29,11 +29,10 @@ services:
 # WAF — ModSecurity v3 + OWASP CRS on nginx. Only public entrypoint.
 #---------------------------------------------------------------------------
   waf:
-    image: owasp/modsecurity-crs:nginx          # PIN A TAG/DIGEST before the demo
+    image: owasp/modsecurity-crs:nginx
     container_name: ready2roll-waf
     restart: unless-stopped
     ports:
-      - "8080:8080"                             # plain HTTP (debug)
       - "8443:8443"                             # HTTPS -> https://localhost:8443
     environment:
       BACKEND: http://nginx:80
@@ -41,7 +40,6 @@ services:
       SSL_PORT: "8443"
       PROXY_SSL: "off"                          # backend is plain HTTP; "on" crashes the WAF
       SERVER_NAME: localhost
-      # Stage 1: observe. Stage 2: set to On, then raise PARANOIA to 2.
       MODSEC_RULE_ENGINE: ON
       PARANOIA: "1"
       BLOCKING_PARANOIA: "1"
