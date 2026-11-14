@@ -16,7 +16,7 @@ const dispatch = (message) => {
     try {
       listener(message);
     } catch (error) {
-      // console.error('Social socket listener failed:', error);
+      console.error('Social socket listener failed:', error);
     }
   });
 };
