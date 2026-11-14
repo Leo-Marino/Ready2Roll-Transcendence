@@ -247,7 +247,7 @@ const handleSocialMessage = (message) => {
     if (targetId === userProfile.value.id) {
       userProfile.value.name = data.username || data['user.name'] || userProfile.value.name;
       userProfile.value.description = data.user_bio ?? userProfile.value.description;
-      if (data.user_avatar) {
+      if (data.user_avatar && data.user_avatar != NULL) {
         userProfile.value.avatar = data.user_avatar;
       }
     }
@@ -768,7 +768,7 @@ const saveProfile = async () => {
           </div>
           <div class="input-group">
             <label>{{ $t('bio') }}</label>
-            <textarea v-model="profileEditForm.bio" :placeholder="$t('bioPlaceholder')" rows="4" class="custom-input textarea-input"></textarea>
+            <textarea v-model="profileEditForm.bio" maxlength="150" :placeholder="$t('bioPlaceholder')" rows="4" class="custom-input textarea-input"></textarea>
           </div>
 
           <!-- TAGS (Visibile solo per account standard) -->

@@ -150,6 +150,18 @@ export default {
       this.actualFile = null;
       this.mediaType = null;
     },
+    extractErrorMessage(data, fallback) {
+      if (!data || typeof data !== 'object') return fallback;
+      if (typeof data.detail === 'string') return data.detail;
+      if (typeof data.error === 'string') return data.error;
+      const firstEntry = Object.entries(data)[0];
+      if (firstEntry) {
+        const [field, messages] = firstEntry;
+        const msg = Array.isArray(messages) ? messages[0] : messages;
+        if (typeof msg === 'string') return `${field}: ${msg}`;
+      }
+      return fallback;
+    },
     async handlePublish() {
       if (!this.eventTitle.trim() || !this.descriptionText.trim() || !this.eventDate || !this.eventStatus) {
         alert($t('allFieldsMandatory'));
@@ -180,7 +192,6 @@ export default {
       formData.append('location', this.eventLocation);
       formData.append('event_date', this.eventDate);
       formData.append('status', this.eventStatus);
-      // Send the selected tag names as one JSON array for the DRF serializer.
       this.selectedTags.forEach(tag => formData.append('tags', tag));
 
       if (this.maxCapacity !== '' && this.maxCapacity !== null) formData.append('max_capacity', this.maxCapacity);
@@ -212,7 +223,6 @@ export default {
         const data = isJson ? await response.json() : {};
 
         if (response.ok) {
-          const savedEvent = isJson ? await response.json() : {};
           sessionStorage.removeItem('editingEvent');
           alert(this.isEditMode ? $t('eventUpdated') : (this.eventStatus === 'scheduled' ? $t('eventScheduled') : $t('eventCreated')));
           this.$emit('event-published', data);
@@ -374,6 +384,7 @@ export default {
                 id="event-title"
                 type="text"
                 v-model="eventTitle"
+                maxlength="42"
                 :placeholder="$t('titlePlaceholder')"
                 class="custom-input"
                 required
@@ -386,6 +397,7 @@ export default {
                 id="event-description"
                 v-model="descriptionText"
                 :placeholder="$t('descriptionPlaceholder')"
+                maxlength="222"
                 class="custom-input textarea-input"
                 rows="1"
                 required
