@@ -11,7 +11,7 @@ vault-status:
 	$(COMPOSE) exec vault vault status
 
 keygen: # 1. Initialize vault and create token keys
-	$(COMPOSE) exec vault vault operator init -key-shares=5 -key-threshold=2
+	$(COMPOSE) exec vault vault operator init -key-shares=5 -key-threshold=3
 
 unseal: # 2. Unseal vault
 	$(COMPOSE) exec vault vault operator unseal

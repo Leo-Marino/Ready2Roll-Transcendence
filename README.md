@@ -353,7 +353,7 @@ erDiagram
 | 2 | Real-time features using WebSockets | Web | Major | 2 | Django Channels + Redis pub/sub (`DMConsumer`, `SocialConsumer`, auto-resync on reconnect) | _Xhuljano, Thilina_ |
 | 3 | User interaction (chat, profiles, friends/follow) | Web | Major | 2 | Live 1-on-1 DMs (`ChatView.vue`), profiles, follow/subscriptions, comments and reactions | _all_ |
 | 4 | Standard user management and authentication | User Management | Major | 2 | Standard/business accounts, profile edit, avatar upload with default fallback, followers | _all_ |
-| 5 | Complete LLM system interface ("Rolly") | Artificial Intelligence | Major | 2 | `events/ai.py` + `RChat.vue`: Gemini API with fallback model, live event context, rate limit of 10 requests/min per user | _Thilina, Xhulano, Ilyas_ |
+| 5 | Complete LLM system interface ("Rolly") | Artificial Intelligence | Major | 2 | `events/ai.py` + `RChat.vue`: Gemini API with fallback model, live event context, rate limit of 10 requests/min per user | _Thilina, Xhuljano, Ilyas_ |
 | 6 | Recommendation system | Artificial Intelligence | Major | 2 | `events/recommender.py`: content-based (tags) + behavioural (likes, trending) filtering for the *For you*, *Discover* and *Following* feeds | _Xhuljano, Ilyas_ |
 | 7 | WAF/ModSecurity (hardened) + HashiCorp Vault for secrets | Cybersecurity | Major | 2 | OWASP ModSecurity CRS + TLS as sole entry point; Vault in server mode (Raft storage, TLS), AppRole auth, Vault Agent rendering secrets to `tmpfs` | _Leo_ |
 | 8 | Use an ORM for the database | Web | Minor | 1 | Django ORM on PostgreSQL 16 (10 models, constraints, `annotate`, `prefetch_related`) | _Thilina_ |
@@ -370,28 +370,28 @@ erDiagram
 
 ### Leo (`lemarino`)
 
-- **Challenges faced_**: _Organizing the team workflow and keeping everybody in contact despite different work hours_
-- **Solutions found**: _Whatsapp groupchat, Slack Work space, Github_
+- **Worked on modules**: _1, 3, 4, 7, 9, 13_
+
 
 ### Xhuljano (`xhamzall`)
 
-- **Challenges faced_**: _Learn to use a new programming language_
-- **Solutions found**: _Online tutorials_
+- **Worked on modules**: _1, 2, 3, 4, 5, 6, 9, 13_
+
 
 ### Thilina (`tkurukul`)
 
-- **Challenges faced_**: _Learn to use a new programming language_
-- **Solutions found**: _Online tutorials_
+- **Worked on modules**: _1, 2, 3, 4, 5, 8, 9, 10, 13_
+
 
 ### Ilyas (`ilmahjou`)
 
-- **Challenges faced_**: _Doing API calls to connect services_
-- **Solutions found**: _Online tutorials_
+- **Worked on modules**: _1, 3, 4, 5, 6, 9, 11, 12, 13_
+
 
 ### Alek (`adegl-in`)
 
-- **Challenges faced_**: _Balancing time between the project and a full time job_
-- **Solutions found**: _Sacrificed free time to work on Ready2Roll_
+- **Worked on modules**: _1, 3, 4, 9, 13_
+
 
 ---
 

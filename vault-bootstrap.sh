@@ -9,7 +9,7 @@ INIT_FILE="${INIT_FILE:-secrets/vault-init.json}"    # contains unseal keys + ro
 SECRETS_FILE="${SECRETS_FILE:-./r2r-secrets.json}"
 APPROLE_DIR="secrets/approle"
 KEY_SHARES=5
-KEY_THRESHOLD=2
+KEY_THRESHOLD=3
 
 command -v jq >/dev/null || { echo "jq is required (apt install jq / brew install jq)"; exit 1; }
 
