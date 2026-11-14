@@ -1,19 +1,4 @@
 import { onBeforeUnmount } from 'vue';
-
-// Shared WebSocket for live updates (likes, comments, reactions, follows,
-// notification signals). One single connection is shared by every component
-// that calls useSocialSocket(); it is opened by the first one and closed
-// when the last one unmounts.
-//
-// Messages received from the server look like:
-//   { action: 'like' | 'comment' | 'comment_reaction' | 'follow' | 'notification',
-//     target_id: <number>,
-//     data: { ... } }
-//
-// After an automatic reconnection a synthetic { action: 'resync' } message is
-// dispatched, so components can re-fetch anything they may have missed while
-// the connection was down.
-
 const MAX_RETRY_DELAY_MS = 30000;
 
 const listeners = new Set();

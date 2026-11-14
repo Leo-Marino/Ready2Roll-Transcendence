@@ -19,12 +19,7 @@ const subFeed = ref([
   </video>
 
   <div class="app-container">
-    <!-- Paste your standard Navbar here -->
-
     <div class="main-content">
-      <!-- Paste your standard Left Sidebar (with router-links) here -->
-
-      <!-- Center: Subscriptions Feed -->
       <main class="feed-container glass-panel">
         <h2>Subscriptions Feed</h2>
         <div class="video-scroll-area">

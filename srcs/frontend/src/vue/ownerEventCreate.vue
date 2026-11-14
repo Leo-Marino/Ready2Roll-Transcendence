@@ -411,7 +411,7 @@ export default {
               class="custom-input date-picker"
               required
             /> -->
-            <div class="form-row">
+            <!-- <div class="form-row">
               <div class="detail-input-group">
                 <label for="end-time">{{ $t('eventEnd') }}</label>
                 <input
@@ -421,7 +421,7 @@ export default {
                   class="custom-input date-picker"
                 />
               </div>
-            </div>
+            </div> -->
 
             <div class="form-row">
               <div class="detail-input-group">

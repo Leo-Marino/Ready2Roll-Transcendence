@@ -160,6 +160,8 @@ export const messages = {
     validationError: "A validation error was found; please check your input.",
     eventSaveError: "There was an error saving the event.",
     fileTooLarge: "File is too large! Maximum allowed size is 600 MB.",
+    eventdetails: "Event Informations",
+    noevents:"No events yet. Owners will publish their events here.",
   },
   fr: {
     menu: 'Menu',
@@ -319,8 +321,12 @@ export const messages = {
     validationError: "Erreur de validation ; veuillez vérifier vos champs.",
     eventSaveError: "Une erreur est survenue lors de l'enregistrement de l'événement.",
     fileTooLarge: "Le fichier est trop volumineux ! La taille maximale autorisée est de 600 Mo.",
+    eventdetails: "Informations sur l’événement",
+    noevents:"Aucun événement pour le moment. Les organisateurs publieront leurs événements ici.",
+
   },
   ar: {
+    eventdetails: "معلومات الفعالية",
     menu: 'القائمة',
     forYou: 'لك',
     subscriptions: 'الاشتراكات',
@@ -477,6 +483,8 @@ export const messages = {
     validationError: "تم العثور على خطأ في التحقق؛ يرجى مراجعة المدخلات.",
     eventSaveError: "حدث خطأ أثناء حفظ الحدث.",
     fileTooLarge: "الملف كبير جداً! الحد الأقصى المسموح به هو 600 ميجابايت.",
+    eventdetails: "معلومات الفعالية",
+    noevents:"لا توجد فعاليات حاليًا. سيقوم منظّمو الفعاليات بنشر فعالياتهم هنا",
   }
 };
 

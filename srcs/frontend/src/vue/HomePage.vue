@@ -487,7 +487,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <h2 class="empty-title">Ready2Roll</h2>
-          <p class="empty-sub">No events yet. Owners will publish their events here.</p>
+          <p class="empty-sub"> {{$t('noevents')}}</p>
         </div>
 
         <div

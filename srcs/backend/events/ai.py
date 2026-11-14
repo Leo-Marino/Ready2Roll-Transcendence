@@ -84,7 +84,7 @@ def build_event_context(event):
         f"Location: {event.location or 'not specified'}\n"
         f"Date: {_fmt(event.event_date)}\n"
         f"Start: {_fmt(event.start_time)}\n"
-        f"End: {_fmt(event.end_time)}\n"
+        # f"End: {_fmt(event.end_time)}\n"
         f"Ticket price: {price}\n"
         f"Max capacity: {event.max_capacity or 'not specified'}\n"
     )

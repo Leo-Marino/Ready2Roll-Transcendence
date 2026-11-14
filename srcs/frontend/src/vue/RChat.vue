@@ -352,17 +352,15 @@ const showSuggestions = () => messages.value.length === 1 && !isTyping.value;
 [dir="rtl"] .rc-root {
   left: auto !important;
   right: 24px !important;
-  align-items: flex-end !important; /* L'fenêtre d'chat tweli m9adda m3a l'bouton f limin */
+  align-items: flex-end !important;
 }
 
-/* Modal dyal Chat khasso yt7el mn limin machi mn l'isser */
 [dir="rtl"] .rc-panel {
   transform-origin: bottom right !important;
 }
 
-/* N9addo l'icone dyal l'input bach tji 3la l'isser f RTL */
 [dir="rtl"] .rc-send-icon {
-  transform: scaleX(-1); /* Kat-qleb l'icone d l'irsar (papie-plane) */
+  transform: scaleX(-1);
 }
 
 </style>
