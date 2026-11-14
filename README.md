@@ -88,7 +88,7 @@ at runtime by the Vault Agent into RAM-backed (`tmpfs`) volumes.
 make run-app
 ```
 
-`run-app` runs a script (vault-bootstrap.sh) that performs every step needed to go from a clean clone to
+`run-app` runs two scripts (gen-certs.sh and vault-bootstrap.sh) that performs every step needed to go from a clean clone to
 a running application: it builds and starts all containers, initializes and unseals
 Vault, configures the secrets engine and AppRole authentication.
 All vault keys will be stored in secrets/vault-init.json
