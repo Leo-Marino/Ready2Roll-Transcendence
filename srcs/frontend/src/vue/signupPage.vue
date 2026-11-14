@@ -151,7 +151,8 @@ const submitSignup = async () => {
             body: JSON.stringify(payload)
         });
 
-        const data = await response.json();
+        const contentType = response.headers.get('content-type') || '';
+        const data = contentType.includes('application/json') ? await response.json() : {};
 
         if (response.ok) {
             if (data.token) {
@@ -160,6 +161,18 @@ const submitSignup = async () => {
             alert($t('signupSuccess'));
             router.push('/login');
         } else {
+            const serverFieldErrors = {};
+            let firstMessage = data.error || data.detail || '';
+            Object.entries(data).forEach(([key, val]) => {
+                const list = Array.isArray(val) ? val : [String(val)];
+                const mappedKey = key === 'legal_name' ? 'legalName' : (key === 'vat_tax' ? 'vatTax' : key);
+                serverFieldErrors[mappedKey] = list;
+                if (!firstMessage && list.length) firstMessage = list[0];
+            });
+            if (Object.keys(serverFieldErrors).length > 0) {
+                errors.value = serverFieldErrors;
+            }
+            alert(firstMessage || $t('signupFailed'));
             alert(data.error || $t('signupFailed'));
         }
     } catch (error) {

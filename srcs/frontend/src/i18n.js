@@ -165,6 +165,12 @@ export const messages = {
     fileTooLarge: "File is too large! Maximum allowed size is 600 MB.",
     eventdetails: "Event Informations",
     noevents:"No events yet. Owners will publish their events here.",
+    fileReadError: "Unable to read the selected file. Please check file permissions.",
+    invalidImageType: "Invalid file format! Please select a valid image (JPG, PNG, GIF, or WEBP).",
+    invalidMediaType: "Invalid file format! Please select a valid image (JPG, PNG, WEBP) or video (MP4, WEBM).",
+    endBeforeStartError: "Event end time cannot be earlier than the start time.",
+    commentTooLong: "Comment cannot exceed 500 characters.",
+    titleTooLong: "Title cannot exceed 255 characters.",
   },
   fr: {
     menu: 'Menu',
@@ -330,6 +336,12 @@ export const messages = {
     eventdetails: "Informations sur l’événement",
     noevents:"Aucun événement pour le moment. Les organisateurs publieront leurs événements ici.",
 
+    fileReadError: "Impossible de lire le fichier sélectionné. Veuillez vérifier les permissions.",
+    invalidImageType: "Format de fichier invalide ! Veuillez sélectionner une image valide (JPG, PNG, GIF ou WEBP).",
+    invalidMediaType: "Format de fichier invalide ! Veuillez sélectionner une image (JPG, PNG, WEBP) ou une vidéo (MP4, WEBM).",
+    endBeforeStartError: "L'heure de fin ne peut pas être antérieure à l'heure de début.",
+    commentTooLong: "Le commentaire ne peut pas dépasser 500 caractères.",
+    titleTooLong: "Le titre ne peut pas dépasser 255 caractères.",
   },
   ar: {
     eventdetails: "معلومات الفعالية",
@@ -494,6 +506,13 @@ export const messages = {
     fileTooLarge: "الملف كبير جداً! الحد الأقصى المسموح به هو 600 ميجابايت.",
     eventdetails: "معلومات الفعالية",
     noevents:"لا توجد فعاليات حاليًا. سيقوم منظّمو الفعاليات بنشر فعالياتهم هنا",
+    fileTooLarge: "الملف كبير جداً! الحد الأقصى المسموح به هو 600 ميجابايت.",
+    fileReadError: "تعذر قراءة الملف المحدد. يرجى التحقق من صلاحيات الملف.",
+    invalidImageType: "صيغة الملف غير صالحة! يرجى اختيار صورة صالحة (JPG أو PNG أو GIF أو WEBP).",
+    invalidMediaType: "صيغة الملف غير صالحة! يرجى اختيار صورة أو فيديو صالح (MP4 أو WEBM).",
+    endBeforeStartError: "لا يمكن أن يكون وقت انتهاء الحدث قبل وقت البدء.",
+    commentTooLong: "لا يمكن أن يتجاوز التعليق 500 حرف.",
+    titleTooLong: "لا يمكن أن يتجاوز العنوان 255 حرفاً.",
   }
 };
 

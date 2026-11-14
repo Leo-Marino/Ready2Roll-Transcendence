@@ -321,7 +321,7 @@ onBeforeUnmount(() => {
         </div>
 
         <form v-if="activeContact" class="chat-input-area" @submit.prevent="sendMessage">
-          <input type="text" v-model="newMessage" :placeholder="$t('chatTypeMessage')" required :dir="currentLang === 'ar' ? 'rtl' : 'ltr'">
+          <input type="text" v-model="newMessage" maxlength="1000" :placeholder="$t('chatTypeMessage')" required :dir="currentLang === 'ar' ? 'rtl' : 'ltr'">
           <button type="submit">{{ $t('chatSendButton') }}</button>
         </form>
       </main>
