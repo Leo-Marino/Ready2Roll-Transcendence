@@ -104,8 +104,8 @@ def event_comments_view(request, event_id):
 
     elif request.method == 'POST':
         content = (request.data.get('content') or '').strip()
-        if not content:
-            return Response({'error': 'Il contenuto del commento \u00e8 obbligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not content or len(content) > 500:
+          return Response({'error': 'Comment must be between 1 and 500 characters.'}, status=status.HTTP_400_BAD_REQUEST)
 
         parent = None
         replied_to = None          # il commento a cui l'utente sta davvero rispondendo

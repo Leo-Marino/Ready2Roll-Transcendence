@@ -247,7 +247,7 @@ const handleSocialMessage = (message) => {
     if (targetId === userProfile.value.id) {
       userProfile.value.name = data.username || data['user.name'] || userProfile.value.name;
       userProfile.value.description = data.user_bio ?? userProfile.value.description;
-      if (data.user_avatar) {
+      if (data.user_avatar && data.user_avatar != NULL) {
         userProfile.value.avatar = data.user_avatar;
       }
     }
@@ -336,34 +336,60 @@ const triggerFileInput = () => {
   fileInput.value.click();
 };
 
-const handleImageUpload = (event) => {
+const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+const extractErrorMessage = (data, fallback) => {
+  if (!data || typeof data !== 'object') return fallback;
+  if (typeof data.detail === 'string') return data.detail;
+  if (typeof data.error === 'string') return data.error;
+  const firstVal = Object.values(data)[0];
+  if (Array.isArray(firstVal) && firstVal.length > 0) return String(firstVal[0]);
+  if (typeof firstVal === 'string') return firstVal;
+  return fallback;
+};
+
+const handleImageUpload = async (event) => {
   const file = event.target.files[0];
-  const MAX_FILE_SIZE = 12 * 1024 * 1024; // 12 MB
+  const MAX_FILE_SIZE = 600 * 1024 * 1024; // 600 MB
   if (file) {
+    // 1. Reject videos or non-image files BEFORE previewing or sending PATCH
+    if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+      alert($t('invalidImageType'));
+      event.target.value = '';
+      return;
+    }
+    // 2. Reject oversized files
     if (file.size > MAX_FILE_SIZE) {
       alert($t('fileTooLarge'));
       event.target.value = '';
       return;
     }
-    selectedFile.value = file;
-    tempAvatar.value = URL.createObjectURL(file);
+    // 3. Test OS read permissions before creating Blob URL
+    try {
+      await file.slice(0, 1).arrayBuffer();
+      tempAvatar.value = URL.createObjectURL(file);
+      selectedFile.value = file;
+    } catch (err) {
+      alert($t('fileReadError'));
+      selectedFile.value = null;
+    }
   }
+  event.target.value = '';
 };
 
 const saveProfile = async () => {
-  if (!usernamePattern.test(profileEditForm.value.username)) {
+  const trimmedUsername = (profileEditForm.value.username || '').trim();
+  if (trimmedUsername.length < 3 || !usernamePattern.test(trimmedUsername)) {
     profileEditUsernameError.value = $t('usernameHelper');
+    alert($t('usernameHelper'));
     return;
   }
   profileEditUsernameError.value = '';
 
   const formData = new FormData();
-  formData.append('username', profileEditForm.value.username);
-  formData.append('bio', profileEditForm.value.bio);
-  formData.append(
-      'tags',
-      JSON.stringify(selectedTagsList.value)
-  );
+  formData.append('username', trimmedUsername);
+  formData.append('bio', profileEditForm.value.bio || '');
+  formData.append('tags', JSON.stringify(selectedTagsList.value));
 
   if (selectedFile.value) {
     formData.append('avatar_url', selectedFile.value);
@@ -385,7 +411,7 @@ const saveProfile = async () => {
     }
 
     if (response.ok) {
-      userProfile.value.name = data.username ?? profileEditForm.value.username;
+      userProfile.value.name = data.username ?? trimmedUsername;
       userProfile.value.description = data.bio ?? profileEditForm.value.bio;
       userProfile.value.tags = data.tags ?? selectedTagsList.value;
 
@@ -394,13 +420,13 @@ const saveProfile = async () => {
       }
       showEditModal.value = false;
     } else {
-      const firstError = Object.values(data)[0];
-      alert(Array.isArray(firstError) ? firstError[0] : $t('profileSaveError'));
+      alert(extractErrorMessage(data, $t('profileSaveError')));
     }
   } catch (error) {
     alert($t('networkError'));
   }
 };
+
 </script>
 
 <template>
@@ -742,7 +768,7 @@ const saveProfile = async () => {
           </div>
           <div class="input-group">
             <label>{{ $t('bio') }}</label>
-            <textarea v-model="profileEditForm.bio" :placeholder="$t('bioPlaceholder')" rows="4" class="custom-input textarea-input"></textarea>
+            <textarea v-model="profileEditForm.bio" maxlength="150" :placeholder="$t('bioPlaceholder')" rows="4" class="custom-input textarea-input"></textarea>
           </div>
 
           <!-- TAGS (Visibile solo per account standard) -->
