@@ -26,6 +26,12 @@ const showInfoModal = ref(false);
 const openInfoModal = () => { showInfoModal.value = true; };
 const closeInfoModal = () => { showInfoModal.value = false; };
 
+// Mostra data/ora esattamente come salvate (stessa logica di profilo e form di modifica)
+const formatEventDate = (iso) => {
+  if (!iso) return 'TBD';
+  return String(iso).slice(0, 16).replace('T', ' ');
+};
+
 const comments = ref([]);
 const newCommentText = ref('');
 
@@ -496,7 +502,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <h2 class="empty-title">Ready2Roll</h2>
-          <p class="empty-sub">No events yet. Owners will publish their events here.</p>
+          <p class="empty-sub"> {{$t('noevents')}}</p>
         </div>
 
         <div
@@ -716,7 +722,7 @@ onBeforeUnmount(() => {
   <div v-if="showInfoModal && activeEvent" class="modal-overlay" @click.self="closeInfoModal">
     <div class="info-modal-card glass-panel">
       <div class="modal-header">
-        <h3 style="margin: 0;">Event Informations</h3>
+        <h3 style="margin: 0;">{{ $t('eventInformations') }}</h3>
         <button class="close-modal-btn" @click="closeInfoModal">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
@@ -735,7 +741,7 @@ onBeforeUnmount(() => {
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-days ui-icon"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M8 13h.01"/><path d="M12 13h.01"/><path d="M16 13h.01"/><path d="M8 17h.01"/><path d="M12 17h.01"/><path d="M16 17h.01"/></svg>
           <div class="info-text-block">
             <strong>{{ $t('date') }}</strong>
-            <span>{{ activeEvent.event_date ? activeEvent.event_date.slice(0, 16).replace('T', ' ') : 'TBD' }}</span>
+            <span>{{ formatEventDate(activeEvent.event_date) }}</span>
           </div>
         </div>
 
@@ -743,7 +749,7 @@ onBeforeUnmount(() => {
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ticket ui-icon"><path d="M15 5v2"/><path d="M15 11v2"/><path d="M15 17v2"/><path d="M5 5h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 0 0-4v-3a2 2 0 0 1 2-2z"/></svg>
           <div class="info-text-block">
             <strong>{{ $t('ticketPrice') }}</strong>
-            <span>{{ activeEvent.ticket_price ? '€' + activeEvent.ticket_price : $t('free') }}</span>
+            <span>{{ Number(activeEvent.ticket_price) > 0 ? '€' + Number(activeEvent.ticket_price).toFixed(2) : $t('free') }}</span>
           </div>
         </div>
 
@@ -758,11 +764,11 @@ onBeforeUnmount(() => {
         <div class="info-row tags-info-row">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ui-icon"><path d="M20.59 13.41 11 3.83V3H4v7h.83l9.58 9.59a2 2 0 0 0 2.83 0l3.35-3.35a2 2 0 0 0 0-2.83Z"/><circle cx="7.5" cy="7.5" r=".5"/></svg>
           <div class="info-text-block tags-info-block">
-            <strong>Event Tags</strong>
+            <strong>{{ $t('eventTags') }}</strong>
             <div v-if="activeEvent.tags?.length" class="event-info-tags">
               <span v-for="tag in activeEvent.tags" :key="tag" class="event-info-tag"># {{ tag }}</span>
             </div>
-            <span v-else class="no-event-tags">No tags added by the owner</span>
+            <span v-else class="no-event-tags">{{ $t('noEventTags') }}</span>
           </div>
         </div>
 

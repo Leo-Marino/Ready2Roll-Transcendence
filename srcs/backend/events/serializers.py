@@ -127,6 +127,7 @@ class FeedEventSerializer(serializers.ModelSerializer):
         model = Event
         fields = [
             "id", "title", "description", "created_at", "event_date", "location",
+            "max_capacity", "ticket_price", "start_time", "end_time",
             "media_src", "media_type",
             "likes_count", "comments_count", "is_liked", "owner", "tags",
         ]
