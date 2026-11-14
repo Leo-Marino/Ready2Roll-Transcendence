@@ -91,6 +91,7 @@ make run-app
 `run-app` runs a script (vault-bootstrap.sh) that performs every step needed to go from a clean clone to
 a running application: it builds and starts all containers, initializes and unseals
 Vault, configures the secrets engine and AppRole authentication.
+All vault keys will be stored in secrets/vault-init.json
 
 Then open **https://localhost:8443** in your browser (the certificate is self-signed,
 so accept the browser warning).

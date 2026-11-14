@@ -1,6 +1,6 @@
 .env
 *Zone.Identifier
-secrets/
+secrets/*
 
 # Logs
 logs
@@ -46,9 +46,11 @@ __screenshots__/
 srcs/vault/tls/*
 srcs/vault/secrets/secrets/
 srcs/vault/tls/*.key
+.certs-ca/
 
 # Waf
 srcs/waf/*
+!srcs/waf/rules
 
 r2r-secrets.json
 unseal_keys.txt
