@@ -65,7 +65,7 @@ Rules:
 
 
 def _fmt(dt):
-    return timezone.localtime(dt, TZ).strftime("%d/%m/%Y %H:%M") if dt else "not specified"
+    return dt.astimezone(ZoneInfo("UTC")).strftime("%d/%m/%Y %H:%M") if dt else "not specified"
 
 
 def build_event_context(event):
