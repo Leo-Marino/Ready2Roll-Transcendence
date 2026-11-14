@@ -1,6 +1,5 @@
 .env
 *Zone.Identifier
-vault-bootstrap.sh
 secrets/
 
 # Logs

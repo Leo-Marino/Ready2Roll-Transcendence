@@ -5,7 +5,11 @@ DATA_DIR = /sgoinfre/$(USER)/ready2roll
 export PUBLIC_HOST_IP  := $(shell hostname -I | awk '{print $$1}')
 export PUBLIC_HOSTNAME := $(shell hostname -f 2>/dev/null || hostname)
 
-all: down up
+all: down certs up
+
+certs:
+	chmod +x scripts/gen-certs.sh
+	./scripts/gen-certs.sh
 
 vault-status:
 	$(COMPOSE) exec vault vault status
@@ -45,9 +49,9 @@ up: setup
 	$(COMPOSE) up -d
 	@echo "login at https://localhost:8443/login"
 
-run-app: up # Runs a script to automatically unseal vault
-	chmod +x vault-bootstrap.sh
-	./vault-bootstrap.sh
+run-app: certs up # Runs a script to automatically unseal vault
+	chmod +x scripts/vault-bootstrap.sh
+	./scripts/vault-bootstrap.sh
 
 down:
 	$(COMPOSE) down
