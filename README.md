@@ -367,35 +367,6 @@ erDiagram
 
 ---
 
-## Individual Contributions
-
-### Leo (`lemarino`)
-
-- **Worked on modules**: _1, 3, 4, 7, 9, 13_
-
-
-### Xhuljano (`xhamzall`)
-
-- **Worked on modules**: _1, 2, 3, 4, 5, 6, 9, 13_
-
-
-### Thilina (`tkurukul`)
-
-- **Worked on modules**: _1, 2, 3, 4, 5, 8, 9, 10, 13_
-
-
-### Ilyas (`ilmahjou`)
-
-- **Worked on modules**: _1, 3, 4, 5, 6, 9, 11, 12, 13_
-
-
-### Alek (`adegl-in`)
-
-- **Worked on modules**: _1, 3, 4, 9, 13_
-
-
----
-
 ## Resources
 
 ### Documentation
