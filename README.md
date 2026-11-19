@@ -1,4 +1,4 @@
-*This project has been created as part of the 42 curriculum by lemarino, xhamzall, tkurukul, ilmahjou, adegl-in.*
+*This project has been created as part of the 42 curriculum by lemarino, [xhamzall](https://github.com/HamzallariXhuljano), tkurukul, [ilmahjou](https://github.com/Ilyas-Mahjoubi), [adegl-in](https://github.com/ffuze).*
 
 # Ready2Roll
 
