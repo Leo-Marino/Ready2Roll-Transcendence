@@ -52,6 +52,7 @@ up: setup
 run-app: certs up # Runs a script to automatically unseal vault
 	chmod +x scripts/vault-bootstrap.sh
 	./scripts/vault-bootstrap.sh
+	shred -u ./r2r-secrets.json
 
 down:
 	$(COMPOSE) down
