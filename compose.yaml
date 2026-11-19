@@ -29,20 +29,19 @@ services:
 # WAF — ModSecurity v3 + OWASP CRS on nginx. Only public entrypoint.
 #---------------------------------------------------------------------------
   waf:
-    image: owasp/modsecurity-crs:nginx
+    image: owasp/modsecurity-crs:4.30.0-nginx-202610180210
     container_name: ready2roll-waf
     restart: unless-stopped
     ports:
       - "8443:8443"                             # HTTPS -> https://localhost:8443
     environment:
       BACKEND: http://nginx:80
-      PORT: "8080"
       SSL_PORT: "8443"
-      PROXY_SSL: "off"                          # backend is plain HTTP; "on" crashes the WAF
+      PROXY_SSL: "off"
       SERVER_NAME: localhost
       MODSEC_RULE_ENGINE: ON
-      PARANOIA: "1"
-      BLOCKING_PARANOIA: "1"
+      PARANOIA: "2"
+      BLOCKING_PARANOIA: "2"
       ANOMALY_INBOUND: "5"
       ANOMALY_OUTBOUND: "4"
       MODSEC_AUDIT_LOG_FORMAT: JSON
@@ -186,8 +185,6 @@ services:
     secrets:
       - pg_root_password
     volumes:
-#      - /tmp/${USER}_ready2roll_pg_data:/var/lib/postgresql/data
-#      - ./srcs/postgre_db/init:/docker-entrypoint-initdb.d:ro
       - ready2roll_pg_data:/var/lib/postgresql/data
       - ./srcs/postgre_db/init:/docker-entrypoint-initdb.d
     networks:
