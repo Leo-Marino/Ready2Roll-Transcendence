@@ -81,6 +81,10 @@ at runtime by the Vault Agent into RAM-backed (`tmpfs`) volumes.
 
 3. **TLS certificates** — the WAF expects `srcs/waf/certs/server.crt` and `server.key`;
    Vault expects `srcs/vault/tls/ca.crt`, `vault.crt` and `vault.key`.
+   You can generate new one with
+```bash
+make certs
+```
 
 ### Running the project (single command)
 
